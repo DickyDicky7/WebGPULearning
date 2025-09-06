@@ -81,16 +81,16 @@
 
         gpuShaderModule = gpuDevice.createShaderModule({
 //      gpuShaderModule = gpuDevice.createShaderModule({
-            label: "our hardcoded red triangle shaders",
-//          label: "our hardcoded red triangle shaders",
+            label: "GPU_SHADER_MODULE",
+//          label: "GPU_SHADER_MODULE",
             code: shaderString,
 //          code: shaderString,
         });
 
         gpuRenderPipeline = await gpuDevice.createRenderPipelineAsync({
 //      gpuRenderPipeline = await gpuDevice.createRenderPipelineAsync({
-            label: "our hardcoded red triangle pipeline",
-//          label: "our hardcoded red triangle pipeline",
+            label: "GPU_RENDER_PIPELINE",
+//          label: "GPU_RENDER_PIPELINE",
             layout: "auto",
 //          layout: "auto",
             vertex:
@@ -114,8 +114,8 @@
         gpuRenderPassDescriptor =
 //      gpuRenderPassDescriptor =
         {
-            label: "our basic canvas renderPass",
-//          label: "our basic canvas renderPass",
+            label: "GPU_RENDER_PASS_DESCRIPTOR",
+//          label: "GPU_RENDER_PASS_DESCRIPTOR",
             colorAttachments:
 //          colorAttachments:
             [
@@ -184,8 +184,8 @@
 
         // Make a command encoder to start encoding commands.
         // Make a command encoder to start encoding commands.
-        gpuCommandEncoder = gpuDevice.createCommandEncoder({ label: "our GPU command encoder" });
-//      gpuCommandEncoder = gpuDevice.createCommandEncoder({ label: "our GPU command encoder" });
+        gpuCommandEncoder = gpuDevice.createCommandEncoder({ label: "GPU_COMMAND_ENCODER" });
+//      gpuCommandEncoder = gpuDevice.createCommandEncoder({ label: "GPU_COMMAND_ENCODER" });
 
         // Make a render pass encoder to encode render specific commands.
         // Make a render pass encoder to encode render specific commands.
