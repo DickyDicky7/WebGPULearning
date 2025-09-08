@@ -5,6 +5,8 @@
 //  import ExampleB from "./lib/ExampleB.svelte";
     import ExampleC from "./lib/ExampleC.svelte";
 //  import ExampleC from "./lib/ExampleC.svelte";
+    import ExampleD from "./lib/ExampleD.svelte";
+//  import ExampleD from "./lib/ExampleD.svelte";
 
     let keyboardKey: string = $state("a");
 //  let keyboardKey: string = $state("a");
@@ -26,5 +28,7 @@
         <ExampleB></ExampleB>
     {:else if keyboardKey === "c"}
         <ExampleC></ExampleC>
+    {:else if keyboardKey === "d"}
+        <ExampleD></ExampleD>
     {/if}
 </main>
