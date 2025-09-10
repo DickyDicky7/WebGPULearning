@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
 //  import { onMount } from "svelte";
-    import shaderString from "../assets/4.wgsl?raw";
-//  import shaderString from "../assets/4.wgsl?raw";
+    import shaderString from "../assets/5.wgsl?raw";
+//  import shaderString from "../assets/5.wgsl?raw";
 
 
 
@@ -30,18 +30,18 @@
 //  let gpuCommandBuffer: GPUCommandBuffer;
     let resizeObserver: ResizeObserver;
 //  let resizeObserver: ResizeObserver;
-    let staticStorageBuffer: GPUBuffer;
-//  let staticStorageBuffer: GPUBuffer;
-    let dynamicStorageBuffer: GPUBuffer;
-//  let dynamicStorageBuffer: GPUBuffer;
+    let staticVertexBuffer: GPUBuffer;
+//  let staticVertexBuffer: GPUBuffer;
+    let dynamicVertexBuffer: GPUBuffer;
+//  let dynamicVertexBuffer: GPUBuffer;
     let staticUnitSize: number;
 //  let staticUnitSize: number;
     let dynamicUnitSize: number;
 //  let dynamicUnitSize: number;
-    let staticStorageBufferSize: number;
-//  let staticStorageBufferSize: number;
-    let dynamicStorageBufferSize: number;
-//  let dynamicStorageBufferSize: number;
+    let staticVertexBufferSize: number;
+//  let staticVertexBufferSize: number;
+    let dynamicVertexBufferSize: number;
+//  let dynamicVertexBufferSize: number;
     let kColorOffset: number;
 //  let kColorOffset: number;
     let kOffsetOffset: number;
@@ -58,16 +58,14 @@
     };
     let objectInfos: ObjectInfo[];
 //  let objectInfos: ObjectInfo[];
-    let gpuBindGroup: GPUBindGroup;
-//  let gpuBindGroup: GPUBindGroup;
-    let dynamicStorageValues: Float32Array;
-//  let dynamicStorageValues: Float32Array;
+    let dynamicVertexValues: Float32Array;
+//  let dynamicVertexValues: Float32Array;
     type CreateCircleVerticesResult = { vertexData: Float32Array, numVertices: number, };
 //  type CreateCircleVerticesResult = { vertexData: Float32Array, numVertices: number, };
     let createCircleVerticesResult: CreateCircleVerticesResult;
 //  let createCircleVerticesResult: CreateCircleVerticesResult;
-    let verticesStorageBuffer: GPUBuffer;
-//  let verticesStorageBuffer: GPUBuffer;
+    let vertexBuffer: GPUBuffer;
+//  let vertexBuffer: GPUBuffer;
 
 
 
@@ -136,6 +134,55 @@
             {
                 module: gpuShaderModule,
 //              module: gpuShaderModule,
+                buffers:
+//              buffers:
+                [
+                    {
+                        arrayStride: 2 * 4, // 2 floats, 4 bytes each
+//                      arrayStride: 2 * 4, // 2 floats, 4 bytes each
+                        stepMode: "vertex",
+//                      stepMode: "vertex",
+                        attributes:
+//                      attributes:
+                        [
+                            { shaderLocation: 0, offset:  0, format: "float32x2", }, // position
+//                          { shaderLocation: 0, offset:  0, format: "float32x2", }, // position
+                        ]
+                        ,
+                    }
+                    ,
+                    {
+                        arrayStride: 6 * 4, // 6 floats, 4 bytes each
+//                      arrayStride: 6 * 4, // 6 floats, 4 bytes each
+                        stepMode: "instance",
+//                      stepMode: "instance",
+                        attributes:
+//                      attributes:
+                        [
+                            { shaderLocation: 1, offset:  0, format: "float32x4", }, // color
+//                          { shaderLocation: 1, offset:  0, format: "float32x4", }, // color
+                            { shaderLocation: 2, offset: 16, format: "float32x2", }, // offset
+//                          { shaderLocation: 2, offset: 16, format: "float32x2", }, // offset
+                        ]
+                        ,
+                    }
+                    ,
+                    {
+                        arrayStride: 2 * 4, // 2 floats, 4 bytes each
+//                      arrayStride: 2 * 4, // 2 floats, 4 bytes each
+                        stepMode: "instance",
+//                      stepMode: "instance",
+                        attributes:
+//                      attributes:
+                        [
+                            { shaderLocation: 3, offset:  0, format: "float32x2", }, // scale
+//                          { shaderLocation: 3, offset:  0, format: "float32x2", }, // scale
+                        ]
+                        ,
+                    }
+                    ,
+                ]
+                ,
             }
             ,
             fragment:
@@ -153,10 +200,8 @@
 //      staticUnitSize =
             4 * 4 + // color  is 4 32bit floats (4bytes each)
 //          4 * 4 + // color  is 4 32bit floats (4bytes each)
-            2 * 4 + // offset is 2 32bit floats (4bytes each)
-//          2 * 4 + // offset is 2 32bit floats (4bytes each)
-            2 * 4;  // padding
-//          2 * 4;  // padding
+            2 * 4;  // offset is 2 32bit floats (4bytes each)
+//          2 * 4;  // offset is 2 32bit floats (4bytes each)
         dynamicUnitSize =
 //      dynamicUnitSize =
             2 * 4;  // scale  is 2 32bit floats (4bytes each)
@@ -171,41 +216,41 @@
 //      kNumObjects = 100;
         objectInfos = [];
 //      objectInfos = [];
-        staticStorageBufferSize = staticUnitSize * kNumObjects;
-//      staticStorageBufferSize = staticUnitSize * kNumObjects;
-        dynamicStorageBufferSize = dynamicUnitSize * kNumObjects;
-//      dynamicStorageBufferSize = dynamicUnitSize * kNumObjects;
-        staticStorageBuffer = gpuDevice.createBuffer({
-//      staticStorageBuffer = gpuDevice.createBuffer({
-            label: "STATIC_STORAGE_FOR_OBJECTS",
-//          label: "STATIC_STORAGE_FOR_OBJECTS",
-            size: staticStorageBufferSize,
-//          size: staticStorageBufferSize,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-//          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        staticVertexBufferSize = staticUnitSize * kNumObjects;
+//      staticVertexBufferSize = staticUnitSize * kNumObjects;
+        dynamicVertexBufferSize = dynamicUnitSize * kNumObjects;
+//      dynamicVertexBufferSize = dynamicUnitSize * kNumObjects;
+        staticVertexBuffer = gpuDevice.createBuffer({
+//      staticVertexBuffer = gpuDevice.createBuffer({
+            label: "STATIC_VERTEX_FOR_OBJECTS",
+//          label: "STATIC_VERTEX_FOR_OBJECTS",
+            size: staticVertexBufferSize,
+//          size: staticVertexBufferSize,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+//          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        dynamicStorageBuffer = gpuDevice.createBuffer({
-//      dynamicStorageBuffer = gpuDevice.createBuffer({
-            label: "DYNAMIC_STORAGE_FOR_OBJECTS",
-//          label: "DYNAMIC_STORAGE_FOR_OBJECTS",
-            size: dynamicStorageBufferSize,
-//          size: dynamicStorageBufferSize,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-//          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        dynamicVertexBuffer = gpuDevice.createBuffer({
+//      dynamicVertexBuffer = gpuDevice.createBuffer({
+            label: "DYNAMIC_VERTEX_FOR_OBJECTS",
+//          label: "DYNAMIC_VERTEX_FOR_OBJECTS",
+            size: dynamicVertexBufferSize,
+//          size: dynamicVertexBufferSize,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+//          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         {
-            const staticStorageValues: Float32Array = new Float32Array(staticStorageBufferSize / 4);
-//          const staticStorageValues: Float32Array = new Float32Array(staticStorageBufferSize / 4);
+            const staticVertexValues: Float32Array = new Float32Array(staticVertexBufferSize / 4);
+//          const staticVertexValues: Float32Array = new Float32Array(staticVertexBufferSize / 4);
             for (let i: number = 0; i < kNumObjects; ++i)
 //          for (let i: number = 0; i < kNumObjects; ++i)
             {
                 const staticOffset: number = i * (staticUnitSize / 4);
 //              const staticOffset: number = i * (staticUnitSize / 4);
 
-                staticStorageValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
-//              staticStorageValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
-                staticStorageValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
-//              staticStorageValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
+                staticVertexValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
+//              staticVertexValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
+                staticVertexValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
+//              staticVertexValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
 
                 objectInfos.push({
 //              objectInfos.push({
@@ -213,42 +258,24 @@
 //                  scale: rand(0.2, 0.5),
                 });
             }
-            gpuDevice.queue.writeBuffer(staticStorageBuffer, 0, staticStorageValues as GPUAllowSharedBufferSource);
-//          gpuDevice.queue.writeBuffer(staticStorageBuffer, 0, staticStorageValues as GPUAllowSharedBufferSource);
+            gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValues as GPUAllowSharedBufferSource);
+//          gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValues as GPUAllowSharedBufferSource);
         }
-        dynamicStorageValues = new Float32Array(dynamicStorageBufferSize / 4);
-//      dynamicStorageValues = new Float32Array(dynamicStorageBufferSize / 4);
+        dynamicVertexValues = new Float32Array(dynamicVertexBufferSize / 4);
+//      dynamicVertexValues = new Float32Array(dynamicVertexBufferSize / 4);
         createCircleVerticesResult = createCircleVertices({ radius: 0.5, innerRadius: 0.25, });
 //      createCircleVerticesResult = createCircleVertices({ radius: 0.5, innerRadius: 0.25, });
-        verticesStorageBuffer = gpuDevice.createBuffer({
-//      verticesStorageBuffer = gpuDevice.createBuffer({
-            label: "STORAGE_BUFFER_VERTICES",
-//          label: "STORAGE_BUFFER_VERTICES",
+        vertexBuffer = gpuDevice.createBuffer({
+//      vertexBuffer = gpuDevice.createBuffer({
+            label: "VERTEX_BUFFER_VERTICES",
+//          label: "VERTEX_BUFFER_VERTICES",
             size: createCircleVerticesResult.vertexData.byteLength,
 //          size: createCircleVerticesResult.vertexData.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-//          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+//          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
-        gpuDevice.queue.writeBuffer(verticesStorageBuffer, 0, createCircleVerticesResult.vertexData as GPUAllowSharedBufferSource);
-//      gpuDevice.queue.writeBuffer(verticesStorageBuffer, 0, createCircleVerticesResult.vertexData as GPUAllowSharedBufferSource);
-        gpuBindGroup = gpuDevice.createBindGroup({
-//      gpuBindGroup = gpuDevice.createBindGroup({
-            label: "BIND_GROUP_FOR_OBJECTS",
-//          label: "BIND_GROUP_FOR_OBJECTS",
-            layout: gpuRenderPipeline.getBindGroupLayout(0),
-//          layout: gpuRenderPipeline.getBindGroupLayout(0),
-            entries:
-//          entries:
-            [
-                { binding: 0, resource: { buffer:   staticStorageBuffer, }, },
-//              { binding: 0, resource: { buffer:   staticStorageBuffer, }, },
-                { binding: 1, resource: { buffer:  dynamicStorageBuffer, }, },
-//              { binding: 1, resource: { buffer:  dynamicStorageBuffer, }, },
-                { binding: 2, resource: { buffer: verticesStorageBuffer, }, },
-//              { binding: 2, resource: { buffer: verticesStorageBuffer, }, },
-            ]
-            ,
-        });
+        gpuDevice.queue.writeBuffer(vertexBuffer, 0, createCircleVerticesResult.vertexData as GPUAllowSharedBufferSource);
+//      gpuDevice.queue.writeBuffer(vertexBuffer, 0, createCircleVerticesResult.vertexData as GPUAllowSharedBufferSource);
 
         gpuRenderPassDescriptor =
 //      gpuRenderPassDescriptor =
@@ -335,17 +362,21 @@
 //      gpuRenderPassEncoder = gpuCommandEncoder.beginRenderPass(gpuRenderPassDescriptor);
         gpuRenderPassEncoder.setPipeline(gpuRenderPipeline);
 //      gpuRenderPassEncoder.setPipeline(gpuRenderPipeline);
+        gpuRenderPassEncoder.setVertexBuffer(0, vertexBuffer);
+//      gpuRenderPassEncoder.setVertexBuffer(0, vertexBuffer);
+        gpuRenderPassEncoder.setVertexBuffer(1, staticVertexBuffer);
+//      gpuRenderPassEncoder.setVertexBuffer(1, staticVertexBuffer);
+        gpuRenderPassEncoder.setVertexBuffer(2, dynamicVertexBuffer);
+//      gpuRenderPassEncoder.setVertexBuffer(2, dynamicVertexBuffer);
         objectInfos.forEach(({ scale, }, idx) => {
 //      objectInfos.forEach(({ scale, }, idx) => {
             const dynamicOffset: number = idx * (dynamicUnitSize / 4);
 //          const dynamicOffset: number = idx * (dynamicUnitSize / 4);
-            dynamicStorageValues.set([scale / aspect, scale], dynamicOffset + kScaleOffset);
-//          dynamicStorageValues.set([scale / aspect, scale], dynamicOffset + kScaleOffset);
+            dynamicVertexValues.set([scale / aspect, scale], dynamicOffset + kScaleOffset);
+//          dynamicVertexValues.set([scale / aspect, scale], dynamicOffset + kScaleOffset);
         });
-        gpuDevice.queue.writeBuffer(dynamicStorageBuffer, 0, dynamicStorageValues as GPUAllowSharedBufferSource);
-//      gpuDevice.queue.writeBuffer(dynamicStorageBuffer, 0, dynamicStorageValues as GPUAllowSharedBufferSource);        
-        gpuRenderPassEncoder.setBindGroup(0, gpuBindGroup);
-//      gpuRenderPassEncoder.setBindGroup(0, gpuBindGroup);
+        gpuDevice.queue.writeBuffer(dynamicVertexBuffer, 0, dynamicVertexValues as GPUAllowSharedBufferSource);
+//      gpuDevice.queue.writeBuffer(dynamicVertexBuffer, 0, dynamicVertexValues as GPUAllowSharedBufferSource);        
         gpuRenderPassEncoder.draw(createCircleVerticesResult.numVertices, kNumObjects); // Call our vertex shader numVertices times for each instance (numVertices vertices x 100 instances)
 //      gpuRenderPassEncoder.draw(createCircleVerticesResult.numVertices, kNumObjects); // Call our vertex shader numVertices times for each instance (numVertices vertices x 100 instances)
         gpuRenderPassEncoder.end();

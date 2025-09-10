@@ -166,8 +166,8 @@
         {
             const staticUniformBuffer: GPUBuffer = gpuDevice.createBuffer({
 //          const staticUniformBuffer: GPUBuffer = gpuDevice.createBuffer({
-                label: `static uniforms for obj: ${i}`,
-//              label: `static uniforms for obj: ${i}`,
+                label: `STATIC_UNIFORMS_FOR_OBJ: ${i}`,
+//              label: `STATIC_UNIFORMS_FOR_OBJ: ${i}`,
                 size: staticUniformBufferSize,
 //              size: staticUniformBufferSize,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -189,8 +189,8 @@
 //          const dynamicUniformValues: Float32Array = new Float32Array(dynamicUniformBufferSize / 4);
             const dynamicUniformBuffer: GPUBuffer = gpuDevice.createBuffer({
 //          const dynamicUniformBuffer: GPUBuffer = gpuDevice.createBuffer({
-                label: `changing uniforms for obj: ${i}`,
-//              label: `changing uniforms for obj: ${i}`,
+                label: `CHANGING_UNIFORMS_FOR_OBJ: ${i}`,
+//              label: `CHANGING_UNIFORMS_FOR_OBJ: ${i}`,
                 size: dynamicUniformBufferSize,
 //              size: dynamicUniformBufferSize,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -199,8 +199,8 @@
 
             const bindGroup: GPUBindGroup = gpuDevice.createBindGroup({
 //          const bindGroup: GPUBindGroup = gpuDevice.createBindGroup({
-                label: `bind group for obj: ${i}`,
-//              label: `bind group for obj: ${i}`,
+                label: `BIND_GROUP_FOR_OBJ: ${i}`,
+//              label: `BIND_GROUP_FOR_OBJ: ${i}`,
                 layout: gpuRenderPipeline.getBindGroupLayout(0),
 //              layout: gpuRenderPipeline.getBindGroupLayout(0),
                 entries:

@@ -44,16 +44,16 @@
         
         gpuShaderModule = gpuDevice.createShaderModule({
 //      gpuShaderModule = gpuDevice.createShaderModule({
-            label: "doubling compute module",
-//          label: "doubling compute module",
+            label: "DOUBLING_COMPUTE_MODULE",
+//          label: "DOUBLING_COMPUTE_MODULE",
             code: shaderString,
 //          code: shaderString,
         });
         
         gpuComputePipeline = gpuDevice.createComputePipeline({
 //      gpuComputePipeline = gpuDevice.createComputePipeline({
-            label: "doubling compute pipeline",
-//          label: "doubling compute pipeline",
+            label: "DOUBLING_COMPUTE_PIPELINE",
+//          label: "DOUBLING_COMPUTE_PIPELINE",
             layout: "auto",
 //          layout: "auto",
             compute:
@@ -69,8 +69,8 @@
 //      input = new Float32Array([1, 3, 5]);
         workBuffer = gpuDevice.createBuffer({
 //      workBuffer = gpuDevice.createBuffer({
-            label: "work buffer",
-//          label: "work buffer",
+            label: "WORK_BUFFER",
+//          label: "WORK_BUFFER",
             size: input.byteLength,
 //          size: input.byteLength,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
@@ -80,8 +80,8 @@
 //      gpuDevice.queue.writeBuffer(workBuffer, 0, input as GPUAllowSharedBufferSource,);
         resultBuffer = gpuDevice.createBuffer({
 //      resultBuffer = gpuDevice.createBuffer({
-            label: "result buffer",
-//          label: "result buffer",
+            label: "RESULT_BUFFER",
+//          label: "RESULT_BUFFER",
             size: input.byteLength,
 //          size: input.byteLength,
             usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
@@ -90,8 +90,8 @@
 
         gpuBindGroup0 = gpuDevice.createBindGroup({
 //      gpuBindGroup0 = gpuDevice.createBindGroup({
-            label: "bindGroup for work buffer",
-//          label: "bindGroup for work buffer",
+            label: "BINDGROUP_FOR_WORK_BUFFER",
+//          label: "BINDGROUP_FOR_WORK_BUFFER",
             layout: gpuComputePipeline.getBindGroupLayout(0),
 //          layout: gpuComputePipeline.getBindGroupLayout(0),
             entries:
@@ -110,13 +110,13 @@
 
         gpuCommandEncoder = gpuDevice.createCommandEncoder({
 //      gpuCommandEncoder = gpuDevice.createCommandEncoder({
-            label: "doubling encoder",
-//          label: "doubling encoder",
+            label: "DOUBLING_ENCODER",
+//          label: "DOUBLING_ENCODER",
         });
         gpuComputePassEncoder = gpuCommandEncoder.beginComputePass({
 //      gpuComputePassEncoder = gpuCommandEncoder.beginComputePass({
-            label: "doubling compute pass",
-//          label: "doubling compute pass",
+            label: "DOUBLING_COMPUTE_PASS",
+//          label: "DOUBLING_COMPUTE_PASS",
         });
         gpuComputePassEncoder.setPipeline(gpuComputePipeline);
 //      gpuComputePassEncoder.setPipeline(gpuComputePipeline);
