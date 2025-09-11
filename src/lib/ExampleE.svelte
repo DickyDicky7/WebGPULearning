@@ -138,8 +138,8 @@
 //              buffers:
                 [
                     {
-                        arrayStride: 2 * 4, // 2 floats, 4 bytes each
-//                      arrayStride: 2 * 4, // 2 floats, 4 bytes each
+                        arrayStride: 2 * 4 + 4, // 2 floats, 4 bytes each + 4 bytes
+//                      arrayStride: 2 * 4 + 4, // 2 floats, 4 bytes each + 4 bytes
                         stepMode: "vertex",
 //                      stepMode: "vertex",
                         attributes:
@@ -147,22 +147,24 @@
                         [
                             { shaderLocation: 0, offset:  0, format: "float32x2", }, // position
 //                          { shaderLocation: 0, offset:  0, format: "float32x2", }, // position
+                            { shaderLocation: 4, offset:  8, format: "unorm8x4" , }, // perVertexColor
+//                          { shaderLocation: 4, offset:  8, format: "unorm8x4" , }, // perVertexColor
                         ]
                         ,
                     }
                     ,
                     {
-                        arrayStride: 6 * 4, // 6 floats, 4 bytes each
-//                      arrayStride: 6 * 4, // 6 floats, 4 bytes each
+                        arrayStride: 4 + 2 * 4, // 4 bytes + 2 floats, 4 bytes each
+//                      arrayStride: 4 + 2 * 4, // 4 bytes + 2 floats, 4 bytes each
                         stepMode: "instance",
 //                      stepMode: "instance",
                         attributes:
 //                      attributes:
                         [
-                            { shaderLocation: 1, offset:  0, format: "float32x4", }, // color
-//                          { shaderLocation: 1, offset:  0, format: "float32x4", }, // color
-                            { shaderLocation: 2, offset: 16, format: "float32x2", }, // offset
-//                          { shaderLocation: 2, offset: 16, format: "float32x2", }, // offset
+                            { shaderLocation: 1, offset:  0, format: "unorm8x4" , }, // color
+//                          { shaderLocation: 1, offset:  0, format: "unorm8x4" , }, // color
+                            { shaderLocation: 2, offset:  4, format: "float32x2", }, // offset
+//                          { shaderLocation: 2, offset:  4, format: "float32x2", }, // offset
                         ]
                         ,
                     }
@@ -198,8 +200,8 @@
 
         staticUnitSize =
 //      staticUnitSize =
-            4 * 4 + // color  is 4 32bit floats (4bytes each)
-//          4 * 4 + // color  is 4 32bit floats (4bytes each)
+            4 +     // color  is 4 bytes
+//          4 +     // color  is 4 bytes
             2 * 4;  // offset is 2 32bit floats (4bytes each)
 //          2 * 4;  // offset is 2 32bit floats (4bytes each)
         dynamicUnitSize =
@@ -208,8 +210,8 @@
 //          2 * 4;  // scale  is 2 32bit floats (4bytes each)
         kColorOffset = 0;
 //      kColorOffset = 0;
-        kOffsetOffset = 4;
-//      kOffsetOffset = 4;
+        kOffsetOffset = 1;
+//      kOffsetOffset = 1;
         kScaleOffset = 0;
 //      kScaleOffset = 0;
         kNumObjects = 100;
@@ -239,18 +241,22 @@
 //          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
         {
-            const staticVertexValues: Float32Array = new Float32Array(staticVertexBufferSize / 4);
-//          const staticVertexValues: Float32Array = new Float32Array(staticVertexBufferSize / 4);
+            const staticVertexValuesU8: Uint8Array = new Uint8Array(staticVertexBufferSize);
+//          const staticVertexValuesU8: Uint8Array = new Uint8Array(staticVertexBufferSize);
+            const staticVertexValuesF32: Float32Array = new Float32Array(staticVertexValuesU8.buffer);
+//          const staticVertexValuesF32: Float32Array = new Float32Array(staticVertexValuesU8.buffer);
             for (let i: number = 0; i < kNumObjects; ++i)
 //          for (let i: number = 0; i < kNumObjects; ++i)
             {
-                const staticOffset: number = i * (staticUnitSize / 4);
-//              const staticOffset: number = i * (staticUnitSize / 4);
+                const staticOffsetU8: number = i * staticUnitSize;
+//              const staticOffsetU8: number = i * staticUnitSize;
+                const staticOffsetF32: number = staticOffsetU8 / 4;
+//              const staticOffsetF32: number = staticOffsetU8 / 4;
 
-                staticVertexValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
-//              staticVertexValues.set([rand(), rand(), rand(), 1], staticOffset + kColorOffset);
-                staticVertexValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
-//              staticVertexValues.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffset + kOffsetOffset);
+                staticVertexValuesU8.set([rand() * 255, rand() * 255, rand() * 255, 255], staticOffsetU8 + kColorOffset); // set the color
+//              staticVertexValuesU8.set([rand() * 255, rand() * 255, rand() * 255, 255], staticOffsetU8 + kColorOffset); // set the color
+                staticVertexValuesF32.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffsetF32 + kOffsetOffset); // set the offset
+//              staticVertexValuesF32.set([rand(-0.9, 0.9), rand(-0.9, 0.9)], staticOffsetF32 + kOffsetOffset); // set the offset
 
                 objectInfos.push({
 //              objectInfos.push({
@@ -258,8 +264,8 @@
 //                  scale: rand(0.2, 0.5),
                 });
             }
-            gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValues as GPUAllowSharedBufferSource);
-//          gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValues as GPUAllowSharedBufferSource);
+            gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValuesF32 as GPUAllowSharedBufferSource);
+//          gpuDevice.queue.writeBuffer(staticVertexBuffer, 0, staticVertexValuesF32 as GPUAllowSharedBufferSource);
         }
         dynamicVertexValues = new Float32Array(dynamicVertexBufferSize / 4);
 //      dynamicVertexValues = new Float32Array(dynamicVertexBufferSize / 4);
@@ -424,24 +430,47 @@
 
     const createCircleVertices = ({ radius = 1, numSubdivisions = 24, innerRadius = 0, startAngle = 0, endAngle = Math.PI * 2, } = {}) =>
     {
-        // 2 triangles per subdivision, 3 verts per tri, 2 values (xy) each.
-        // 2 triangles per subdivision, 3 verts per tri, 2 values (xy) each.
+        // 2 triangles per subdivision, 3 verts per tri
+        // 2 triangles per subdivision, 3 verts per tri
         const numVertices: number = numSubdivisions * 3 * 2;
 //      const numVertices: number = numSubdivisions * 3 * 2;
-        const vertexData: Float32Array = new Float32Array(numSubdivisions * 2 * 3 * 2);
-//      const vertexData: Float32Array = new Float32Array(numSubdivisions * 2 * 3 * 2);
+        // 2 32-bit values for position (xy) and 1 32-bit value for color (rgb_)
+        // 2 32-bit values for position (xy) and 1 32-bit value for color (rgb_)
+        // The 32-bit color value will be written/read as 4 8-bit values
+        // The 32-bit color value will be written/read as 4 8-bit values
+        const vertexData: Float32Array = new Float32Array(numVertices * (2 + 1));
+//      const vertexData: Float32Array = new Float32Array(numVertices * (2 + 1));
+        const colorData: Uint8Array = new Uint8Array(vertexData.buffer);
+//      const colorData: Uint8Array = new Uint8Array(vertexData.buffer);
  
         let offset: number = 0;
 //      let offset: number = 0;
-        const addVertex = (x: number, y: number): void =>
-//      const addVertex = (x: number, y: number): void =>
+        let colorOffset: number = 8;
+//      let colorOffset: number = 8;
+        const addVertex = (x: number, y: number, r: number, g: number, b: number): void =>
+//      const addVertex = (x: number, y: number, r: number, g: number, b: number): void =>
         {
             vertexData[offset++] = x;
 //          vertexData[offset++] = x;
             vertexData[offset++] = y;
 //          vertexData[offset++] = y;
+            offset += 1;  // skip the color
+//          offset += 1;  // skip the color
+            colorData[colorOffset++] = r * 255;
+//          colorData[colorOffset++] = r * 255;
+            colorData[colorOffset++] = g * 255;
+//          colorData[colorOffset++] = g * 255;
+            colorData[colorOffset++] = b * 255;
+//          colorData[colorOffset++] = b * 255;
+            colorOffset += 9;  // skip extra byte and the position
+//          colorOffset += 9;  // skip extra byte and the position
         };
- 
+
+        const innerColor: [number, number, number] = [1.0, 1.0, 1.0];
+//      const innerColor: [number, number, number] = [1.0, 1.0, 1.0];
+        const outerColor: [number, number, number] = [0.1, 0.1, 0.1];
+//      const outerColor: [number, number, number] = [0.1, 0.1, 0.1];
+          
         // 2 triangles per subdivision
         // 2 triangles per subdivision
         //
@@ -473,21 +502,21 @@
  
             // first triangle
             // first triangle
-            addVertex(c1 *      radius, s1 *      radius);
-//          addVertex(c1 *      radius, s1 *      radius);
-            addVertex(c2 *      radius, s2 *      radius);
-//          addVertex(c2 *      radius, s2 *      radius);
-            addVertex(c1 * innerRadius, s1 * innerRadius);
-//          addVertex(c1 * innerRadius, s1 * innerRadius);
+            addVertex(c1 *      radius, s1 *      radius, ...outerColor);
+//          addVertex(c1 *      radius, s1 *      radius, ...outerColor);
+            addVertex(c2 *      radius, s2 *      radius, ...outerColor);
+//          addVertex(c2 *      radius, s2 *      radius, ...outerColor);
+            addVertex(c1 * innerRadius, s1 * innerRadius, ...innerColor);
+//          addVertex(c1 * innerRadius, s1 * innerRadius, ...innerColor);
  
             // second triangle
             // second triangle
-            addVertex(c1 * innerRadius, s1 * innerRadius);
-//          addVertex(c1 * innerRadius, s1 * innerRadius);
-            addVertex(c2 *      radius, s2 *      radius);
-//          addVertex(c2 *      radius, s2 *      radius);
-            addVertex(c2 * innerRadius, s2 * innerRadius);
-//          addVertex(c2 * innerRadius, s2 * innerRadius);
+            addVertex(c1 * innerRadius, s1 * innerRadius, ...innerColor);
+//          addVertex(c1 * innerRadius, s1 * innerRadius, ...innerColor);
+            addVertex(c2 *      radius, s2 *      radius, ...outerColor);
+//          addVertex(c2 *      radius, s2 *      radius, ...outerColor);
+            addVertex(c2 * innerRadius, s2 * innerRadius, ...innerColor);
+//          addVertex(c2 * innerRadius, s2 * innerRadius, ...innerColor);
         }
  
         return { vertexData, numVertices, };

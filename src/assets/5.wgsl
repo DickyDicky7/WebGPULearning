@@ -31,6 +31,8 @@
 //  @location(2) offset: vec2<f32>,
     @location(3) scale: vec2<f32>,
 //  @location(3) scale: vec2<f32>,
+    @location(4) perVertexColor: vec3<f32>,
+//  @location(4) perVertexColor: vec3<f32>,
 };
 
 
@@ -42,8 +44,8 @@
 //  var vertexShaderOutput: VertexShaderOutput;
     vertexShaderOutput.vertexPosition = vec4<f32>(vertex.position * vertex.scale + vertex.offset, 0.0, 1.0);
 //  vertexShaderOutput.vertexPosition = vec4<f32>(vertex.position * vertex.scale + vertex.offset, 0.0, 1.0);
-    vertexShaderOutput.color = vertex.color;
-//  vertexShaderOutput.color = vertex.color;
+    vertexShaderOutput.color = vertex.color * vec4<f32>(vertex.perVertexColor, 1.0);
+//  vertexShaderOutput.color = vertex.color * vec4<f32>(vertex.perVertexColor, 1.0);
     return vertexShaderOutput;
 //  return vertexShaderOutput;
 }
