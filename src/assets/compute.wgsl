@@ -1,3 +1,63 @@
+    const BACKGROUND_TYPE_SKY_BOX_BLUE: u32 = 0u;
+//  const BACKGROUND_TYPE_SKY_BOX_BLUE: u32 = 0u;
+    const BACKGROUND_TYPE_SKY_BOX_DARK: u32 = 1u;
+//  const BACKGROUND_TYPE_SKY_BOX_DARK: u32 = 1u;
+    const BACKGROUND_TYPE_SKY_BOX_HDRI: u32 = 2u;
+//  const BACKGROUND_TYPE_SKY_BOX_HDRI: u32 = 2u;
+
+    const MATERIAL_TYPE_DIFFUSE   : u32 = 0u;
+//  const MATERIAL_TYPE_DIFFUSE   : u32 = 0u;
+    const MATERIAL_TYPE_METAL     : u32 = 1u;
+//  const MATERIAL_TYPE_METAL     : u32 = 1u;
+    const MATERIAL_TYPE_GLOSS     : u32 = 2u;
+//  const MATERIAL_TYPE_GLOSS     : u32 = 2u;
+    const MATERIAL_TYPE_DIELECTRIC: u32 = 3u;
+//  const MATERIAL_TYPE_DIELECTRIC: u32 = 3u;
+    const MATERIAL_TYPE_LIGHT     : u32 = 4u;
+//  const MATERIAL_TYPE_LIGHT     : u32 = 4u;
+
+    const REFRACTIVE_INDEX_DEFAULT: u32 = 0u;
+//  const REFRACTIVE_INDEX_DEFAULT: u32 = 0u;
+    const REFRACTIVE_INDEX_NOTHING: u32 = 1u;
+//  const REFRACTIVE_INDEX_NOTHING: u32 = 1u;
+    const REFRACTIVE_INDEX_AIR    : u32 = 2u;
+//  const REFRACTIVE_INDEX_AIR    : u32 = 2u;
+    const REFRACTIVE_INDEX_WATER  : u32 = 3u;
+//  const REFRACTIVE_INDEX_WATER  : u32 = 3u;
+    const REFRACTIVE_INDEX_SKIN   : u32 = 4u;
+//  const REFRACTIVE_INDEX_SKIN   : u32 = 4u;
+    const REFRACTIVE_INDEX_GLASS  : u32 = 5u;
+//  const REFRACTIVE_INDEX_GLASS  : u32 = 5u;
+    const REFRACTIVE_INDEX_MARBLE : u32 = 6u;
+//  const REFRACTIVE_INDEX_MARBLE : u32 = 6u;
+    const REFRACTIVE_INDEX_DIAMOND: u32 = 7u;
+//  const REFRACTIVE_INDEX_DIAMOND: u32 = 7u;
+
+    const TEXTURE_TYPE_COLOR: u32 = 0u;
+//  const TEXTURE_TYPE_COLOR: u32 = 0u;
+    const TEXTURE_TYPE_IMAGE: u32 = 1u;
+//  const TEXTURE_TYPE_IMAGE: u32 = 1u;
+
+    const refractiveIndices: array<f32, 8> = array<f32, 8>(
+//  const refractiveIndices: array<f32, 8> = array<f32, 8>(
+        0.000000,
+//      0.000000,
+        1.000000,
+//      1.000000,
+        1.000293,
+//      1.000293,
+        1.333000,
+//      1.333000,
+        1.400000,
+//      1.400000,
+        1.500000,
+//      1.500000,
+        1.550000,
+//      1.550000,
+        2.400000,
+//      2.400000,
+    );
+
     struct Ray
 //  struct Ray
 {
@@ -16,6 +76,8 @@
 //  radius: f32,
     materialIndex: u32,
 //  materialIndex: u32,
+    _pad: vec2<u32>,
+//  _pad: vec2<u32>,
 };
 
     struct RayHitResult
@@ -37,8 +99,8 @@
 //  materialIndex: u32,
 };
 
-    struct MaterialScatteredResult
-//  struct MaterialScatteredResult
+    struct MaterialLightScatteringResult
+//  struct MaterialLightScatteringResult
 {
     scatteredRay: Ray,
 //  scatteredRay: Ray,
@@ -65,7 +127,12 @@
 //  textureIndex: u32,
     materialType: u32,
 //  materialType: u32,
+    _pad: vec2<u32>,
+//  _pad: vec2<u32>,
 };
+
+    @group(0) @binding(3) var<storage, read> materials: array<Material>;
+//  @group(0) @binding(3) var<storage, read> materials: array<Material>;
 
     struct Interval
 //  struct Interval
@@ -90,6 +157,8 @@
 //  imageIndex: u32,
     textureType: u32,
 //  textureType: u32,
+    _pad: vec2<u32>,
+//  _pad: vec2<u32>,
 };
 
     const      PI: f32 = 3.1415926535897930; // 1*π
@@ -226,6 +295,51 @@
 //  return finalRayHitResult;
 };
 
+    fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
+//  fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
+{
+    var materialLightScatteringResult: MaterialLightScatteringResult;
+//  var materialLightScatteringResult: MaterialLightScatteringResult;
+    let material: Material = materials[recentRayHitResult.materialIndex];
+//  let material: Material = materials[recentRayHitResult.materialIndex];
+    switch (material.materialType)
+//  switch (material.materialType)
+    {
+        case MATERIAL_TYPE_DIFFUSE:
+//      case MATERIAL_TYPE_DIFFUSE:
+        {
+
+        }
+        case MATERIAL_TYPE_METAL:
+//      case MATERIAL_TYPE_METAL:
+        {
+
+        }
+        case MATERIAL_TYPE_GLOSS:
+//      case MATERIAL_TYPE_GLOSS:
+        {
+
+        }
+        case MATERIAL_TYPE_DIELECTRIC:
+//      case MATERIAL_TYPE_DIELECTRIC:
+        {
+
+        }
+        case MATERIAL_TYPE_LIGHT:
+//      case MATERIAL_TYPE_LIGHT:
+        {
+
+        }
+        default:
+//      default:
+        {
+
+        }
+    }
+    return materialLightScatteringResult;
+//  return materialLightScatteringResult;
+};
+
     fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
 //  fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
 {
@@ -286,3 +400,49 @@
     textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
 //  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
 };
+
+    struct RNG
+//  struct RNG
+{
+    state: u32,
+//  state: u32,
+};
+
+    fn _pcg32Next(rng: ptr<function, RNG>) -> f32
+//  fn _pcg32Next(rng: ptr<function, RNG>) -> f32
+{
+    // Advance LCG state (PCG parameters)
+    // Advance LCG state (PCG parameters)
+    let old: u32 = (*rng).state;
+//  let old: u32 = (*rng).state;
+    (*rng).state = old * 747796405u + 2891336453u;
+//  (*rng).state = old * 747796405u + 2891336453u;
+
+    // Output permutation (PCG XSH RR)
+    // Output permutation (PCG XSH RR)
+    var x: u32 = ((old >> ((old >> 28u) + 4u)) ^ old) * 277803737u;
+//  var x: u32 = ((old >> ((old >> 28u) + 4u)) ^ old) * 277803737u;
+    x = (x >> 22u) ^ x;
+//  x = (x >> 22u) ^ x;
+
+    // Convert to float in [0,1)
+    // Convert to float in [0,1)
+    return f32(x) / 4294967296.0; // divide by 2^32
+//  return f32(x) / 4294967296.0; // divide by 2^32
+}
+
+    fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+//  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+
+    fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, ratioOfEtaiOverEtat: f32) -> vec3<f32>
+//  fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, ratioOfEtaiOverEtat: f32) -> vec3<f32>
+    {
+        let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
+//      let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
+        let refractedRayPerpendicular: vec3<f32> = ratioOfEtaiOverEtat * (incomingVector + cosTheta * normal);
+//      let refractedRayPerpendicular: vec3<f32> = ratioOfEtaiOverEtat * (incomingVector + cosTheta * normal);
+        let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
+//      let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
+        return refractedRayPerpendicular + refractedRayParallel;
+//      return refractedRayPerpendicular + refractedRayParallel;
+    }
