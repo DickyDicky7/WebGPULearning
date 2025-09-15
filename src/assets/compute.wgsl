@@ -431,6 +431,20 @@
 //  return f32(x) / 4294967296.0; // divide by 2^32
 }
 
+    fn _pcg32NextRangeU32(rng: ptr<function, RNG>, min: u32, max: u32) -> u32
+//  fn _pcg32NextRangeU32(rng: ptr<function, RNG>, min: u32, max: u32) -> u32
+{
+    return min + u32(_pcg32Next(rng) * f32(max - min));
+//  return min + u32(_pcg32Next(rng) * f32(max - min));
+}
+
+    fn _pcg32NextRangeF32(rng: ptr<function, RNG>, min: f32, max: f32) -> f32
+//  fn _pcg32NextRangeF32(rng: ptr<function, RNG>, min: f32, max: f32) -> f32
+{
+    return min +    (_pcg32Next(rng) *    (max - min));
+//  return min +    (_pcg32Next(rng) *    (max - min));
+}
+
     fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 //  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 
@@ -445,4 +459,43 @@
 //      let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
         return refractedRayPerpendicular + refractedRayParallel;
 //      return refractedRayPerpendicular + refractedRayParallel;
+    }
+
+    fn _reflectance(cosine: f32, ratioOfEtaiOverEtat: f32) -> f32
+//  fn _reflectance(cosine: f32, ratioOfEtaiOverEtat: f32) -> f32
+    {
+        // Use Schlick's approximation for reflectance.
+        // Use Schlick's approximation for reflectance.
+        var r0: f32 = (1.0 - ratioOfEtaiOverEtat) / (1.0 + ratioOfEtaiOverEtat);
+//      var r0: f32 = (1.0 - ratioOfEtaiOverEtat) / (1.0 + ratioOfEtaiOverEtat);
+        r0 = r0 * r0;
+//      r0 = r0 * r0;
+        let temp: f32 = 1.0 - cosine;
+//      let temp: f32 = 1.0 - cosine;
+        return r0 + (1.0 - r0) * temp * temp * temp * temp * temp;
+//      return r0 + (1.0 - r0) * temp * temp * temp * temp * temp;
+    }
+
+    fn _generateRandomUnitVector(rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _generateRandomUnitVector(rng: ptr<function, RNG>) -> vec3<f32>
+    {
+//  Archimedes' Method
+//  Archimedes' Method
+
+        let theta: f32 = _pcg32NextRangeF32(rng,  0.0,  2.0 * PI); // Longitude          (uniform)
+//      let theta: f32 = _pcg32NextRangeF32(rng,  0.0,  2.0 * PI); // Longitude          (uniform)
+        let z    : f32 = _pcg32NextRangeF32(rng, -1.0,  1.0     ); // Height on cylinder (uniform)
+//      let z    : f32 = _pcg32NextRangeF32(rng, -1.0,  1.0     ); // Height on cylinder (uniform)
+
+        let r: f32 = sqrt(1.0 - z * z); // Radius of the circle at this height
+//      let r: f32 = sqrt(1.0 - z * z); // Radius of the circle at this height
+
+        let x: f32 = r * cos(theta);
+//      let x: f32 = r * cos(theta);
+        let y: f32 = r * sin(theta);
+//      let y: f32 = r * sin(theta);
+
+        return vec3<f32>(x, y, z);
+//      return vec3<f32>(x, y, z);
+
     }
