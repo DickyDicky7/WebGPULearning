@@ -499,3 +499,55 @@
 //      return vec3<f32>(x, y, z);
 
     }
+
+    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
+//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
+    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
+//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
+    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
+//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
+    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+    fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
+//  fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
+    fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
+//  fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
+
+    @group(0) @binding(4) var<storage, read> textures: array<Texture>;
+//  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
+    @group(0) @binding(5) var textureSampler: sampler;
+//  @group(0) @binding(5) var textureSampler: sampler;
+
+    fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
+//  fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
+{
+    var textureSampleValue: vec3<f32>;
+//  var textureSampleValue: vec3<f32>;
+    let texture: Texture = textures[textureIndex];
+//  let texture: Texture = textures[textureIndex];
+    switch (texture.textureType)
+//  switch (texture.textureType)
+    {
+        case TEXTURE_TYPE_COLOR:
+//      case TEXTURE_TYPE_COLOR:
+        {
+
+        }
+        case TEXTURE_TYPE_IMAGE:
+//      case TEXTURE_TYPE_IMAGE:
+        {
+
+        }
+        case default:
+//      case default:
+        {
+
+        }
+    }
+    return textureSampleValue;
+//  return textureSampleValue;
+}
