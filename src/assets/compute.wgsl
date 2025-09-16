@@ -519,8 +519,10 @@
 
     @group(0) @binding(4) var<storage, read> textures: array<Texture>;
 //  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var textureSampler: sampler;
-//  @group(0) @binding(5) var textureSampler: sampler;
+    @group(0) @binding(5) var atlasSampler: sampler;
+//  @group(0) @binding(5) var atlasSampler: sampler;
+    @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
+//  @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
 
     fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
 //  fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
@@ -550,4 +552,20 @@
     }
     return textureSampleValue;
 //  return textureSampleValue;
+}
+
+    const atlasGridSize: vec2<f32> = vec2<f32>(4.0, 4.0); // 4x4 grid
+//  const atlasGridSize: vec2<f32> = vec2<f32>(4.0, 4.0); // 4x4 grid
+
+    fn _sampleAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
+//  fn _sampleAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
+{
+    let cell : vec2<f32> = vec2<f32>(f32(imageIndex % 4u), f32(imageIndex / 4u));
+//  let cell : vec2<f32> = vec2<f32>(f32(imageIndex % 4u), f32(imageIndex / 4u));
+    let scale: vec2<f32> = 1.0 / atlasGridSize;
+//  let scale: vec2<f32> = 1.0 / atlasGridSize;
+    let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
+//  let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
+    return textureSample(atlasTexture, atlasSampler, atlasUVTextureCoordinate).rgb;
+//  return textureSample(atlasTexture, atlasSampler, atlasUVTextureCoordinate).rgb;
 }
