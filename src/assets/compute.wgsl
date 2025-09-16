@@ -524,8 +524,8 @@
     @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
 //  @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
 
-    fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
-//  fn _textureSample(textureIndex: u32, uvTextureCoordinate: vec2<f32>) -> vec3<f32>
+    fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
+//  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
 {
     var textureSampleValue: vec3<f32>;
 //  var textureSampleValue: vec3<f32>;
@@ -537,17 +537,24 @@
         case TEXTURE_TYPE_COLOR:
 //      case TEXTURE_TYPE_COLOR:
         {
-
+            textureSampleValue = texture.albedo;
+//          textureSampleValue = texture.albedo;
         }
         case TEXTURE_TYPE_IMAGE:
 //      case TEXTURE_TYPE_IMAGE:
         {
-
+            var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
+//          var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
+            uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
+//          uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
+            textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
+//          textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
         }
         case default:
 //      case default:
         {
-
+            textureSampleValue = vec3<f32>(0.0, 0.0, 0.0);
+//          textureSampleValue = vec3<f32>(0.0, 0.0, 0.0);
         }
     }
     return textureSampleValue;
