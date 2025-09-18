@@ -308,27 +308,171 @@
         case MATERIAL_TYPE_DIFFUSE:
 //      case MATERIAL_TYPE_DIFFUSE:
         {
-
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//          materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
         }
         case MATERIAL_TYPE_METAL:
 //      case MATERIAL_TYPE_METAL:
         {
-
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
+//          materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
         }
         case MATERIAL_TYPE_GLOSS:
 //      case MATERIAL_TYPE_GLOSS:
         {
+            var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
+//          var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
 
+            let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+
+            if (recentRayHitResult.isFrontFaceHitted)
+//          if (recentRayHitResult.isFrontFaceHitted)
+            {
+                ratioOfEtaiOverEtat = 1.0f / ratioOfEtaiOverEtat;
+//              ratioOfEtaiOverEtat = 1.0f / ratioOfEtaiOverEtat;
+            }
+        
+            let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
+//          let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
+
+            var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
+//          var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
+
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+
+            if (_pcg32Next(rng) < reflectanceProbability)
+//          if (_pcg32Next(rng) < reflectanceProbability)
+            {
+                scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//              scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+                if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
+//              if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
+                {
+                    materialLightScatteringResult.isScattered = false;
+//                  materialLightScatteringResult.isScattered = false;
+                }
+                attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
+//              attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
+            }
+            else
+//          else
+            {
+                scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//              scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+                attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+//              attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            }
+
+            if (materialLightScatteringResult.isScattered)
+//          if (materialLightScatteringResult.isScattered)
+            {
+                materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
+//              materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
+                materialLightScatteringResult.attenuation = attenuationColor;
+//              materialLightScatteringResult.attenuation = attenuationColor;
+            }
+            else
+//          else
+            {
+                materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+//              materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+            }
+            materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
         }
         case MATERIAL_TYPE_DIELECTRIC:
 //      case MATERIAL_TYPE_DIELECTRIC:
         {
+            let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//          let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 
+            var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
+//          var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
+            if (recentRayHitResult.isFrontFaceHitted) { ratioOfEtaiOverEtat = material.layer0IOR / material.layer1IOR; }
+//          if (recentRayHitResult.isFrontFaceHitted) { ratioOfEtaiOverEtat = material.layer0IOR / material.layer1IOR; }
+
+            let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+            let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+//          let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+            let notAbleToRefract: bool = sinTheta * ratioOfEtaiOverEtat > 1.0 || _reflectance(cosTheta, ratioOfEtaiOverEtat) > _pcg32Next(rng);
+//          let notAbleToRefract: bool = sinTheta * ratioOfEtaiOverEtat > 1.0 || _reflectance(cosTheta, ratioOfEtaiOverEtat) > _pcg32Next(rng);
+            var scatteredRayDirection: vec3<f32>;
+//          var scatteredRayDirection: vec3<f32>;
+
+            if (notAbleToRefract)
+//          if (notAbleToRefract)
+            {
+                 scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+//               scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+            }
+            else
+//          else
+            {
+                 scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, ratioOfEtaiOverEtat), -diffuseRayDirection, material.layer1Roughness);
+//               scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, ratioOfEtaiOverEtat), -diffuseRayDirection, material.layer1Roughness);
+            }
+
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
+//          materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+
+/*
+            // Absorption
+            // Absorption
+            if (!recentRayHitResult.isFrontFaceHitted)
+//          if (!recentRayHitResult.isFrontFaceHitted)
+            {
+                materialLightScatteringResult.attenuation *= vec3<f32>
+//              materialLightScatteringResult.attenuation *= vec3<f32>
+                (
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                );
+            }
+*/
         }
         case MATERIAL_TYPE_LIGHT:
 //      case MATERIAL_TYPE_LIGHT:
         {
-
+            materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+//          materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.isScattered = false;
+//          materialLightScatteringResult.isScattered = false;
         }
         default:
 //      default:
