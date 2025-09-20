@@ -502,6 +502,119 @@
 //  return (1.0 - ratio) * vec3<f32>(1.0, 1.0, 1.0) + ratio * vec3<f32>(0.5, 0.7, 1.0);
 };
 
+    @group(0) @binding(7) var hdriSampler: sampler;
+//  @group(0) @binding(7) var hdriSampler: sampler;
+    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
+//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
+
+    fn _rayColorTemp(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _rayColorTemp(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+{
+        var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
+//      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
+        var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00);
+//      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00);
+        var currentRay: Ray = initialRay;
+//      var currentRay: Ray = initialRay;
+
+
+        for (var depth: u32 = 0u; depth < maxDepth; depth++)
+//      for (var depth: u32 = 0u; depth < maxDepth; depth++)
+        {
+            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 3.4028235e38));
+//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 3.4028235e38));
+
+
+            if (!rayHitResult.isHitted)
+//          if (!rayHitResult.isHitted)
+            {
+                var backgroundColor: vec3<f32>;
+//              var backgroundColor: vec3<f32>;
+                switch (backgroundType)
+//              switch (backgroundType)
+                {
+                    case BACKGROUND_TYPE_SKY_BOX_BLUE:
+//                  case BACKGROUND_TYPE_SKY_BOX_BLUE:
+                    {
+                        let normalizedRayDirection: vec3<f32> = normalize(currentRay.direction);
+//                      let normalizedRayDirection: vec3<f32> = normalize(currentRay.direction);
+                        let ratio: f32 = 0.5 * (normalizedRayDirection.y + 1.0);
+//                      let ratio: f32 = 0.5 * (normalizedRayDirection.y + 1.0);
+                        backgroundColor = mix(vec3<f32>(1.00, 1.00, 1.00), vec3<f32>(0.50, 0.70, 1.00), ratio);
+//                      backgroundColor = mix(vec3<f32>(1.00, 1.00, 1.00), vec3<f32>(0.50, 0.70, 1.00), ratio);
+                    }
+
+
+                    case BACKGROUND_TYPE_SKY_BOX_DARK:
+//                  case BACKGROUND_TYPE_SKY_BOX_DARK:
+                    {
+                        backgroundColor = vec3<f32>(0.00, 0.00, 0.00);
+//                      backgroundColor = vec3<f32>(0.00, 0.00, 0.00);
+                    }
+
+
+                    case BACKGROUND_TYPE_SKY_BOX_HDRI:
+//                  case BACKGROUND_TYPE_SKY_BOX_HDRI:
+                    {
+                        let theta: f32 = acos (-currentRay.direction.y); // latitude
+//                      let theta: f32 = acos (-currentRay.direction.y); // latitude
+                        let phi  : f32 = atan2(-currentRay.direction.z, currentRay.direction.x) + PI; // longitude
+//                      let phi  : f32 = atan2(-currentRay.direction.z, currentRay.direction.x) + PI; // longitude
+
+                        var u: f32 = phi   / (2.0 * PI);
+//                      var u: f32 = phi   / (2.0 * PI);
+                        var v: f32 = theta /        PI ;
+//                      var v: f32 = theta /        PI ;
+
+                        u =       clamp(u, 0.0, 1.0);
+//                      u =       clamp(u, 0.0, 1.0);
+                        v = 1.0 - clamp(v, 0.0, 1.0);
+//                      v = 1.0 - clamp(v, 0.0, 1.0);
+
+
+                        backgroundColor = textureSample(hdriTexture, hdriSampler, vec2<f32>(u, v)).rgb;
+//                      backgroundColor = textureSample(hdriTexture, hdriSampler, vec2<f32>(u, v)).rgb;          
+                    }
+
+
+                    default:
+//                  default:
+                    {
+                        backgroundColor = vec3<f32>(1.00, 1.00, 1.00);
+//                      backgroundColor = vec3<f32>(1.00, 1.00, 1.00);
+                    }
+                }
+
+                accumulatedColor += attenuation * backgroundColor;
+//              accumulatedColor += attenuation * backgroundColor;
+                break;
+//              break;
+            }
+
+            let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
+//          let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
+
+            accumulatedColor += attenuation * materialLightScatteringResult.emission;
+//          accumulatedColor += attenuation * materialLightScatteringResult.emission;
+
+            if (!materialLightScatteringResult.isScattered)
+//          if (!materialLightScatteringResult.isScattered)
+            {
+                break;
+//              break;
+            }
+
+            attenuation *= materialLightScatteringResult.attenuation ;
+//          attenuation *= materialLightScatteringResult.attenuation ;
+            currentRay   = materialLightScatteringResult.scatteredRay;
+//          currentRay   = materialLightScatteringResult.scatteredRay;
+        }
+
+        return accumulatedColor;
+//      return accumulatedColor;
+
+};
+
 //  cameraCenter:vec3<f32>+padding<f32>, pixelDeltaU:vec3<f32>+padding<f32>, pixelDeltaV:vec3<f32>+padding<f32>, pixel00Loc:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
 //  cameraCenter:vec3<f32>+padding<f32>, pixelDeltaU:vec3<f32>+padding<f32>, pixelDeltaV:vec3<f32>+padding<f32>, pixel00Loc:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
     @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
