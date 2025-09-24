@@ -56,8 +56,30 @@
 //  let _texture: GPUTexture;
     let _sampler: GPUSampler;
 //  let _sampler: GPUSampler;
+    let _lookFrom: number[];
+//  let _lookFrom: number[];
+    let _lookAt: number[];
+//  let _lookAt: number[];
+    let _viewUp: number[];
+//  let _viewUp: number[];
+//     let _focusDistance: number;
+// //  let _focusDistance: number;
+    let _vFOV: number;
+//  let _vFOV: number;
+    let _hFOV: number;
+//  let _hFOV: number;
+    let _h: number;
+//  let _h: number;
+    let _w: number;
+//  let _w: number;
     let _focalLength: number;
 //  let _focalLength: number;
+    let _cameraU: number[];
+//  let _cameraU: number[];
+    let _cameraV: number[];
+//  let _cameraV: number[];
+    let _cameraW: number[];
+//  let _cameraW: number[];
     let _viewportW: number;
 //  let _viewportW: number;
     let _viewportH: number;
@@ -68,14 +90,14 @@
 //  let _viewportU: number[];
     let _viewportV: number[];
 //  let _viewportV: number[];
-    let _pixelDeltaU: number[];
-//  let _pixelDeltaU: number[];
-    let _pixelDeltaV: number[];
-//  let _pixelDeltaV: number[];
+    let _fromPixelToPixelDeltaU: number[];
+//  let _fromPixelToPixelDeltaU: number[];
+    let _fromPixelToPixelDeltaV: number[];
+//  let _fromPixelToPixelDeltaV: number[];
     let _viewportTL: number[];
 //  let _viewportTL: number[];
-    let _pixel00Loc: number[];
-//  let _pixel00Loc: number[];
+    let _pixel00Coordinates: number[];
+//  let _pixel00Coordinates: number[];
     let _isRunning: boolean;
 //  let _isRunning: boolean;
     let _frameHandle: number;
@@ -338,32 +360,68 @@
 
     const prepare = (): void => {
 //  const prepare = (): void => {
-        _focalLength = 1.0;
-//      _focalLength = 1.0;
-        _viewportH = 2.0;
-//      _viewportH = 2.0;
-        _viewportW = (_viewportH * _canvas.width) / _canvas.height;
-//      _viewportW = (_viewportH * _canvas.width) / _canvas.height;
-        _cameraCenter = [0.0, 0.0, 0.0];
-//      _cameraCenter = [0.0, 0.0, 0.0];
+        _lookFrom = [-28.284, 0.0, -28.284];
+//      _lookFrom = [-28.284, 0.0, -28.284];
+        _lookAt = [0.0, 0.0, 0.0];
+//      _lookAt = [0.0, 0.0, 0.0];
+        _viewUp = [0.0, 1.0, 0.0];
+//      _viewUp = [0.0, 1.0, 0.0];
+
+        let lookAtSubtractLookFrom: number[] = m.subtract(_lookAt, _lookFrom);
+//      let lookAtSubtractLookFrom: number[] = m.subtract(_lookAt, _lookFrom);
+        let lengthLookAtSubtractLookFrom: number = m.norm(lookAtSubtractLookFrom) as number;
+//      let lengthLookAtSubtractLookFrom: number = m.norm(lookAtSubtractLookFrom) as number;
+
+//         _focusDistance = lengthLookAtSubtractLookFrom;
+// //      _focusDistance = lengthLookAtSubtractLookFrom;
+
+        _vFOV = m.pi / 2.5;
+//      _vFOV = m.pi / 2.5;
+        _hFOV = m.pi / 2.5;
+//      _hFOV = m.pi / 2.5;
+        _h = m.tan(_vFOV / 2.0);
+//      _h = m.tan(_vFOV / 2.0);
+        _w = m.tan(_hFOV / 2.0);
+//      _w = m.tan(_hFOV / 2.0);
+
+        _focalLength = lengthLookAtSubtractLookFrom;
+//      _focalLength = lengthLookAtSubtractLookFrom;
+
+        let lookFromSubtractLookAt: number[] = m.subtract(_lookFrom, _lookAt);
+//      let lookFromSubtractLookAt: number[] = m.subtract(_lookFrom, _lookAt);
+        _cameraW = m.divide(lookFromSubtractLookAt, m.norm(lookFromSubtractLookAt)) as number[];
+//      _cameraW = m.divide(lookFromSubtractLookAt, m.norm(lookFromSubtractLookAt)) as number[];
+        let viewUpCrossCameraW: number[] = m.cross(_viewUp, _cameraW) as number[];
+//      let viewUpCrossCameraW: number[] = m.cross(_viewUp, _cameraW) as number[];
+        _cameraU = m.divide(viewUpCrossCameraW, m.norm(viewUpCrossCameraW)) as number[];
+//      _cameraU = m.divide(viewUpCrossCameraW, m.norm(viewUpCrossCameraW)) as number[];
+        _cameraV = m.cross(_cameraW, _cameraU) as number[];
+//      _cameraV = m.cross(_cameraW, _cameraU) as number[];
+
+        _viewportH = 2.0 * _h * _focalLength;
+//      _viewportH = 2.0 * _h * _focalLength;
+        _viewportW = _viewportH * _canvas.width / _canvas.height;
+//      _viewportW = _viewportH * _canvas.width / _canvas.height;
+        _cameraCenter = _lookFrom;
+//      _cameraCenter = _lookFrom;
 
 
-        _viewportU = [ _viewportW,         0.0, 0.0];
-//      _viewportU = [ _viewportW,         0.0, 0.0];
-        _viewportV = [        0.0, -_viewportH, 0.0];
-//      _viewportV = [        0.0, -_viewportH, 0.0];
+        _viewportU = m.multiply( _viewportW, _cameraU) as number[];
+//      _viewportU = m.multiply( _viewportW, _cameraU) as number[];
+        _viewportV = m.multiply(-_viewportH, _cameraV) as number[];
+//      _viewportV = m.multiply(-_viewportH, _cameraV) as number[];
 
 
-        _pixelDeltaU = m.chain(_viewportU).divide(_canvas.width ).done() as number[];
-//      _pixelDeltaU = m.chain(_viewportU).divide(_canvas.width ).done() as number[];
-        _pixelDeltaV = m.chain(_viewportV).divide(_canvas.height).done() as number[];
-//      _pixelDeltaV = m.chain(_viewportV).divide(_canvas.height).done() as number[];
+        _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
+//      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
+        _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
+//      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
 
 
-        _viewportTL = m.chain(_cameraCenter).subtract([0.0, 0.0, _focalLength]).subtract(m.chain(_viewportU).divide(2).done()).subtract(m.chain(_viewportV).divide(2).done()).done() as number[];
-//      _viewportTL = m.chain(_cameraCenter).subtract([0.0, 0.0, _focalLength]).subtract(m.chain(_viewportU).divide(2).done()).subtract(m.chain(_viewportV).divide(2).done()).done() as number[];
-        _pixel00Loc = m.chain(_viewportTL).add(m.chain(0.5).multiply(m.chain(_pixelDeltaU).add(_pixelDeltaV).done()).done()).done() as number[];
-//      _pixel00Loc = m.chain(_viewportTL).add(m.chain(0.5).multiply(m.chain(_pixelDeltaU).add(_pixelDeltaV).done()).done()).done() as number[];
+        _viewportTL = m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[];
+//      _viewportTL = m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[];
+        _pixel00Coordinates = m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[];
+//      _pixel00Coordinates = m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[];
 
 
         //------------------------------|------------------------------|------------------------------//
@@ -375,12 +433,12 @@
             [
                 ..._cameraCenter, 0.0,
 //              ..._cameraCenter, 0.0,
-                ..._pixelDeltaU , 0.0,
-//              ..._pixelDeltaU , 0.0,
-                ..._pixelDeltaV , 0.0,
-//              ..._pixelDeltaV , 0.0,
-                ..._pixel00Loc  , 0.0,
-//              ..._pixel00Loc  , 0.0,
+                ..._fromPixelToPixelDeltaU, 0.0,
+//              ..._fromPixelToPixelDeltaU, 0.0,
+                ..._fromPixelToPixelDeltaV, 0.0,
+//              ..._fromPixelToPixelDeltaV, 0.0,
+                ..._pixel00Coordinates, 0.0,
+//              ..._pixel00Coordinates, 0.0,
                 _canvas.width, _canvas.height, 0.0, 0.0,
 //              _canvas.width, _canvas.height, 0.0, 0.0,
             ],
