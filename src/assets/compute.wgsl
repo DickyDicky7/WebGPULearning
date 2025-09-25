@@ -345,8 +345,8 @@
             if (recentRayHitResult.isFrontFaceHitted)
 //          if (recentRayHitResult.isFrontFaceHitted)
             {
-                ratioOfEtaiOverEtat = 1.0f / ratioOfEtaiOverEtat;
-//              ratioOfEtaiOverEtat = 1.0f / ratioOfEtaiOverEtat;
+                ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
+//              ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
             }
         
             let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
@@ -521,8 +521,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 3.4028235e38));
-//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 3.4028235e38));
+            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -572,8 +572,8 @@
 //                      v = 1.0 - clamp(v, 0.0, 1.0);
 
 
-                        backgroundColor = textureSample(hdriTexture, hdriSampler, vec2<f32>(u, v)).rgb;
-//                      backgroundColor = textureSample(hdriTexture, hdriSampler, vec2<f32>(u, v)).rgb;          
+                        backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
+//                      backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;          
                     }
 
 
@@ -830,8 +830,8 @@
 //  let scale: vec2<f32> = 1.0 / atlasGridSize;
     let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
 //  let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
-    return textureSample(atlasTexture, atlasSampler, atlasUVTextureCoordinate).rgb;
-//  return textureSample(atlasTexture, atlasSampler, atlasUVTextureCoordinate).rgb;
+    return textureSampleLevel(atlasTexture, atlasSampler, atlasUVTextureCoordinate, 0.0).rgb;
+//  return textureSampleLevel(atlasTexture, atlasSampler, atlasUVTextureCoordinate, 0.0).rgb;
 }
 
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
