@@ -615,8 +615,8 @@
 
 };
 
-//  cameraCenter:vec3<f32>+padding<f32>, pixelDeltaU:vec3<f32>+padding<f32>, pixelDeltaV:vec3<f32>+padding<f32>, pixel00Loc:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
-//  cameraCenter:vec3<f32>+padding<f32>, pixelDeltaU:vec3<f32>+padding<f32>, pixelDeltaV:vec3<f32>+padding<f32>, pixel00Loc:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
+//  cameraCenter:vec3<f32>+padding<f32>, fromPixelToPixelDeltaU:vec3<f32>+padding<f32>, fromPixelToPixelDeltaV:vec3<f32>+padding<f32>, pixel00Coordinates:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
+//  cameraCenter:vec3<f32>+padding<f32>, fromPixelToPixelDeltaU:vec3<f32>+padding<f32>, fromPixelToPixelDeltaV:vec3<f32>+padding<f32>, pixel00Coordinates:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
     @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
 //  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
     @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
@@ -635,17 +635,17 @@
 //      return;
     }
 
-    let cameraCenter: vec3<f32> = data[0].xyz;
-//  let cameraCenter: vec3<f32> = data[0].xyz;
-    let pixelDeltaU : vec3<f32> = data[1].xyz;
-//  let pixelDeltaU : vec3<f32> = data[1].xyz;
-    let pixelDeltaV : vec3<f32> = data[2].xyz;
-//  let pixelDeltaV : vec3<f32> = data[2].xyz;
-    let pixel00Loc  : vec3<f32> = data[3].xyz;
-//  let pixel00Loc  : vec3<f32> = data[3].xyz;
+    let cameraCenter          : vec3<f32> = data[0].xyz;
+//  let cameraCenter          : vec3<f32> = data[0].xyz;
+    let fromPixelToPixelDeltaU: vec3<f32> = data[1].xyz;
+//  let fromPixelToPixelDeltaU: vec3<f32> = data[1].xyz;
+    let fromPixelToPixelDeltaV: vec3<f32> = data[2].xyz;
+//  let fromPixelToPixelDeltaV: vec3<f32> = data[2].xyz;
+    let pixel00Coordinates    : vec3<f32> = data[3].xyz;
+//  let pixel00Coordinates    : vec3<f32> = data[3].xyz;
 
-    let pixelCenter : vec3<f32> = pixel00Loc + (f32(gid.x) * pixelDeltaU) + (f32(gid.y) * pixelDeltaV);
-//  let pixelCenter : vec3<f32> = pixel00Loc + (f32(gid.x) * pixelDeltaU) + (f32(gid.y) * pixelDeltaV);
+    let pixelCenter : vec3<f32> = pixel00Coordinates + (f32(gid.x) * fromPixelToPixelDeltaU) + (f32(gid.y) * fromPixelToPixelDeltaV);
+//  let pixelCenter : vec3<f32> = pixel00Coordinates + (f32(gid.x) * fromPixelToPixelDeltaU) + (f32(gid.y) * fromPixelToPixelDeltaV);
     let rayDirection: vec3<f32> = normalize(pixelCenter - cameraCenter);
 //  let rayDirection: vec3<f32> = normalize(pixelCenter - cameraCenter);
 
