@@ -56,6 +56,18 @@
 //  let _texture: GPUTexture;
     let _sampler: GPUSampler;
 //  let _sampler: GPUSampler;
+    let _samplesPerPixel: number;
+//  let _samplesPerPixel: number;
+    let _pixelSamplesScale: number;
+//  let _pixelSamplesScale: number;
+    let _stratifiedSamplesPerPixel: number;
+//  let _stratifiedSamplesPerPixel: number;
+    let _inverseStratifiedSamplesPerPixel: number;
+//  let _inverseStratifiedSamplesPerPixel: number;
+    let _stratifiedSampleX: number;
+//  let _stratifiedSampleX: number;
+    let _stratifiedSampleY: number;
+//  let _stratifiedSampleY: number;
     let _lookFrom: number[];
 //  let _lookFrom: number[];
     let _lookAt: number[];
@@ -360,6 +372,19 @@
 
     const prepare = (): void => {
 //  const prepare = (): void => {
+        _samplesPerPixel = 100.0;
+//      _samplesPerPixel = 100.0;
+        _pixelSamplesScale = 1.0 / _samplesPerPixel;
+//      _pixelSamplesScale = 1.0 / _samplesPerPixel;
+        _stratifiedSamplesPerPixel = Math.sqrt(_samplesPerPixel);
+//      _stratifiedSamplesPerPixel = Math.sqrt(_samplesPerPixel);
+        _inverseStratifiedSamplesPerPixel = 1.0 / _stratifiedSamplesPerPixel;
+//      _inverseStratifiedSamplesPerPixel = 1.0 / _stratifiedSamplesPerPixel;
+        _stratifiedSampleX = 0.0;
+//      _stratifiedSampleX = 0.0;
+        _stratifiedSampleY = 0.0;
+//      _stratifiedSampleY = 0.0;
+
         _lookFrom = [-28.284, 0.0, -28.284];
 //      _lookFrom = [-28.284, 0.0, -28.284];
         _lookAt = [0.0, 0.0, 0.0];
@@ -431,14 +456,14 @@
         _dataStorageValues.set(
 //      _dataStorageValues.set(
             [
-                ..._cameraCenter, 0.0,
-//              ..._cameraCenter, 0.0,
-                ..._fromPixelToPixelDeltaU, 0.0,
-//              ..._fromPixelToPixelDeltaU, 0.0,
-                ..._fromPixelToPixelDeltaV, 0.0,
-//              ..._fromPixelToPixelDeltaV, 0.0,
-                ..._pixel00Coordinates, 0.0,
-//              ..._pixel00Coordinates, 0.0,
+                ..._cameraCenter, _pixelSamplesScale,
+//              ..._cameraCenter, _pixelSamplesScale,
+                ..._fromPixelToPixelDeltaU, _stratifiedSampleX,
+//              ..._fromPixelToPixelDeltaU, _stratifiedSampleX,
+                ..._fromPixelToPixelDeltaV, _stratifiedSampleY,
+//              ..._fromPixelToPixelDeltaV, _stratifiedSampleY,
+                ..._pixel00Coordinates, _inverseStratifiedSamplesPerPixel,
+//              ..._pixel00Coordinates, _inverseStratifiedSamplesPerPixel,
                 _canvas.width, _canvas.height, 0.0, 0.0,
 //              _canvas.width, _canvas.height, 0.0, 0.0,
             ],
