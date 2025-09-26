@@ -615,8 +615,8 @@
 
 };
 
-//  cameraCenter:vec3<f32>+padding<f32>, fromPixelToPixelDeltaU:vec3<f32>+padding<f32>, fromPixelToPixelDeltaV:vec3<f32>+padding<f32>, pixel00Coordinates:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
-//  cameraCenter:vec3<f32>+padding<f32>, fromPixelToPixelDeltaU:vec3<f32>+padding<f32>, fromPixelToPixelDeltaV:vec3<f32>+padding<f32>, pixel00Coordinates:vec3<f32>+padding<f32>, canvasWidth&Height:vec2<f32>+padding<f32>+padding<f32>
+//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
+//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
     @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
 //  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
     @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
@@ -634,6 +634,15 @@
         return;
 //      return;
     }
+
+    let pixelSamplesScale: f32 = data[0].w;
+//  let pixelSamplesScale: f32 = data[0].w;
+    let stratifiedSampleX: f32 = data[1].w;
+//  let stratifiedSampleX: f32 = data[1].w;
+    let stratifiedSampleY: f32 = data[2].w;
+//  let stratifiedSampleY: f32 = data[2].w;
+    let inverseStratifiedSamplesPerPixel: f32 = data[3].w;
+//  let inverseStratifiedSamplesPerPixel: f32 = data[3].w;
 
     let cameraCenter          : vec3<f32> = data[0].xyz;
 //  let cameraCenter          : vec3<f32> = data[0].xyz;
@@ -657,6 +666,45 @@
     textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
 //  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
 };
+
+    fn _generatePrimaryRay(
+//  fn _generatePrimaryRay(
+        stratifiedSampleX: f32,
+//      stratifiedSampleX: f32,
+        stratifiedSampleY: f32,
+//      stratifiedSampleY: f32,
+        inverseStratifiedSamplesPerPixel: f32,
+//      inverseStratifiedSamplesPerPixel: f32,
+        pixel00Coordinates: vec3<f32>,
+//      pixel00Coordinates: vec3<f32>,
+        fromPixelToPixelDeltaU: vec3<f32>,
+//      fromPixelToPixelDeltaU: vec3<f32>,
+        fromPixelToPixelDeltaV: vec3<f32>,
+//      fromPixelToPixelDeltaV: vec3<f32>,
+        pixelX: f32,
+//      pixelX: f32,
+        pixelY: f32,
+//      pixelY: f32,
+        cameraCenter: vec3<f32>,
+//      cameraCenter: vec3<f32>,
+        rng: ptr<function, RNG>,
+//      rng: ptr<function, RNG>,
+    ) -> Ray
+//  ) -> Ray
+    {
+        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+        let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
+//      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
+        let rayOrigin: vec3<f32> = cameraCenter;
+//      let rayOrigin: vec3<f32> = cameraCenter;
+        let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
+//      let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
+        let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
+//      let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
+        return ray;
+//      return ray;
+    }
 
     struct RNG
 //  struct RNG
