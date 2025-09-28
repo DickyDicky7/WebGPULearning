@@ -56,64 +56,77 @@
 //  let _texture: GPUTexture;
     let _sampler: GPUSampler;
 //  let _sampler: GPUSampler;
-    let _samplesPerPixel: number;
-//  let _samplesPerPixel: number;
-    let _pixelSamplesScale: number;
-//  let _pixelSamplesScale: number;
-    let _stratifiedSamplesPerPixel: number;
-//  let _stratifiedSamplesPerPixel: number;
-    let _inverseStratifiedSamplesPerPixel: number;
-//  let _inverseStratifiedSamplesPerPixel: number;
+    let _samplesPerPixel: number = $state(100.0);
+//  let _samplesPerPixel: number = $state(100.0);
+    let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
+//  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
+    let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
+//  let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
+    let _inverseStratifiedSamplesPerPixel: number = $derived(1.0 / _stratifiedSamplesPerPixel);
+//  let _inverseStratifiedSamplesPerPixel: number = $derived(1.0 / _stratifiedSamplesPerPixel);
     let _stratifiedSampleX: number;
 //  let _stratifiedSampleX: number;
     let _stratifiedSampleY: number;
 //  let _stratifiedSampleY: number;
-    let _lookFrom: number[];
-//  let _lookFrom: number[];
-    let _lookAt: number[];
-//  let _lookAt: number[];
-    let _viewUp: number[];
-//  let _viewUp: number[];
-//     let _focusDistance: number;
-// //  let _focusDistance: number;
-    let _vFOV: number;
-//  let _vFOV: number;
-    let _hFOV: number;
-//  let _hFOV: number;
-    let _h: number;
-//  let _h: number;
-    let _w: number;
-//  let _w: number;
-    let _focalLength: number;
-//  let _focalLength: number;
-    let _cameraU: number[];
-//  let _cameraU: number[];
-    let _cameraV: number[];
-//  let _cameraV: number[];
-    let _cameraW: number[];
-//  let _cameraW: number[];
-    let _viewportW: number;
-//  let _viewportW: number;
-    let _viewportH: number;
-//  let _viewportH: number;
-    let _cameraCenter: number[];
-//  let _cameraCenter: number[];
-    let _viewportU: number[];
-//  let _viewportU: number[];
-    let _viewportV: number[];
-//  let _viewportV: number[];
-    let _fromPixelToPixelDeltaU: number[];
-//  let _fromPixelToPixelDeltaU: number[];
-    let _fromPixelToPixelDeltaV: number[];
-//  let _fromPixelToPixelDeltaV: number[];
-    let _viewportTL: number[];
-//  let _viewportTL: number[];
-    let _pixel00Coordinates: number[];
-//  let _pixel00Coordinates: number[];
+    let _lookFrom: number[] = $state([-28.284, 0.0, -28.284]);
+//  let _lookFrom: number[] = $state([-28.284, 0.0, -28.284]);
+    let _lookAt: number[] = $state([0.0, 0.0, 0.0]);
+//  let _lookAt: number[] = $state([0.0, 0.0, 0.0]);
+    let _viewUp: number[] = $state([0.0, 1.0, 0.0]);
+//  let _viewUp: number[] = $state([0.0, 1.0, 0.0]);
+    let _lookAtSubtractLookFrom: number[] = $derived(m.subtract(_lookAt, _lookFrom));
+//  let _lookAtSubtractLookFrom: number[] = $derived(m.subtract(_lookAt, _lookFrom));
+    let _lengthLookAtSubtractLookFrom: number = $derived(m.norm(_lookAtSubtractLookFrom) as number);
+//  let _lengthLookAtSubtractLookFrom: number = $derived(m.norm(_lookAtSubtractLookFrom) as number);
+    let _lookFromSubtractLookAt: number[] = $derived(m.subtract(_lookFrom, _lookAt));
+//  let _lookFromSubtractLookAt: number[] = $derived(m.subtract(_lookFrom, _lookAt));
+    let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
+//  let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
+    let _vFOV: number = $state(m.pi / 2.5);
+//  let _vFOV: number = $state(m.pi / 2.5);
+    let _hFOV: number = $state(m.pi / 2.5);
+//  let _hFOV: number = $state(m.pi / 2.5);
+    let _h: number = $derived(m.tan(_vFOV / 2.0));
+//  let _h: number = $derived(m.tan(_vFOV / 2.0));
+    let _w: number = $derived(m.tan(_hFOV / 2.0));
+//  let _w: number = $derived(m.tan(_hFOV / 2.0));
+    let _focalLength: number = $derived(_lengthLookAtSubtractLookFrom);
+//  let _focalLength: number = $derived(_lengthLookAtSubtractLookFrom);
+    let _cameraW: number[] = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as number[]);
+//  let _cameraW: number[] = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as number[]);
+    let _viewUpCrossCameraW: number[] = $derived(m.cross(_viewUp, _cameraW) as number[]);
+//  let _viewUpCrossCameraW: number[] = $derived(m.cross(_viewUp, _cameraW) as number[]);
+    let _cameraU: number[] = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as number[]);
+//  let _cameraU: number[] = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as number[]);
+    let _cameraV: number[] = $derived(m.cross(_cameraW, _cameraU) as number[]);
+//  let _cameraV: number[] = $derived(m.cross(_cameraW, _cameraU) as number[]);
+    let _viewportH: number = $derived(2.0 * _h * _focalLength);
+//  let _viewportH: number = $derived(2.0 * _h * _focalLength);
+    let _viewportW: number = $state(1.0);
+//  let _viewportW: number = $state(1.0);
+    let _cameraCenter: number[] = $derived(_lookFrom);
+//  let _cameraCenter: number[] = $derived(_lookFrom);
+    let _viewportU: number[] = $derived(m.multiply( _viewportW, _cameraU) as number[]);
+//  let _viewportU: number[] = $derived(m.multiply( _viewportW, _cameraU) as number[]);
+    let _viewportV: number[] = $derived(m.multiply(-_viewportH, _cameraV) as number[]);
+//  let _viewportV: number[] = $derived(m.multiply(-_viewportH, _cameraV) as number[]);
+    let _fromPixelToPixelDeltaU: number[] = $state([1.0, 1.0, 1.0]);
+//  let _fromPixelToPixelDeltaU: number[] = $state([1.0, 1.0, 1.0]);
+    let _fromPixelToPixelDeltaV: number[] = $state([1.0, 1.0, 1.0]);
+//  let _fromPixelToPixelDeltaV: number[] = $state([1.0, 1.0, 1.0]);
+    let _viewportTL: number[] = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[]);
+//  let _viewportTL: number[] = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[]);
+    let _pixel00Coordinates: number[] = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[]);
+//  let _pixel00Coordinates: number[] = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[]);
     let _isRunning: boolean;
 //  let _isRunning: boolean;
     let _frameHandle: number;
 //  let _frameHandle: number;
+
+
+
+//  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
+//  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
 
 
 
@@ -230,15 +243,45 @@
             return;
 //          return;
         }
+//      }
         prepare();
 //      prepare();
         render();
 //      render();
 //      console.info("loop");
 //      console.info("loop");
+        if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
+//      if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
+            _stratifiedSampleX++;
+//          _stratifiedSampleX++;
+            if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
+//          if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
+                _stratifiedSampleX = 0;
+//              _stratifiedSampleX = 0;
+                _stratifiedSampleY++;
+//              _stratifiedSampleY++;
+            }
+//          }
+            if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
+//          if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
+                stopLoop();
+//              stopLoop();
+                return;
+//              return;
+            }
+//          }
+        } else {
+//      } else {
+            stopLoop();
+//          stopLoop();
+            return;
+//          return;
+        }
+//      }
         _frameHandle = requestAnimationFrame(renderLoop);
 //      _frameHandle = requestAnimationFrame(renderLoop);
     };
+//  };
     const startLoop = (): void => {
 //  const startLoop = (): void => {
         if (!_isRunning) {
@@ -247,10 +290,16 @@
 //          _isRunning = true;
 //          console.info("start loop");
 //          console.info("start loop");
+            _stratifiedSampleX = 0.0;
+//          _stratifiedSampleX = 0.0;
+            _stratifiedSampleY = 0.0;
+//          _stratifiedSampleY = 0.0;
             _frameHandle = requestAnimationFrame(renderLoop);
 //          _frameHandle = requestAnimationFrame(renderLoop);
         }
+//      }
     };
+//  };
     const stopLoop = (): void => {
 //  const stopLoop = (): void => {
         _isRunning = false;
@@ -264,7 +313,9 @@
             _frameHandle = null!;
 //          _frameHandle = null!;
         }
+//      }
     };
+//  };
 
 
 
@@ -275,8 +326,10 @@
         // return;
         // return;
 
+
         await initOnce();
 //      await initOnce();
+
 
         _resizeObserver = new ResizeObserver(
 //      _resizeObserver = new ResizeObserver(
@@ -313,6 +366,74 @@
                     );
 //                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
 //                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
+                    _viewportW = _viewportH * _canvas.width / _canvas.height;
+//                  _viewportW = _viewportH * _canvas.width / _canvas.height;
+                    _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
+//                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
+                    _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
+//                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
+                    if (_texture) {
+//                  if (_texture) {
+                        _texture.destroy();
+//                      _texture.destroy();
+                    }
+                    _texture = _device.createTexture({
+//                  _texture = _device.createTexture({
+                        label: "OUTPUT_TEXTURE",
+//                      label: "OUTPUT_TEXTURE",
+                        size: [ _canvas.width, _canvas.height, ],
+//                      size: [ _canvas.width, _canvas.height, ],
+                        format: "rgba8unorm",
+//                      format: "rgba8unorm",
+                        usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
+//                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
+                    });
+                    const textureView: GPUTextureView = _texture.createView();
+//                  const textureView: GPUTextureView = _texture.createView();
+                    _renderBindGroup0 = _device.createBindGroup({
+//                  _renderBindGroup0 = _device.createBindGroup({
+                        label: "GPU_BIND_GROUP_0_RENDER",
+//                      label: "GPU_BIND_GROUP_0_RENDER",
+                        layout: _renderPipeline.getBindGroupLayout(0),
+//                      layout: _renderPipeline.getBindGroupLayout(0),
+                        entries: [
+//                      entries: [
+                            {
+                                binding: 0,
+//                              binding: 0,
+                                resource: _sampler,
+//                              resource: _sampler,
+                            },
+                            {
+                                binding: 1,
+//                              binding: 1,
+                                resource: textureView,
+//                              resource: textureView,
+                            },
+                        ],
+                    });
+                    _computeBindGroup0 = _device.createBindGroup({
+//                  _computeBindGroup0 = _device.createBindGroup({
+                        label: "GPU_BIND_GROUP_0_COMPUTE",
+//                      label: "GPU_BIND_GROUP_0_COMPUTE",
+                        layout: _computePipeline.getBindGroupLayout(0),
+//                      layout: _computePipeline.getBindGroupLayout(0),
+                        entries: [
+//                      entries: [
+                            {
+                                binding: 0,
+//                              binding: 0,
+                                resource: _dataStorageBuffer,
+//                              resource: _dataStorageBuffer,
+                            },
+                            {
+                                binding: 1,
+//                              binding: 1,
+                                resource: textureView,
+//                              resource: textureView,
+                            },
+                        ],
+                    });
                 }
                 // prepare();
                 // prepare();
@@ -323,6 +444,7 @@
             },
 //          },
         );
+
 
         _resizeObserver.observe(_canvas);
 //      _resizeObserver.observe(_canvas);
@@ -367,95 +489,18 @@
         _device.queue.submit([_commandBuffer]);
 //      _device.queue.submit([_commandBuffer]);
     };
+//  };
 
 
 
     const prepare = (): void => {
 //  const prepare = (): void => {
-        _samplesPerPixel = 100.0;
-//      _samplesPerPixel = 100.0;
-        _pixelSamplesScale = 1.0 / _samplesPerPixel;
-//      _pixelSamplesScale = 1.0 / _samplesPerPixel;
-        _stratifiedSamplesPerPixel = Math.sqrt(_samplesPerPixel);
-//      _stratifiedSamplesPerPixel = Math.sqrt(_samplesPerPixel);
-        _inverseStratifiedSamplesPerPixel = 1.0 / _stratifiedSamplesPerPixel;
-//      _inverseStratifiedSamplesPerPixel = 1.0 / _stratifiedSamplesPerPixel;
-        _stratifiedSampleX = 0.0;
-//      _stratifiedSampleX = 0.0;
-        _stratifiedSampleY = 0.0;
-//      _stratifiedSampleY = 0.0;
-
-        _lookFrom = [-28.284, 0.0, -28.284];
-//      _lookFrom = [-28.284, 0.0, -28.284];
-        _lookAt = [0.0, 0.0, 0.0];
-//      _lookAt = [0.0, 0.0, 0.0];
-        _viewUp = [0.0, 1.0, 0.0];
-//      _viewUp = [0.0, 1.0, 0.0];
-
-        let lookAtSubtractLookFrom: number[] = m.subtract(_lookAt, _lookFrom);
-//      let lookAtSubtractLookFrom: number[] = m.subtract(_lookAt, _lookFrom);
-        let lengthLookAtSubtractLookFrom: number = m.norm(lookAtSubtractLookFrom) as number;
-//      let lengthLookAtSubtractLookFrom: number = m.norm(lookAtSubtractLookFrom) as number;
-
-//         _focusDistance = lengthLookAtSubtractLookFrom;
-// //      _focusDistance = lengthLookAtSubtractLookFrom;
-
-        _vFOV = m.pi / 2.5;
-//      _vFOV = m.pi / 2.5;
-        _hFOV = m.pi / 2.5;
-//      _hFOV = m.pi / 2.5;
-        _h = m.tan(_vFOV / 2.0);
-//      _h = m.tan(_vFOV / 2.0);
-        _w = m.tan(_hFOV / 2.0);
-//      _w = m.tan(_hFOV / 2.0);
-
-        _focalLength = lengthLookAtSubtractLookFrom;
-//      _focalLength = lengthLookAtSubtractLookFrom;
-
-        let lookFromSubtractLookAt: number[] = m.subtract(_lookFrom, _lookAt);
-//      let lookFromSubtractLookAt: number[] = m.subtract(_lookFrom, _lookAt);
-        _cameraW = m.divide(lookFromSubtractLookAt, m.norm(lookFromSubtractLookAt)) as number[];
-//      _cameraW = m.divide(lookFromSubtractLookAt, m.norm(lookFromSubtractLookAt)) as number[];
-        let viewUpCrossCameraW: number[] = m.cross(_viewUp, _cameraW) as number[];
-//      let viewUpCrossCameraW: number[] = m.cross(_viewUp, _cameraW) as number[];
-        _cameraU = m.divide(viewUpCrossCameraW, m.norm(viewUpCrossCameraW)) as number[];
-//      _cameraU = m.divide(viewUpCrossCameraW, m.norm(viewUpCrossCameraW)) as number[];
-        _cameraV = m.cross(_cameraW, _cameraU) as number[];
-//      _cameraV = m.cross(_cameraW, _cameraU) as number[];
-
-        _viewportH = 2.0 * _h * _focalLength;
-//      _viewportH = 2.0 * _h * _focalLength;
-        _viewportW = _viewportH * _canvas.width / _canvas.height;
-//      _viewportW = _viewportH * _canvas.width / _canvas.height;
-        _cameraCenter = _lookFrom;
-//      _cameraCenter = _lookFrom;
-
-
-        _viewportU = m.multiply( _viewportW, _cameraU) as number[];
-//      _viewportU = m.multiply( _viewportW, _cameraU) as number[];
-        _viewportV = m.multiply(-_viewportH, _cameraV) as number[];
-//      _viewportV = m.multiply(-_viewportH, _cameraV) as number[];
-
-
-        _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
-//      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
-        _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
-//      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
-
-
-        _viewportTL = m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[];
-//      _viewportTL = m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[];
-        _pixel00Coordinates = m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[];
-//      _pixel00Coordinates = m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[];
-
-
-        //------------------------------|------------------------------|------------------------------//
-        //------------------------------|------------------------------|------------------------------//
-
-        
+//      console.log("_stratifiedSampleX:", _stratifiedSampleX, "_stratifiedSampleY:", _stratifiedSampleY);
+//      console.log("_stratifiedSampleX:", _stratifiedSampleX, "_stratifiedSampleY:", _stratifiedSampleY);
         _dataStorageValues.set(
 //      _dataStorageValues.set(
             [
+//          [
                 ..._cameraCenter, _pixelSamplesScale,
 //              ..._cameraCenter, _pixelSamplesScale,
                 ..._fromPixelToPixelDeltaU, _stratifiedSampleX,
@@ -467,71 +512,18 @@
                 _canvas.width, _canvas.height, 0.0, 0.0,
 //              _canvas.width, _canvas.height, 0.0, 0.0,
             ],
+//          ],
             0,
+//          0,
         );
+//      );
         _device.queue.writeBuffer(_dataStorageBuffer, 0, _dataStorageValues as GPUAllowSharedBufferSource,);
 //      _device.queue.writeBuffer(_dataStorageBuffer, 0, _dataStorageValues as GPUAllowSharedBufferSource,);
-        _texture = _device.createTexture({
-//      _texture = _device.createTexture({
-            label: "OUTPUT_TEXTURE",
-//          label: "OUTPUT_TEXTURE",
-            size: [ _canvas.width, _canvas.height, ],
-//          size: [ _canvas.width, _canvas.height, ],
-            format: "rgba8unorm",
-//          format: "rgba8unorm",
-            usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
-//          usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
-        });
-        const textureView: GPUTextureView = _texture.createView();
-//      const textureView: GPUTextureView = _texture.createView();
-        _renderBindGroup0 = _device.createBindGroup({
-//      _renderBindGroup0 = _device.createBindGroup({
-            label: "GPU_BIND_GROUP_0_RENDER",
-//          label: "GPU_BIND_GROUP_0_RENDER",
-            layout: _renderPipeline.getBindGroupLayout(0),
-//          layout: _renderPipeline.getBindGroupLayout(0),
-            entries: [
-//          entries: [
-                {
-                    binding: 0,
-//                  binding: 0,
-                    resource: _sampler,
-//                  resource: _sampler,
-                },
-                {
-                    binding: 1,
-//                  binding: 1,
-                    resource: textureView,
-//                  resource: textureView,
-                },
-            ],
-        });
-        _computeBindGroup0 = _device.createBindGroup({
-//      _computeBindGroup0 = _device.createBindGroup({
-            label: "GPU_BIND_GROUP_0_COMPUTE",
-//          label: "GPU_BIND_GROUP_0_COMPUTE",
-            layout: _computePipeline.getBindGroupLayout(0),
-//          layout: _computePipeline.getBindGroupLayout(0),
-            entries: [
-//          entries: [
-                {
-                    binding: 0,
-//                  binding: 0,
-                    resource: _dataStorageBuffer,
-//                  resource: _dataStorageBuffer,
-                },
-                {
-                    binding: 1,
-//                  binding: 1,
-                    resource: textureView,
-//                  resource: textureView,
-                },
-            ],
-        });
     };
+//  };
 
 
     
 </script>
 
-<canvas bind:this={_canvas} style:width="100%" style:height="100%" style:display="block"></canvas>
+<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>
