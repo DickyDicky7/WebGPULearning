@@ -10,6 +10,15 @@
 
 
 
+    type Vec2 = [number, number];
+//  type Vec2 = [number, number];
+    type Vec3 = [number, number, number];
+//  type Vec3 = [number, number, number];
+    type Vec4 = [number, number, number, number];
+//  type Vec4 = [number, number, number, number];
+
+
+
     let _adapter: GPUAdapter;
 //  let _adapter: GPUAdapter;
     let _device: GPUDevice;
@@ -68,18 +77,18 @@
 //  let _stratifiedSampleX: number;
     let _stratifiedSampleY: number;
 //  let _stratifiedSampleY: number;
-    let _lookFrom: number[] = $state([-28.284, 0.0, -28.284]);
-//  let _lookFrom: number[] = $state([-28.284, 0.0, -28.284]);
-    let _lookAt: number[] = $state([0.0, 0.0, 0.0]);
-//  let _lookAt: number[] = $state([0.0, 0.0, 0.0]);
-    let _viewUp: number[] = $state([0.0, 1.0, 0.0]);
-//  let _viewUp: number[] = $state([0.0, 1.0, 0.0]);
-    let _lookAtSubtractLookFrom: number[] = $derived(m.subtract(_lookAt, _lookFrom));
-//  let _lookAtSubtractLookFrom: number[] = $derived(m.subtract(_lookAt, _lookFrom));
+    let _lookFrom: Vec3 = $state([-28.284, 0.0, -28.284]);
+//  let _lookFrom: Vec3 = $state([-28.284, 0.0, -28.284]);
+    let _lookAt: Vec3 = $state([0.0, 0.0, 0.0]);
+//  let _lookAt: Vec3 = $state([0.0, 0.0, 0.0]);
+    let _viewUp: Vec3 = $state([0.0, 1.0, 0.0]);
+//  let _viewUp: Vec3 = $state([0.0, 1.0, 0.0]);
+    let _lookAtSubtractLookFrom: Vec3 = $derived(m.subtract(_lookAt, _lookFrom));
+//  let _lookAtSubtractLookFrom: Vec3 = $derived(m.subtract(_lookAt, _lookFrom));
     let _lengthLookAtSubtractLookFrom: number = $derived(m.norm(_lookAtSubtractLookFrom) as number);
 //  let _lengthLookAtSubtractLookFrom: number = $derived(m.norm(_lookAtSubtractLookFrom) as number);
-    let _lookFromSubtractLookAt: number[] = $derived(m.subtract(_lookFrom, _lookAt));
-//  let _lookFromSubtractLookAt: number[] = $derived(m.subtract(_lookFrom, _lookAt));
+    let _lookFromSubtractLookAt: Vec3 = $derived(m.subtract(_lookFrom, _lookAt));
+//  let _lookFromSubtractLookAt: Vec3 = $derived(m.subtract(_lookFrom, _lookAt));
     let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
 //  let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
     let _vFOV: number = $state(m.pi / 2.5);
@@ -92,32 +101,32 @@
 //  let _w: number = $derived(m.tan(_hFOV / 2.0));
     let _focalLength: number = $derived(_lengthLookAtSubtractLookFrom);
 //  let _focalLength: number = $derived(_lengthLookAtSubtractLookFrom);
-    let _cameraW: number[] = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as number[]);
-//  let _cameraW: number[] = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as number[]);
-    let _viewUpCrossCameraW: number[] = $derived(m.cross(_viewUp, _cameraW) as number[]);
-//  let _viewUpCrossCameraW: number[] = $derived(m.cross(_viewUp, _cameraW) as number[]);
-    let _cameraU: number[] = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as number[]);
-//  let _cameraU: number[] = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as number[]);
-    let _cameraV: number[] = $derived(m.cross(_cameraW, _cameraU) as number[]);
-//  let _cameraV: number[] = $derived(m.cross(_cameraW, _cameraU) as number[]);
+    let _cameraW: Vec3 = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as Vec3);
+//  let _cameraW: Vec3 = $derived(m.divide(_lookFromSubtractLookAt, m.norm(_lookFromSubtractLookAt)) as Vec3);
+    let _viewUpCrossCameraW: Vec3 = $derived(m.cross(_viewUp, _cameraW) as Vec3);
+//  let _viewUpCrossCameraW: Vec3 = $derived(m.cross(_viewUp, _cameraW) as Vec3);
+    let _cameraU: Vec3 = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as Vec3);
+//  let _cameraU: Vec3 = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as Vec3);
+    let _cameraV: Vec3 = $derived(m.cross(_cameraW, _cameraU) as Vec3);
+//  let _cameraV: Vec3 = $derived(m.cross(_cameraW, _cameraU) as Vec3);
     let _viewportH: number = $derived(2.0 * _h * _focalLength);
 //  let _viewportH: number = $derived(2.0 * _h * _focalLength);
     let _viewportW: number = $state(1.0);
 //  let _viewportW: number = $state(1.0);
-    let _cameraCenter: number[] = $derived(_lookFrom);
-//  let _cameraCenter: number[] = $derived(_lookFrom);
-    let _viewportU: number[] = $derived(m.multiply( _viewportW, _cameraU) as number[]);
-//  let _viewportU: number[] = $derived(m.multiply( _viewportW, _cameraU) as number[]);
-    let _viewportV: number[] = $derived(m.multiply(-_viewportH, _cameraV) as number[]);
-//  let _viewportV: number[] = $derived(m.multiply(-_viewportH, _cameraV) as number[]);
-    let _fromPixelToPixelDeltaU: number[] = $state([1.0, 1.0, 1.0]);
-//  let _fromPixelToPixelDeltaU: number[] = $state([1.0, 1.0, 1.0]);
-    let _fromPixelToPixelDeltaV: number[] = $state([1.0, 1.0, 1.0]);
-//  let _fromPixelToPixelDeltaV: number[] = $state([1.0, 1.0, 1.0]);
-    let _viewportTL: number[] = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[]);
-//  let _viewportTL: number[] = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as number[]);
-    let _pixel00Coordinates: number[] = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[]);
-//  let _pixel00Coordinates: number[] = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as number[]);
+    let _cameraCenter: Vec3 = $derived(_lookFrom);
+//  let _cameraCenter: Vec3 = $derived(_lookFrom);
+    let _viewportU: Vec3 = $derived(m.multiply( _viewportW, _cameraU) as Vec3);
+//  let _viewportU: Vec3 = $derived(m.multiply( _viewportW, _cameraU) as Vec3);
+    let _viewportV: Vec3 = $derived(m.multiply(-_viewportH, _cameraV) as Vec3);
+//  let _viewportV: Vec3 = $derived(m.multiply(-_viewportH, _cameraV) as Vec3);
+    let _fromPixelToPixelDeltaU: Vec3 = $state([1.0, 1.0, 1.0]);
+//  let _fromPixelToPixelDeltaU: Vec3 = $state([1.0, 1.0, 1.0]);
+    let _fromPixelToPixelDeltaV: Vec3 = $state([1.0, 1.0, 1.0]);
+//  let _fromPixelToPixelDeltaV: Vec3 = $state([1.0, 1.0, 1.0]);
+    let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
+//  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
+    let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
+//  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
     let _isRunning: boolean;
 //  let _isRunning: boolean;
     let _frameHandle: number;
@@ -368,10 +377,10 @@
 //                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
                     _viewportW = _viewportH * _canvas.width / _canvas.height;
 //                  _viewportW = _viewportH * _canvas.width / _canvas.height;
-                    _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
-//                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as number[];
-                    _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
-//                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as number[];
+                    _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+//                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+                    _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+//                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
                     if (_texture) {
 //                  if (_texture) {
                         _texture.destroy();
