@@ -19,29 +19,111 @@
 
 
 
-    const _REFRACTIVE_INDICES = {
-//  const _REFRACTIVE_INDICES = {
-        _REFRACTIVE_INDEX_DEFAULT: 0.000000,
-//      _REFRACTIVE_INDEX_DEFAULT: 0.000000,
-        _REFRACTIVE_INDEX_NOTHING: 1.000000,
-//      _REFRACTIVE_INDEX_NOTHING: 1.000000,
-        _REFRACTIVE_INDEX_AIR    : 1.000293,
-//      _REFRACTIVE_INDEX_AIR    : 1.000293,
-        _REFRACTIVE_INDEX_WATER  : 1.333000,
-//      _REFRACTIVE_INDEX_WATER  : 1.333000,
-        _REFRACTIVE_INDEX_SKIN   : 1.400000,
-//      _REFRACTIVE_INDEX_SKIN   : 1.400000,
-        _REFRACTIVE_INDEX_GLASS  : 1.500000,
-//      _REFRACTIVE_INDEX_GLASS  : 1.500000,
-        _REFRACTIVE_INDEX_MARBLE : 1.550000,
-//      _REFRACTIVE_INDEX_MARBLE : 1.550000,
-        _REFRACTIVE_INDEX_DIAMOND: 2.400000,
-//      _REFRACTIVE_INDEX_DIAMOND: 2.400000,
+    const BackgroundType = {
+//  const BackgroundType = {
+        SKY_BOX_BLUE: 0,
+//      SKY_BOX_BLUE: 0,
+        SKY_BOX_DARK: 1,
+//      SKY_BOX_DARK: 1,
+        SKY_BOX_HDRI: 2,
+//      SKY_BOX_HDRI: 2,
+    } as const;
+//  } as const;
+    type BackgroundType = typeof BackgroundType[keyof typeof BackgroundType];
+//  type BackgroundType = typeof BackgroundType[keyof typeof BackgroundType];
+    const RefractiveIndex = {
+//  const RefractiveIndex = {
+        DEFAULT: 0.000000,
+//      DEFAULT: 0.000000,
+        NOTHING: 1.000000,
+//      NOTHING: 1.000000,
+        AIR    : 1.000293,
+//      AIR    : 1.000293,
+        WATER  : 1.333000,
+//      WATER  : 1.333000,
+        SKIN   : 1.400000,
+//      SKIN   : 1.400000,
+        GLASS  : 1.500000,
+//      GLASS  : 1.500000,
+        MARBLE : 1.550000,
+//      MARBLE : 1.550000,
+        DIAMOND: 2.400000,
+//      DIAMOND: 2.400000,
+    } as const;
+//  } as const;
+    type RefractiveIndex = typeof RefractiveIndex[keyof typeof RefractiveIndex];
+//  type RefractiveIndex = typeof RefractiveIndex[keyof typeof RefractiveIndex];
+    type Sphere = {
+//  type Sphere = {
+        center: Vec3,
+//      center: Vec3,
+        radius: number,
+//      radius: number,
+        materialIndex: number,
+//      materialIndex: number,
+        _pad: [number, number],
+//      _pad: [number, number],
+    };
+//  };
+    const MaterialType = {
+//  const MaterialType = {
+        DIFFUSE   : 0,
+//      DIFFUSE   : 0,
+        METAL     : 1,
+//      METAL     : 1,
+        GLOSS     : 2,
+//      GLOSS     : 2,
+        DIELECTRIC: 3,
+//      DIELECTRIC: 3,
+        LIGHT     : 4,
+//      LIGHT     : 4,
+    } as const;
+//  } as const;
+    type MaterialType = typeof MaterialType[keyof typeof MaterialType];
+//  type MaterialType = typeof MaterialType[keyof typeof MaterialType];
+    type Material = {
+//  type Material = {
+        layer1Roughness: number,
+//      layer1Roughness: number,
+        layer1Thickness: number,
+//      layer1Thickness: number,
+        layer0IOR: RefractiveIndex,
+//      layer0IOR: RefractiveIndex,
+        layer1IOR: RefractiveIndex,
+//      layer1IOR: RefractiveIndex,
+        textureIndex: number,
+//      textureIndex: number,
+        materialType: MaterialType,
+//      materialType: MaterialType,
+        _pad: [number, number],
+//      _pad: [number, number],
+    };
+//  };
+    const TextureType = {
+//  const TextureType = {
+        COLOR: 0,
+//      COLOR: 0,
+        IMAGE: 1,
+//      IMAGE: 1,
+    } as const;
+//  } as const;
+    type TextureType = typeof TextureType[keyof typeof TextureType];
+//  type TextureType = typeof TextureType[keyof typeof TextureType];
+    type Texture = {
+//  type Texture = {
+        albedo: Vec3,
+//      albedo: Vec3,
+        imageIndex: number,
+//      imageIndex: number,
+        textureType: TextureType,
+//      textureType: TextureType,
+        _pad: [number, number],
+//      _pad: [number, number],
     };
 //  };
 
 
-
+    
     let _adapter: GPUAdapter;
 //  let _adapter: GPUAdapter;
     let _device: GPUDevice;
@@ -80,6 +162,32 @@
 //  let _dataStorageValues: Float32Array;
     let _dataStorageBuffer: GPUBuffer;
 //  let _dataStorageBuffer: GPUBuffer;
+    let _spheresStorageValues: Float32Array;
+//  let _spheresStorageValues: Float32Array;
+    let _spheresStorageBuffer: GPUBuffer;
+//  let _spheresStorageBuffer: GPUBuffer;
+    let _materialsStorageValues: Float32Array;
+//  let _materialsStorageValues: Float32Array;
+    let _materialsStorageBuffer: GPUBuffer;
+//  let _materialsStorageBuffer: GPUBuffer;
+    let _hdriSampler: GPUSampler;
+//  let _hdriSampler: GPUSampler;
+    let _hdriTexture: GPUTexture;
+//  let _hdriTexture: GPUTexture;
+    let _texturesStorageValues: Float32Array;
+//  let _texturesStorageValues: Float32Array;
+    let _texturesStorageBuffer: GPUBuffer;
+//  let _texturesStorageBuffer: GPUBuffer;
+    let _atlasSampler: GPUSampler;
+//  let _atlasSampler: GPUSampler;
+    let _atlasTexture: GPUTexture;
+//  let _atlasTexture: GPUTexture;
+    let _spheres: Sphere[];
+//  let _spheres: Sphere[];
+    let _materials: Material[];
+//  let _materials: Material[];
+    let _textures: Texture[];
+//  let _textures: Texture[];
     let _renderBindGroup0: GPUBindGroup;
 //  let _renderBindGroup0: GPUBindGroup;
     let _computeBindGroup0: GPUBindGroup;
@@ -159,6 +267,59 @@
 
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
+
+
+
+    const spheresToSpheresStorageValues = (spheres: Sphere[], spheresStorageValues: Float32Array): void => {
+//  const spheresToSpheresStorageValues = (spheres: Sphere[], spheresStorageValues: Float32Array): void => {
+    };
+//  };
+    const materialsToMaterialsStorageValues = (materials: Material[], materialsStorageValues: Float32Array): void => {
+//  const materialsToMaterialsStorageValues = (materials: Material[], materialsStorageValues: Float32Array): void => {
+        materialsStorageValues = new Float32Array(materials.length * 8);
+//      materialsStorageValues = new Float32Array(materials.length * 8);
+        materials.forEach((
+//      materials.forEach((
+            {
+                layer1Roughness,
+//              layer1Roughness,
+                layer1Thickness,
+//              layer1Thickness,
+                layer0IOR,
+//              layer0IOR,
+                layer1IOR,
+//              layer1IOR,
+                textureIndex,
+//              textureIndex,
+                materialType,
+//              materialType,
+                _pad,
+//              _pad,
+            }
+            : Material, materialIndex: number) => {
+//          : Material, materialIndex: number) => {
+            materialsStorageValues.set([
+//          materialsStorageValues.set([
+                layer1Roughness,
+//              layer1Roughness,
+                layer1Thickness,
+//              layer1Thickness,
+                layer0IOR,
+//              layer0IOR,
+                layer1IOR,
+//              layer1IOR,
+                textureIndex,
+//              textureIndex,
+                materialType,
+//              materialType,
+                ..._pad,
+//              ..._pad,
+            ], materialIndex * 8);
+//          ], materialIndex * 8);
+        });
+//      });
+    };
+//  };
 
 
 

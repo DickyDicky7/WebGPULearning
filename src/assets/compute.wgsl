@@ -470,8 +470,8 @@
     @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 
-    fn _rayColorTemp(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
-//  fn _rayColorTemp(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+    fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
 {
         var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
 //      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
