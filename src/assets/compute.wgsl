@@ -16,47 +16,10 @@
     const MATERIAL_TYPE_LIGHT     : u32 = 4u;
 //  const MATERIAL_TYPE_LIGHT     : u32 = 4u;
 
-    const REFRACTIVE_INDEX_DEFAULT: u32 = 0u;
-//  const REFRACTIVE_INDEX_DEFAULT: u32 = 0u;
-    const REFRACTIVE_INDEX_NOTHING: u32 = 1u;
-//  const REFRACTIVE_INDEX_NOTHING: u32 = 1u;
-    const REFRACTIVE_INDEX_AIR    : u32 = 2u;
-//  const REFRACTIVE_INDEX_AIR    : u32 = 2u;
-    const REFRACTIVE_INDEX_WATER  : u32 = 3u;
-//  const REFRACTIVE_INDEX_WATER  : u32 = 3u;
-    const REFRACTIVE_INDEX_SKIN   : u32 = 4u;
-//  const REFRACTIVE_INDEX_SKIN   : u32 = 4u;
-    const REFRACTIVE_INDEX_GLASS  : u32 = 5u;
-//  const REFRACTIVE_INDEX_GLASS  : u32 = 5u;
-    const REFRACTIVE_INDEX_MARBLE : u32 = 6u;
-//  const REFRACTIVE_INDEX_MARBLE : u32 = 6u;
-    const REFRACTIVE_INDEX_DIAMOND: u32 = 7u;
-//  const REFRACTIVE_INDEX_DIAMOND: u32 = 7u;
-
     const TEXTURE_TYPE_COLOR: u32 = 0u;
 //  const TEXTURE_TYPE_COLOR: u32 = 0u;
     const TEXTURE_TYPE_IMAGE: u32 = 1u;
 //  const TEXTURE_TYPE_IMAGE: u32 = 1u;
-
-    const refractiveIndices: array<f32, 8> = array<f32, 8>(
-//  const refractiveIndices: array<f32, 8> = array<f32, 8>(
-        0.000000,
-//      0.000000,
-        1.000000,
-//      1.000000,
-        1.000293,
-//      1.000293,
-        1.333000,
-//      1.333000,
-        1.400000,
-//      1.400000,
-        1.500000,
-//      1.500000,
-        1.550000,
-//      1.550000,
-        2.400000,
-//      2.400000,
-    );
 
     struct Ray
 //  struct Ray
@@ -65,7 +28,7 @@
 //  origin: vec3<f32>,
     direction: vec3<f32>,
 //  direction: vec3<f32>,
-};
+}
 
     struct Sphere
 //  struct Sphere
@@ -78,7 +41,7 @@
 //  materialIndex: u32,
     _pad: vec2<u32>,
 //  _pad: vec2<u32>,
-};
+}
 
     struct RayHitResult
 //  struct RayHitResult
@@ -97,7 +60,7 @@
 //  isFrontFaceHitted: bool,
     materialIndex: u32,
 //  materialIndex: u32,
-};
+}
 
     struct MaterialLightScatteringResult
 //  struct MaterialLightScatteringResult
@@ -110,7 +73,7 @@
 //  emission: vec3<f32>,
     isScattered: bool,
 //  isScattered: bool,
-};
+}
 
     struct Material
 //  struct Material
@@ -129,7 +92,7 @@
 //  materialType: u32,
     _pad: vec2<u32>,
 //  _pad: vec2<u32>,
-};
+}
 
     @group(0) @binding(3) var<storage, read> materials: array<Material>;
 //  @group(0) @binding(3) var<storage, read> materials: array<Material>;
@@ -141,7 +104,7 @@
 //  min: f32,
     max: f32,
 //  max: f32,
-};
+}
 
     fn _intervalContain (interval: Interval, value: f32) -> bool { return interval.min <= value && value <= interval.max; }
 //  fn _intervalContain (interval: Interval, value: f32) -> bool { return interval.min <= value && value <= interval.max; }
@@ -159,7 +122,7 @@
 //  textureType: u32,
     _pad: vec2<u32>,
 //  _pad: vec2<u32>,
-};
+}
 
     const      PI: f32 = 3.1415926535897930; // 1*π
 //  const      PI: f32 = 3.1415926535897930; // 1*π
@@ -173,7 +136,7 @@
 {
     return dot(value, value);
 //  return dot(value, value);
-};
+}
 
     @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 //  @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -264,7 +227,7 @@
 
     return rayHitResult;
 //  return rayHitResult;
-};
+}
 
     fn _rayHitSpheres(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitSpheres(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
@@ -293,7 +256,7 @@
     }
     return finalRayHitResult;
 //  return finalRayHitResult;
-};
+}
 
     fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
 //  fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
@@ -482,14 +445,14 @@
     }
     return materialLightScatteringResult;
 //  return materialLightScatteringResult;
-};
+}
 
     fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
 //  fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
 {
     return ray.origin + ray.direction * distance;
 //  return ray.origin + ray.direction * distance;
-};
+}
 
     fn _rayColor(ray: Ray) -> vec3<f32>
 //  fn _rayColor(ray: Ray) -> vec3<f32>
@@ -500,7 +463,7 @@
 //  let ratio: f32 = 0.5 * (unitDirection.y + 1.0);
     return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
 //  return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
-};
+}
 
     @group(0) @binding(7) var hdriSampler: sampler;
 //  @group(0) @binding(7) var hdriSampler: sampler;
@@ -613,7 +576,7 @@
         return accumulatedColor;
 //      return accumulatedColor;
 
-};
+}
 
 //  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
 //  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
@@ -665,7 +628,7 @@
 
     textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
 //  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-};
+}
 
     fn _generatePrimaryRay(
 //  fn _generatePrimaryRay(
@@ -711,7 +674,7 @@
 {
     state: u32,
 //  state: u32,
-};
+}
 
     fn _pcg32Next(rng: ptr<function, RNG>) -> f32
 //  fn _pcg32Next(rng: ptr<function, RNG>) -> f32
