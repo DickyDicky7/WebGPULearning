@@ -39,8 +39,6 @@
 //  radius: f32,
     materialIndex: u32,
 //  materialIndex: u32,
-    _pad: vec2<u32>,
-//  _pad: vec2<u32>,
 }
 
     struct RayHitResult
@@ -80,8 +78,6 @@
 {
     layer1Roughness: f32,
 //  layer1Roughness: f32,
-    layer1Thickness: f32,
-//  layer1Thickness: f32,
     layer0IOR: f32,
 //  layer0IOR: f32,
     layer1IOR: f32,
@@ -90,8 +86,6 @@
 //  textureIndex: u32,
     materialType: u32,
 //  materialType: u32,
-    _pad: vec2<u32>,
-//  _pad: vec2<u32>,
 }
 
     @group(0) @binding(3) var<storage, read> materials: array<Material>;
@@ -120,8 +114,6 @@
 //  imageIndex: u32,
     textureType: u32,
 //  textureType: u32,
-    _pad: vec2<u32>,
-//  _pad: vec2<u32>,
 }
 
     const      PI: f32 = 3.1415926535897930; // 1*π
@@ -578,8 +570,8 @@
 
 }
 
-//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
-//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+padding:<f32>+padding:<f32>
+//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+emptySlot:<f32>+emptySlot:<f32>
+//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+emptySlot:<f32>+emptySlot:<f32>
     @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
 //  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
     @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
