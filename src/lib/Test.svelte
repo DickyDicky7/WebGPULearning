@@ -160,16 +160,16 @@
 //  let _spheresStorageValues: ArrayBuffer;
     let _spheresStorageBuffer: GPUBuffer;
 //  let _spheresStorageBuffer: GPUBuffer;
-    let _spheres: Sphere[] = $state(null!);
-//  let _spheres: Sphere[] = $state(null!);
+    let _spheres: Sphere[] = $state([]);
+//  let _spheres: Sphere[] = $state([]);
     let _materialsStorageValuesDataView: DataView;
 //  let _materialsStorageValuesDataView: DataView;
     let _materialsStorageValues: ArrayBuffer;
 //  let _materialsStorageValues: ArrayBuffer;
     let _materialsStorageBuffer: GPUBuffer;
 //  let _materialsStorageBuffer: GPUBuffer;
-    let _materials: Material[] = $state(null!);
-//  let _materials: Material[] = $state(null!);
+    let _materials: Material[] = $state([]);
+//  let _materials: Material[] = $state([]);
     let _hdriSampler: GPUSampler;
 //  let _hdriSampler: GPUSampler;
     let _hdriTexture: GPUTexture;
@@ -180,8 +180,8 @@
 //  let _texturesStorageValues: ArrayBuffer;
     let _texturesStorageBuffer: GPUBuffer;
 //  let _texturesStorageBuffer: GPUBuffer;
-    let _textures: Texture[] = $state(null!);
-//  let _textures: Texture[] = $state(null!);
+    let _textures: Texture[] = $state([]);
+//  let _textures: Texture[] = $state([]);
     let _atlasSampler: GPUSampler;
 //  let _atlasSampler: GPUSampler;
     let _atlasTexture: GPUTexture;
@@ -268,34 +268,30 @@
 
 
 
-    const packSpheres = (): void => {
-//  const packSpheres = (): void => {
-        if (!_spheres) {
-//      if (!_spheres) {
-            _spheresStorageValues = new ArrayBuffer(0);
-//          _spheresStorageValues = new ArrayBuffer(0);
-            _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
-//          _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
-            return;
-//          return;
-        }
-//      }
-        if (_spheres.length === 0) {
-//      if (_spheres.length === 0) {
-            _spheresStorageValues = new ArrayBuffer(0);
-//          _spheresStorageValues = new ArrayBuffer(0);
-            _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
-//          _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
-            return;
-//          return;
-        }
-//      }
+    const prepareSpheres = (): void => {
+//  const prepareSpheres = (): void => {
         if (!_spheresStorageValues || _spheres.length !== _spheresStorageValues.byteLength / 32) {
 //      if (!_spheresStorageValues || _spheres.length !== _spheresStorageValues.byteLength / 32) {
             _spheresStorageValues = new ArrayBuffer(_spheres.length * 32);
 //          _spheresStorageValues = new ArrayBuffer(_spheres.length * 32);
             _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
 //          _spheresStorageValuesDataView = new DataView(_spheresStorageValues);
+            if (_spheresStorageBuffer) {
+//          if (_spheresStorageBuffer) {
+                _spheresStorageBuffer.destroy();
+//              _spheresStorageBuffer.destroy();
+            }
+//          }
+            _spheresStorageBuffer = _device.createBuffer({
+//          _spheresStorageBuffer = _device.createBuffer({
+                label: "SPHERES_STORAGE_BUFFER",
+//              label: "SPHERES_STORAGE_BUFFER",
+                size: _spheresStorageValues.byteLength,
+//              size: _spheresStorageValues.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+//              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+//          });
         }
 //      }
         _spheres.forEach((
@@ -324,36 +320,34 @@
 //              _spheresStorageValuesDataView.setUint32(base + 16, materialIndex, true);
         });
 //      });
+        _device.queue.writeBuffer(_spheresStorageBuffer, 0, _spheresStorageValues as GPUAllowSharedBufferSource);
+//      _device.queue.writeBuffer(_spheresStorageBuffer, 0, _spheresStorageValues as GPUAllowSharedBufferSource);
     };
 //  };
-    const packMaterials = (): void => {
-//  const packMaterials = (): void => {
-        if (!_materials) {
-//      if (!_materials) {
-            _materialsStorageValues = new ArrayBuffer(0);
-//          _materialsStorageValues = new ArrayBuffer(0);
-            _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
-//          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
-            return;
-//          return;
-        }
-//      }
-        if (_materials.length === 0) {
-//      if (_materials.length === 0) {
-            _materialsStorageValues = new ArrayBuffer(0);
-//          _materialsStorageValues = new ArrayBuffer(0);
-            _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
-//          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
-            return;
-//          return;
-        }
-//      }
+    const prepareMaterials = (): void => {
+//  const prepareMaterials = (): void => {
         if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
 //      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
             _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
 //          _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
             _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
 //          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
+            if (_materialsStorageBuffer) {
+//          if (_materialsStorageBuffer) {
+                _materialsStorageBuffer.destroy();
+//              _materialsStorageBuffer.destroy();
+            }
+//          }
+            _materialsStorageBuffer = _device.createBuffer({
+//          _materialsStorageBuffer = _device.createBuffer({
+                label: "MATERIALS_STORAGE_BUFFER",
+//              label: "MATERIALS_STORAGE_BUFFER",
+                size: _materialsStorageValues.byteLength,
+//              size: _materialsStorageValues.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+//              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+//          });
         }
 //      }
         _materials.forEach((
@@ -386,36 +380,34 @@
 //              _materialsStorageValuesDataView.setUint32(base + 16, materialType, true);
         });
 //      });
+        _device.queue.writeBuffer(_materialsStorageBuffer, 0, _materialsStorageValues as GPUAllowSharedBufferSource);
+//      _device.queue.writeBuffer(_materialsStorageBuffer, 0, _materialsStorageValues as GPUAllowSharedBufferSource);
     };
 //  };
-    const packTextures = (): void => {
-//  const packTextures = (): void => {
-        if (!_textures) {
-//      if (!_textures) {
-            _texturesStorageValues = new ArrayBuffer(0);
-//          _texturesStorageValues = new ArrayBuffer(0);
-            _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
-//          _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
-            return;
-//          return;
-        }
-//      }
-        if (_textures.length === 0) {
-//      if (_textures.length === 0) {
-            _texturesStorageValues = new ArrayBuffer(0);
-//          _texturesStorageValues = new ArrayBuffer(0);
-            _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
-//          _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
-            return;
-//          return;
-        }
-//      }
+    const prepareTextures = (): void => {
+//  const prepareTextures = (): void => {
         if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
 //      if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
             _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
 //          _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
             _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
 //          _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
+            if (_texturesStorageBuffer) {
+//          if (_texturesStorageBuffer) {
+                _texturesStorageBuffer.destroy();
+//              _texturesStorageBuffer.destroy();
+            }
+//          }
+            _texturesStorageBuffer = _device.createBuffer({
+//          _texturesStorageBuffer = _device.createBuffer({
+                label: "TEXTURES_STORAGE_BUFFER",
+//              label: "TEXTURES_STORAGE_BUFFER",
+                size: _texturesStorageValues.byteLength,
+//              size: _texturesStorageValues.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+//              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+//          });
         }
 //      }
         _textures.forEach((
@@ -444,6 +436,8 @@
 //              _texturesStorageValuesDataView.setUint32(base + 16, textureType, true);
         });
 //      });
+        _device.queue.writeBuffer(_texturesStorageBuffer, 0, _texturesStorageValues as GPUAllowSharedBufferSource);
+//      _device.queue.writeBuffer(_texturesStorageBuffer, 0, _texturesStorageValues as GPUAllowSharedBufferSource);
     };
 //  };
 
