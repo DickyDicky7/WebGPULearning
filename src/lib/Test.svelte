@@ -310,12 +310,6 @@
             }
             : Sphere, sphereIndex: number): void => {
 //          : Sphere, sphereIndex: number): void => {
-                // [ center:12-bytes       | radius:4-bytes   ] alignment@16-bytes
-                // [ center:12-bytes       | radius:4-bytes   ] alignment@16-bytes
-                // [ materialIndex:4-bytes | padding:12-bytes ] alignment@16-bytes
-                // [ materialIndex:4-bytes | padding:12-bytes ] alignment@16-bytes
-                // --> total@32-bytes
-                // --> total@32-bytes
                 const base: number = sphereIndex * 32;
 //              const base: number = sphereIndex * 32;
                 _spheresStorageValuesDataView.setFloat32(base + 0, center[0], true);
@@ -354,10 +348,10 @@
 //          return;
         }
 //      }
-        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 32) {
-//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 32) {
-            _materialsStorageValues = new ArrayBuffer(_materials.length * 32);
-//          _materialsStorageValues = new ArrayBuffer(_materials.length * 32);
+        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
+//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
+            _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
+//          _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
             _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
 //          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
         }
@@ -378,14 +372,8 @@
             }
             : Material, materialIndex: number): void => {
 //          : Material, materialIndex: number): void => {
-                // [ layer1Roughness:4-bytes | layer0IOR:4-bytes | layer1IOR:4-bytes | textureIndex:4-bytes ] alignment@16-bytes
-                // [ layer1Roughness:4-bytes | layer0IOR:4-bytes | layer1IOR:4-bytes | textureIndex:4-bytes ] alignment@16-bytes
-                // [ materialType:4-bytes    | padding:12-bytes                                             ] alignment@16-bytes
-                // [ materialType:4-bytes    | padding:12-bytes                                             ] alignment@16-bytes
-                // --> total@32-bytes
-                // --> total@32-bytes
-                const base: number = materialIndex * 32;
-//              const base: number = materialIndex * 32;
+                const base: number = materialIndex * 20;
+//              const base: number = materialIndex * 20;
                 _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
 //              _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
                 _materialsStorageValuesDataView.setFloat32(base + 4, layer0IOR, true);
@@ -442,12 +430,6 @@
             }
             : Texture, textureIndex: number): void => {
 //          : Texture, textureIndex: number): void => {
-                // [ albedo:12-bytes     | imageIndex:4-bytes ] alignment@16-bytes
-                // [ albedo:12-bytes     | imageIndex:4-bytes ] alignment@16-bytes
-                // [ textureType:4-bytes | padding:12-bytes   ] alignment@16-bytes
-                // [ textureType:4-bytes | padding:12-bytes   ] alignment@16-bytes
-                // --> total@32-bytes
-                // --> total@32-bytes
                 const base: number = textureIndex * 32;
 //              const base: number = textureIndex * 32;
                 _texturesStorageValuesDataView.setFloat32(base + 0, albedo[0], true);
