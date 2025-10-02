@@ -1,6 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
 //  import { onMount } from "svelte";
+    import { onDestroy } from "svelte";
+//  import { onDestroy } from "svelte";
     import shaderStringRender from "../assets/render.wgsl?raw";
 //  import shaderStringRender from "../assets/render.wgsl?raw";
     import shaderStringCompute from "../assets/compute.wgsl?raw";
@@ -190,10 +192,10 @@
 //  let _renderBindGroup0: GPUBindGroup;
     let _computeBindGroup0: GPUBindGroup;
 //  let _computeBindGroup0: GPUBindGroup;
-    let _texture: GPUTexture;
-//  let _texture: GPUTexture;
-    let _sampler: GPUSampler;
-//  let _sampler: GPUSampler;
+    let _outputTexture: GPUTexture;
+//  let _outputTexture: GPUTexture;
+    let _outputSampler: GPUSampler;
+//  let _outputSampler: GPUSampler;
     let _samplesPerPixel: number = $state(100.0);
 //  let _samplesPerPixel: number = $state(100.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
@@ -534,12 +536,48 @@
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
 //          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        _sampler = _device.createSampler({
-//      _sampler = _device.createSampler({
+        _hdriSampler = _device.createSampler({
+//      _hdriSampler = _device.createSampler({
             magFilter: "linear",
 //          magFilter: "linear",
             minFilter: "linear",
 //          minFilter: "linear",
+        });
+        _atlasSampler = _device.createSampler({
+//      _atlasSampler = _device.createSampler({
+            magFilter: "linear",
+//          magFilter: "linear",
+            minFilter: "linear",
+//          minFilter: "linear",
+        });
+        _outputSampler = _device.createSampler({
+//      _outputSampler = _device.createSampler({
+            magFilter: "linear",
+//          magFilter: "linear",
+            minFilter: "linear",
+//          minFilter: "linear",
+        });
+        _hdriTexture = _device.createTexture({
+//      _hdriTexture = _device.createTexture({
+            label: "HDRI_TEXTURE",
+//          label: "HDRI_TEXTURE",
+            size: [ 1, 1, ],
+//          size: [ 1, 1, ],
+            format: "rgba8unorm",
+//          format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING,
+//          usage: GPUTextureUsage.TEXTURE_BINDING,
+        });
+        _atlasTexture = _device.createTexture({
+//      _atlasTexture = _device.createTexture({
+            label: "ATLAS_TEXTURE",
+//          label: "ATLAS_TEXTURE",
+            size: [ 1, 1, ],
+//          size: [ 1, 1, ],
+            format: "rgba8unorm",
+//          format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING,
+//          usage: GPUTextureUsage.TEXTURE_BINDING,
         });
         _isRunning = false;
 //      _isRunning = false;
@@ -632,8 +670,8 @@
 
 
 
-    onMount(async () => {
-//  onMount(async () => {
+    onMount(async (): Promise<void> => {
+//  onMount(async (): Promise<void> => {
         // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
         // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
         // return;
@@ -685,13 +723,13 @@
 //                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
                     _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
 //                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
-                    if (_texture) {
-//                  if (_texture) {
-                        _texture.destroy();
-//                      _texture.destroy();
+                    if (_outputTexture) {
+//                  if (_outputTexture) {
+                        _outputTexture.destroy();
+//                      _outputTexture.destroy();
                     }
-                    _texture = _device.createTexture({
-//                  _texture = _device.createTexture({
+                    _outputTexture = _device.createTexture({
+//                  _outputTexture = _device.createTexture({
                         label: "OUTPUT_TEXTURE",
 //                      label: "OUTPUT_TEXTURE",
                         size: [ _canvas.width, _canvas.height, ],
@@ -701,8 +739,8 @@
                         usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
                     });
-                    const textureView: GPUTextureView = _texture.createView();
-//                  const textureView: GPUTextureView = _texture.createView();
+                    const outputTextureView: GPUTextureView = _outputTexture.createView();
+//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
                     _renderBindGroup0 = _device.createBindGroup({
 //                  _renderBindGroup0 = _device.createBindGroup({
                         label: "GPU_BIND_GROUP_0_RENDER",
@@ -714,14 +752,14 @@
                             {
                                 binding: 0,
 //                              binding: 0,
-                                resource: _sampler,
-//                              resource: _sampler,
+                                resource: _outputSampler,
+//                              resource: _outputSampler,
                             },
                             {
                                 binding: 1,
 //                              binding: 1,
-                                resource: textureView,
-//                              resource: textureView,
+                                resource: outputTextureView,
+//                              resource: outputTextureView,
                             },
                         ],
                     });
@@ -742,8 +780,8 @@
                             {
                                 binding: 1,
 //                              binding: 1,
-                                resource: textureView,
-//                              resource: textureView,
+                                resource: outputTextureView,
+//                              resource: outputTextureView,
                             },
                         ],
                     });
@@ -764,7 +802,61 @@
     });
 
 
-    
+
+    onDestroy(async (): Promise<void> => {
+//  onDestroy(async (): Promise<void> => {
+        if (_outputTexture) {
+//      if (_outputTexture) {
+            _outputTexture.destroy();
+//          _outputTexture.destroy();
+        }
+//      }
+        if (_atlasTexture) {
+//      if (_atlasTexture) {
+            _atlasTexture.destroy();
+//          _atlasTexture.destroy();
+        }
+//      }
+        if (_hdriTexture) {
+//      if (_hdriTexture) {
+            _hdriTexture.destroy();
+//          _hdriTexture.destroy();
+        }
+//      }
+        if (_texturesStorageBuffer) {
+//      if (_texturesStorageBuffer) {
+            _texturesStorageBuffer.destroy();
+//          _texturesStorageBuffer.destroy();
+        }
+//      }
+        if (_materialsStorageBuffer) {
+//      if (_materialsStorageBuffer) {
+            _materialsStorageBuffer.destroy();
+//          _materialsStorageBuffer.destroy();
+        }
+//      }
+        if (_spheresStorageBuffer) {
+//      if (_spheresStorageBuffer) {
+            _spheresStorageBuffer.destroy();
+//          _spheresStorageBuffer.destroy();
+        }
+//      }
+        if (_dataStorageBuffer) {
+//      if (_dataStorageBuffer) {
+            _dataStorageBuffer.destroy();
+//          _dataStorageBuffer.destroy();
+        }
+//      }
+        if (_device) {
+//      if (_device) {
+            _device.destroy();
+//          _device.destroy();
+        }
+//      }
+    });
+
+
+
     const render = (): void => {
 //  const render = (): void => {
         (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
@@ -839,4 +931,9 @@
     
 </script>
 
-<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>
+<!--<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>-->
+    <canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>
+<!--<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>-->
+<!--<svelte:options runes={true}></svelte:options>-->
+    <svelte:options runes={true}></svelte:options>
+<!--<svelte:options runes={true}></svelte:options>-->

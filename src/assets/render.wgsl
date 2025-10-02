@@ -48,10 +48,10 @@
 //      vec2<f32>(1.0, 0.0),
     );
 
-    @group(0) @binding(0) var textureSampler: sampler;
-//  @group(0) @binding(0) var textureSampler: sampler;
-    @group(0) @binding(1) var texture: texture_2d<f32>;
-//  @group(0) @binding(1) var texture: texture_2d<f32>;
+    @group(0) @binding(0) var outputSampler: sampler;
+//  @group(0) @binding(0) var outputSampler: sampler;
+    @group(0) @binding(1) var outputTexture: texture_2d<f32>;
+//  @group(0) @binding(1) var outputTexture: texture_2d<f32>;
 
     @vertex fn vertexShader(@builtin(vertex_index) vertexIndex : u32) -> VertexShaderOutput
 //  @vertex fn vertexShader(@builtin(vertex_index) vertexIndex : u32) -> VertexShaderOutput
@@ -69,6 +69,6 @@
     @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
 //  @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
 {
-    return textureSample(texture, textureSampler, fragmentShaderInput.uv);
-//  return textureSample(texture, textureSampler, fragmentShaderInput.uv);
+    return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
+//  return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
 };
