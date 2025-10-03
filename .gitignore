@@ -47,3 +47,8 @@ dist-ssr
 
 package-lock.json
 package-lock.json
+
+helper_server/__pycache__/*
+helper_server/__pycache__/*
+helper_server/venv/*
+helper_server/venv/*

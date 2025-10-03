@@ -1,0 +1,16 @@
+fastapi[all]
+fastapi[all]
+uvicorn
+uvicorn
+pyvips-binary
+pyvips-binary
+pyvips
+pyvips
+numpy
+numpy
+python-multipart
+python-multipart
+OpenEXR
+OpenEXR
+Imath
+Imath
