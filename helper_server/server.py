@@ -9,6 +9,8 @@
 
 # which python
 # which python
+# Get-Command python
+# Get-Command python
 
 # cd helper_server; .\venv/Scripts/activate.ps1
 # cd helper_server; .\venv/Scripts/activate.ps1
@@ -36,8 +38,8 @@
 #
 # 2. Install dependencies:
 # 2. Install dependencies:
-#    pip install -r requirements.txt
-#    pip install -r requirements.txt
+#    pip install -r requirements.txt -q
+#    pip install -r requirements.txt -q
 #
 #
 # 3. Start the server:

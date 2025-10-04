@@ -1,18 +1,18 @@
 <script lang="ts">
-    let file: File | null = null;
-//  let file: File | null = null;
-    let canvas: HTMLCanvasElement;
-//  let canvas: HTMLCanvasElement;
+    let _file: File | null = $state(null);
+//  let _file: File | null = $state(null);
+    let _canvas: HTMLCanvasElement;
+//  let _canvas: HTMLCanvasElement;
 
     async function upload() {
 //  async function upload() {
-        if (!file) return;
-//      if (!file) return;
+        if (!_file) return;
+//      if (!_file) return;
 
         const formData = new FormData();
 //      const formData = new FormData();
-        formData.append("file", file);
-//      formData.append("file", file);
+        formData.append("file", _file);
+//      formData.append("file", _file);
 
         const response = await fetch("http://127.0.0.1:8000/process-image", {
 //      const response = await fetch("http://127.0.0.1:8000/process-image", {
@@ -70,28 +70,40 @@
 //          out[i * 4 + 3] = 255;
         }
 
-        const ctx = canvas.getContext("2d");
-//      const ctx = canvas.getContext("2d");
+        const ctx = _canvas.getContext("2d");
+//      const ctx = _canvas.getContext("2d");
         if (ctx) {
 //      if (ctx) {
             const imageData = new ImageData(out, width, height);
 //          const imageData = new ImageData(out, width, height);
-            canvas.width = width;
-//          canvas.width = width;
-            canvas.height = height;
-//          canvas.height = height;
+            _canvas.width = width;
+//          _canvas.width = width;
+            _canvas.height = height;
+//          _canvas.height = height;
             ctx.putImageData(imageData, 0, 0);
 //          ctx.putImageData(imageData, 0, 0);
         }
     }
 </script>
 
-<!--<input type="file" on:change={(e: any) => (file = e.target.files[0])} />-->
-    <input type="file" on:change={(e: any) => (file = e.target.files[0])} />
-<!--<input type="file" on:change={(e: any) => (file = e.target.files[0])} />-->
-<!--<button on:click={upload}>Upload & Render</button>-->
-    <button on:click={upload}>Upload & Render</button>
-<!--<button on:click={upload}>Upload & Render</button>-->
-<!--<canvas bind:this={canvas}></canvas>-->
-    <canvas bind:this={canvas}></canvas>
-<!--<canvas bind:this={canvas}></canvas>-->
+    <br/>
+    <br/>
+<!--<button class="large-elevate circle"><i>attach_file</i><input type="file" onchange={(e: any) => (_file = e.target.files[0])} /></button>-->
+    <button class="large-elevate circle"><i>attach_file</i><input type="file" onchange={(e: any) => (_file = e.target.files[0])} /></button>
+<!--<button class="large-elevate circle"><i>attach_file</i><input type="file" onchange={(e: any) => (_file = e.target.files[0])} /></button>-->
+    <br/>
+    <br/>
+<!--<button class="large-elevate" style:width="200px" onclick={upload}>Upload & Render</button>-->
+    <button class="large-elevate" style:width="200px" onclick={upload}>Upload & Render</button>
+<!--<button class="large-elevate" style:width="200px" onclick={upload}>Upload & Render</button>-->
+    <br/>
+    <br/>
+<!--<canvas class="large-elevate" width="960px" height="540px" style:width="960px" style:height="540px" bind:this={_canvas}></canvas>-->
+    <canvas class="large-elevate" width="960px" height="540px" style:width="960px" style:height="540px" bind:this={_canvas}></canvas>
+<!--<canvas class="large-elevate" width="960px" height="540px" style:width="960px" style:height="540px" bind:this={_canvas}></canvas>-->
+    <br/>
+    <br/>
+
+<!--<svelte:options runes={true}></svelte:options>-->
+    <svelte:options runes={true}></svelte:options>
+<!--<svelte:options runes={true}></svelte:options>-->

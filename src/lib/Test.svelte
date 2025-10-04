@@ -931,9 +931,9 @@
     
 </script>
 
-<!--<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>-->
-    <canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>
-<!--<canvas bind:this={_canvas} style:width="960px" style:height="540px" style:display="block"></canvas>-->
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+    <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
 <!--<svelte:options runes={true}></svelte:options>-->
     <svelte:options runes={true}></svelte:options>
 <!--<svelte:options runes={true}></svelte:options>-->
