@@ -3,10 +3,12 @@
 //  import { onMount } from "svelte";
     import { onDestroy } from "svelte";
 //  import { onDestroy } from "svelte";
-    import shaderStringRender from "../assets/render.wgsl?raw";
-//  import shaderStringRender from "../assets/render.wgsl?raw";
     import shaderStringCompute from "../assets/compute.wgsl?raw";
 //  import shaderStringCompute from "../assets/compute.wgsl?raw";
+    import shaderStringGather from "../assets/gather.wgsl?raw";
+//  import shaderStringGather from "../assets/gather.wgsl?raw";
+    import shaderStringRender from "../assets/render.wgsl?raw";
+//  import shaderStringRender from "../assets/render.wgsl?raw";
     import * as m from "mathjs";
 //  import * as m from "mathjs";
 
@@ -128,26 +130,46 @@
 //  let _canvasContext: GPUCanvasContext;
     let _presentationFormat: GPUTextureFormat;
 //  let _presentationFormat: GPUTextureFormat;
-    let _renderShaderModule: GPUShaderModule;
-//  let _renderShaderModule: GPUShaderModule;
     let _computeShaderModule: GPUShaderModule;
 //  let _computeShaderModule: GPUShaderModule;
-    let _renderPipeline: GPURenderPipeline;
-//  let _renderPipeline: GPURenderPipeline;
+    let _gatherShaderModule: GPUShaderModule;
+//  let _gatherShaderModule: GPUShaderModule;
+    let _renderShaderModule: GPUShaderModule;
+//  let _renderShaderModule: GPUShaderModule;
+    let _computeBindGroupLayout0: GPUBindGroupLayout | null;
+//  let _computeBindGroupLayout0: GPUBindGroupLayout | null;
+    let _gatherBindGroupLayout0: GPUBindGroupLayout | null;
+//  let _gatherBindGroupLayout0: GPUBindGroupLayout | null;
+    let _renderBindGroupLayout0: GPUBindGroupLayout | null;
+//  let _renderBindGroupLayout0: GPUBindGroupLayout | null;
+    let _computePipelineLayout: GPUPipelineLayout | "auto";
+//  let _computePipelineLayout: GPUPipelineLayout | "auto";
+    let _gatherPipelineLayout: GPUPipelineLayout | "auto";
+//  let _gatherPipelineLayout: GPUPipelineLayout | "auto";
+    let _renderPipelineLayout: GPUPipelineLayout | "auto";
+//  let _renderPipelineLayout: GPUPipelineLayout | "auto";
     let _computePipeline: GPUComputePipeline;
 //  let _computePipeline: GPUComputePipeline;
+    let _gatherPipeline: GPUComputePipeline;
+//  let _gatherPipeline: GPUComputePipeline;
+    let _renderPipeline: GPURenderPipeline;
+//  let _renderPipeline: GPURenderPipeline;
     let _commandEncoderDescriptor: GPUCommandEncoderDescriptor;
 //  let _commandEncoderDescriptor: GPUCommandEncoderDescriptor;
-    let _renderPassDescriptor: GPURenderPassDescriptor;
-//  let _renderPassDescriptor: GPURenderPassDescriptor;
     let _computePassDescriptor: GPUComputePassDescriptor;
 //  let _computePassDescriptor: GPUComputePassDescriptor;
+    let _gatherPassDescriptor: GPUComputePassDescriptor;
+//  let _gatherPassDescriptor: GPUComputePassDescriptor;
+    let _renderPassDescriptor: GPURenderPassDescriptor;
+//  let _renderPassDescriptor: GPURenderPassDescriptor;
     let _commandEncoder: GPUCommandEncoder;
 //  let _commandEncoder: GPUCommandEncoder;
-    let _renderPass: GPURenderPassEncoder;
-//  let _renderPass: GPURenderPassEncoder;
     let _computePass: GPUComputePassEncoder;
 //  let _computePass: GPUComputePassEncoder;
+    let _gatherPass: GPUComputePassEncoder;
+//  let _gatherPass: GPUComputePassEncoder;
+    let _renderPass: GPURenderPassEncoder;
+//  let _renderPass: GPURenderPassEncoder;
     let _commandBuffer: GPUCommandBuffer;
 //  let _commandBuffer: GPUCommandBuffer;
     let _resizeObserver: ResizeObserver;
@@ -172,10 +194,6 @@
 //  let _materialsStorageBuffer: GPUBuffer;
     let _materials: Material[] = $state([]);
 //  let _materials: Material[] = $state([]);
-    let _hdriSampler: GPUSampler;
-//  let _hdriSampler: GPUSampler;
-    let _hdriTexture: GPUTexture;
-//  let _hdriTexture: GPUTexture;
     let _texturesStorageValuesDataView: DataView;
 //  let _texturesStorageValuesDataView: DataView;
     let _texturesStorageValues: ArrayBuffer;
@@ -188,10 +206,18 @@
 //  let _atlasSampler: GPUSampler;
     let _atlasTexture: GPUTexture;
 //  let _atlasTexture: GPUTexture;
-    let _renderBindGroup0: GPUBindGroup;
-//  let _renderBindGroup0: GPUBindGroup;
+    let _hdriSampler: GPUSampler;
+//  let _hdriSampler: GPUSampler;
+    let _hdriTexture: GPUTexture;
+//  let _hdriTexture: GPUTexture;
     let _computeBindGroup0: GPUBindGroup;
 //  let _computeBindGroup0: GPUBindGroup;
+    let _gatherBindGroup0: GPUBindGroup;
+//  let _gatherBindGroup0: GPUBindGroup;
+    let _renderBindGroup0: GPUBindGroup;
+//  let _renderBindGroup0: GPUBindGroup;
+    let _outputStorage: GPUBuffer;
+//  let _outputStorage: GPUBuffer;
     let _outputTexture: GPUTexture;
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
@@ -258,6 +284,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
     let _isRunning: boolean;
 //  let _isRunning: boolean;
     let _frameHandle: number;
@@ -286,8 +314,8 @@
 //          }
             _spheresStorageBuffer = _device.createBuffer({
 //          _spheresStorageBuffer = _device.createBuffer({
-                label: "SPHERES_STORAGE_BUFFER",
-//              label: "SPHERES_STORAGE_BUFFER",
+                label: "GPU_STORAGE_BUFFER_SPHERES",
+//              label: "GPU_STORAGE_BUFFER_SPHERES",
                 size: _spheresStorageValues.byteLength,
 //              size: _spheresStorageValues.byteLength,
                 usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -342,8 +370,8 @@
 //          }
             _materialsStorageBuffer = _device.createBuffer({
 //          _materialsStorageBuffer = _device.createBuffer({
-                label: "MATERIALS_STORAGE_BUFFER",
-//              label: "MATERIALS_STORAGE_BUFFER",
+                label: "GPU_STORAGE_BUFFER_MATERIALS",
+//              label: "GPU_STORAGE_BUFFER_MATERIALS",
                 size: _materialsStorageValues.byteLength,
 //              size: _materialsStorageValues.byteLength,
                 usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -402,8 +430,8 @@
 //          }
             _texturesStorageBuffer = _device.createBuffer({
 //          _texturesStorageBuffer = _device.createBuffer({
-                label: "TEXTURES_STORAGE_BUFFER",
-//              label: "TEXTURES_STORAGE_BUFFER",
+                label: "GPU_STORAGE_BUFFER_TEXTURES",
+//              label: "GPU_STORAGE_BUFFER_TEXTURES",
                 size: _texturesStorageValues.byteLength,
 //              size: _texturesStorageValues.byteLength,
                 usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
@@ -457,13 +485,6 @@
 //      _presentationFormat = navigator.gpu.getPreferredCanvasFormat();
         _canvasContext.configure({ device: _device, format: _presentationFormat, });
 //      _canvasContext.configure({ device: _device, format: _presentationFormat, });
-        _renderShaderModule = _device.createShaderModule({
-//      _renderShaderModule = _device.createShaderModule({
-            label: "GPU_SHADER_MODULE_RENDER",
-//          label: "GPU_SHADER_MODULE_RENDER",
-            code: shaderStringRender,
-//          code: shaderStringRender,
-        });
         _computeShaderModule = _device.createShaderModule({
 //      _computeShaderModule = _device.createShaderModule({
             label: "GPU_SHADER_MODULE_COMPUTE",
@@ -471,43 +492,139 @@
             code: shaderStringCompute,
 //          code: shaderStringCompute,
         });
-        _renderPipeline = await _device.createRenderPipelineAsync({
-//      _renderPipeline = await _device.createRenderPipelineAsync({
-            label: "GPU_RENDER_PIPELINE",
-//          label: "GPU_RENDER_PIPELINE",
-            layout: "auto",
-//          layout: "auto",
-            vertex: {
-//          vertex: {
-                module: _renderShaderModule,
-//              module: _renderShaderModule,
-            },
-            fragment: {
-//          fragment: {
-                module: _renderShaderModule,
-//              module: _renderShaderModule,
-                targets: [{ format: _presentationFormat }],
-//              targets: [{ format: _presentationFormat }],
-            },
+//      });
+        _gatherShaderModule = _device.createShaderModule({
+//      _gatherShaderModule = _device.createShaderModule({
+            label: "GPU_SHADER_MODULE_GATHER",
+//          label: "GPU_SHADER_MODULE_GATHER",
+            code: shaderStringGather,
+//          code: shaderStringGather,
         });
+//      });
+        _renderShaderModule = _device.createShaderModule({
+//      _renderShaderModule = _device.createShaderModule({
+            label: "GPU_SHADER_MODULE_RENDER",
+//          label: "GPU_SHADER_MODULE_RENDER",
+            code: shaderStringRender,
+//          code: shaderStringRender,
+        });
+//      });
+        _computeBindGroupLayout0 = _device.createBindGroupLayout({
+//      _computeBindGroupLayout0 = _device.createBindGroupLayout({
+            label: "GPU_BIND_GROUP_LAYOUT_0_COMPUTE",
+//          label: "GPU_BIND_GROUP_LAYOUT_0_COMPUTE",
+            entries: [
+//          entries: [
+                { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
+//              { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
+                { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 5, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+//              { binding: 5, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+                { binding: 6, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+//              { binding: 6, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+                { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+//              { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+                { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+//              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+            ],
+//          ],
+        });
+//      });
+        _gatherBindGroupLayout0 = null;
+//      _gatherBindGroupLayout0 = null;
+        _renderBindGroupLayout0 = null;
+//      _renderBindGroupLayout0 = null;
+        _computePipelineLayout = _device.createPipelineLayout({
+//      _computePipelineLayout = _device.createPipelineLayout({
+            label: "GPU_PIPELINE_LAYOUT_COMPUTE",
+//          label: "GPU_PIPELINE_LAYOUT_COMPUTE",
+            bindGroupLayouts: [
+//          bindGroupLayouts: [
+                _computeBindGroupLayout0,
+//              _computeBindGroupLayout0,
+            ],
+//          ],
+        });
+//      });
+        _gatherPipelineLayout = "auto";
+//      _gatherPipelineLayout = "auto";
+        _renderPipelineLayout = "auto";
+//      _renderPipelineLayout = "auto";
         _computePipeline = await _device.createComputePipelineAsync({
 //      _computePipeline = await _device.createComputePipelineAsync({
-            label: "GPU_COMPUTE_PIPELINE",
-//          label: "GPU_COMPUTE_PIPELINE",
-            layout: "auto",
-//          layout: "auto",
+            label: "GPU_PIPELINE_COMPUTE",
+//          label: "GPU_PIPELINE_COMPUTE",
+            layout: _computePipelineLayout,
+//          layout: _computePipelineLayout,
             compute: {
 //          compute: {
                 module: _computeShaderModule,
 //              module: _computeShaderModule,
+                entryPoint: "main",
+//              entryPoint: "main",
             },
+//          },
         });
-        _commandEncoderDescriptor = { label: "GPU_COMMAND_ENCODER", };
-//      _commandEncoderDescriptor = { label: "GPU_COMMAND_ENCODER", };
+//      });
+        _gatherPipeline = await _device.createComputePipelineAsync({
+//      _gatherPipeline = await _device.createComputePipelineAsync({
+            label: "GPU_PIPELINE_GATHER",
+//          label: "GPU_PIPELINE_GATHER",
+            layout: _gatherPipelineLayout,
+//          layout: _gatherPipelineLayout,
+            compute: {
+//          compute: {
+                module: _gatherShaderModule,
+//              module: _gatherShaderModule,
+                entryPoint: "main",
+//              entryPoint: "main",
+            },
+//          },
+        });
+//      });
+        _renderPipeline = await _device.createRenderPipelineAsync({
+//      _renderPipeline = await _device.createRenderPipelineAsync({
+            label: "GPU_PIPELINE_RENDER",
+//          label: "GPU_PIPELINE_RENDER",
+            layout: _renderPipelineLayout,
+//          layout: _renderPipelineLayout,
+            vertex: {
+//          vertex: {
+                module: _renderShaderModule,
+//              module: _renderShaderModule,
+                entryPoint: "vertexShader",
+//              entryPoint: "vertexShader",
+            },
+//          },
+            fragment: {
+//          fragment: {
+                module: _renderShaderModule,
+//              module: _renderShaderModule,
+                entryPoint: "fragmentShader",
+//              entryPoint: "fragmentShader",
+                targets: [{ format: _presentationFormat }],
+//              targets: [{ format: _presentationFormat }],
+            },
+//          },
+        });
+//      });
+        _commandEncoderDescriptor = { label: "GPU_COMMAND_ENCODER_DESCRIPTOR", };
+//      _commandEncoderDescriptor = { label: "GPU_COMMAND_ENCODER_DESCRIPTOR", };
+        _computePassDescriptor = { label: "GPU_PASS_DESCRIPTOR_COMPUTE", };
+//      _computePassDescriptor = { label: "GPU_PASS_DESCRIPTOR_COMPUTE", };
+        _gatherPassDescriptor = { label: "GPU_PASS_DESCRIPTOR_GATHER", };
+//      _gatherPassDescriptor = { label: "GPU_PASS_DESCRIPTOR_GATHER", };
         _renderPassDescriptor = {
 //      _renderPassDescriptor = {
-            label: "GPU_RENDER_PASS_DESCRIPTOR",
-//          label: "GPU_RENDER_PASS_DESCRIPTOR",
+            label: "GPU_PASS_DESCRIPTOR_RENDER",
+//          label: "GPU_PASS_DESCRIPTOR_RENDER",
             colorAttachments: [
 //          colorAttachments: [
                 {
@@ -519,30 +636,23 @@
 //                  loadOp: "clear",
                     storeOp: "store",
 //                  storeOp: "store",
-                },
+                }
             ] as GPURenderPassColorAttachment[],
 //          ] as GPURenderPassColorAttachment[],
         };
-        _computePassDescriptor = { label: "GPU_COMPUTE_PASS_DESCRIPTOR", };
-//      _computePassDescriptor = { label: "GPU_COMPUTE_PASS_DESCRIPTOR", };
+//      };
         _dataStorageValues = new Float32Array(5 * 4); // 5 * vec4<f32>
 //      _dataStorageValues = new Float32Array(5 * 4); // 5 * vec4<f32>
         _dataStorageBuffer = _device.createBuffer({
 //      _dataStorageBuffer = _device.createBuffer({
-            label: "DATA_STORAGE_BUFFER",
-//          label: "DATA_STORAGE_BUFFER",
+            label: "GPU_STORAGE_BUFFER_DATA",
+//          label: "GPU_STORAGE_BUFFER_DATA",
             size: _dataStorageValues.byteLength,
 //          size: _dataStorageValues.byteLength,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
 //          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
         });
-        _hdriSampler = _device.createSampler({
-//      _hdriSampler = _device.createSampler({
-            magFilter: "linear",
-//          magFilter: "linear",
-            minFilter: "linear",
-//          minFilter: "linear",
-        });
+//      });
         _atlasSampler = _device.createSampler({
 //      _atlasSampler = _device.createSampler({
             magFilter: "linear",
@@ -550,6 +660,15 @@
             minFilter: "linear",
 //          minFilter: "linear",
         });
+//      });
+        _hdriSampler = _device.createSampler({
+//      _hdriSampler = _device.createSampler({
+            magFilter: "linear",
+//          magFilter: "linear",
+            minFilter: "linear",
+//          minFilter: "linear",
+        });
+//      });
         _outputSampler = _device.createSampler({
 //      _outputSampler = _device.createSampler({
             magFilter: "linear",
@@ -557,21 +676,11 @@
             minFilter: "linear",
 //          minFilter: "linear",
         });
-        _hdriTexture = _device.createTexture({
-//      _hdriTexture = _device.createTexture({
-            label: "HDRI_TEXTURE",
-//          label: "HDRI_TEXTURE",
-            size: [ 1, 1, ],
-//          size: [ 1, 1, ],
-            format: "rgba8unorm",
-//          format: "rgba8unorm",
-            usage: GPUTextureUsage.TEXTURE_BINDING,
-//          usage: GPUTextureUsage.TEXTURE_BINDING,
-        });
+//      });
         _atlasTexture = _device.createTexture({
 //      _atlasTexture = _device.createTexture({
-            label: "ATLAS_TEXTURE",
-//          label: "ATLAS_TEXTURE",
+            label: "GPU_TEXTURE_ATLAS",
+//          label: "GPU_TEXTURE_ATLAS",
             size: [ 1, 1, ],
 //          size: [ 1, 1, ],
             format: "rgba8unorm",
@@ -579,11 +688,174 @@
             usage: GPUTextureUsage.TEXTURE_BINDING,
 //          usage: GPUTextureUsage.TEXTURE_BINDING,
         });
+//      });
+        _hdriTexture = _device.createTexture({
+//      _hdriTexture = _device.createTexture({
+            label: "GPU_TEXTURE_HDRI",
+//          label: "GPU_TEXTURE_HDRI",
+            size: [ 1, 1, ],
+//          size: [ 1, 1, ],
+            format: "rgba8unorm",
+//          format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING,
+//          usage: GPUTextureUsage.TEXTURE_BINDING,
+        });
+//      });
+        _spheres.push(
+//      _spheres.push(
+            {
+//          {
+                center: [ +0.0, -1020.0, +0.0 ],
+//              center: [ +0.0, -1020.0, +0.0 ],
+                radius: 1000.0,
+//              radius: 1000.0,
+                materialIndex: 0,
+//              materialIndex: 0,
+            },
+//          },
+            {
+//          {
+                center: [ +10.0, -12.0, -10.0 ],
+//              center: [ +10.0, -12.0, -10.0 ],
+                radius: 8.0,
+//              radius: 8.0,
+                materialIndex: 1,
+//              materialIndex: 1,
+
+            },
+//          },
+            {
+//          {
+                center: [ -10.0, -12.0, +10.0 ],
+//              center: [ -10.0, -12.0, +10.0 ],
+                radius: 8.0,
+//              radius: 8.0,
+                materialIndex: 2,
+//              materialIndex: 2,
+            },
+//          },
+            {
+//          {
+                center: [ +10.0, -12.0, +10.0 ],
+//              center: [ +10.0, -12.0, +10.0 ],
+                radius: 8.0,
+//              radius: 8.0,
+                materialIndex: 3,
+//              materialIndex: 3,
+            },
+//          },
+        );
+//      );
+        _materials.push(
+//      _materials.push(
+            {
+//          {
+                layer0IOR: RefractiveIndex.AIR,
+//              layer0IOR: RefractiveIndex.AIR,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
+                textureIndex: 0,
+//              textureIndex: 0,
+            },
+//          },
+            {
+//          {
+                layer0IOR: RefractiveIndex.AIR,
+//              layer0IOR: RefractiveIndex.AIR,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                materialType: MaterialType.METAL,
+//              materialType: MaterialType.METAL,
+                textureIndex: 1,
+//              textureIndex: 1,
+            },
+//          },
+            {
+//          {
+                layer0IOR: RefractiveIndex.AIR,
+//              layer0IOR: RefractiveIndex.AIR,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                materialType: MaterialType.METAL,
+//              materialType: MaterialType.METAL,
+                textureIndex: 2,
+//              textureIndex: 2,
+            },
+//          },
+            {
+//          {
+                layer0IOR: RefractiveIndex.AIR,
+//              layer0IOR: RefractiveIndex.AIR,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                materialType: MaterialType.METAL,
+//              materialType: MaterialType.METAL,
+                textureIndex: 3,
+//              textureIndex: 3,
+            },
+//          },
+        );
+//      );
+        _textures.push(
+//      _textures.push(
+            {
+//          {
+                albedo: [ 0.5, 0.5, 0.5 ],
+//              albedo: [ 0.5, 0.5, 0.5 ],
+                imageIndex: 0,
+//              imageIndex: 0,
+                textureType: TextureType.COLOR,
+//              textureType: TextureType.COLOR,
+            },
+//          },
+            {
+//          {
+                albedo: [ 0.5, 0.5, 1.0 ],
+//              albedo: [ 0.5, 0.5, 1.0 ],
+                imageIndex: 1,
+//              imageIndex: 1,
+                textureType: TextureType.COLOR,
+//              textureType: TextureType.COLOR,
+            },
+//          },
+            {
+//          {
+                albedo: [ 1.0, 0.5, 0.0 ],
+//              albedo: [ 1.0, 0.5, 0.0 ],
+                imageIndex: 2,
+//              imageIndex: 2,
+                textureType: TextureType.COLOR,
+//              textureType: TextureType.COLOR,
+            },
+//          },
+            {
+//          {
+                albedo: [ 0.0, 1.0, 0.5 ],
+//              albedo: [ 0.0, 1.0, 0.5 ],
+                imageIndex: 3,
+//              imageIndex: 3,
+                textureType: TextureType.COLOR,
+//              textureType: TextureType.COLOR,
+            },
+//          },
+        );
+//      );
         _isRunning = false;
 //      _isRunning = false;
         _frameHandle = null!;
 //      _frameHandle = null!;
     };
+//  };
 
 
 
@@ -681,6 +953,12 @@
         await initOnce();
 //      await initOnce();
 
+        prepareSpheres();
+//      prepareSpheres();
+        prepareMaterials();
+//      prepareMaterials();
+        prepareTextures();
+//      prepareTextures();
 
         _resizeObserver = new ResizeObserver(
 //      _resizeObserver = new ResizeObserver(
@@ -697,6 +975,7 @@
                         return;
 //                      return;
                     }
+//                  }
                     const width : number = entry.contentBoxSize[0].inlineSize;
 //                  const width : number = entry.contentBoxSize[0].inlineSize;
                     const height: number = entry.contentBoxSize[0]. blockSize;
@@ -708,6 +987,7 @@
                         Math.min(width, _device.limits.maxTextureDimension2D),
 //                      Math.min(width, _device.limits.maxTextureDimension2D),
                     );
+//                  );
                     entryAsCanvas.height = Math.max(
 //                  entryAsCanvas.height = Math.max(
                         1,
@@ -715,6 +995,7 @@
                         Math.min(height, _device.limits.maxTextureDimension2D),
 //                      Math.min(height, _device.limits.maxTextureDimension2D),
                     );
+//                  );
 //                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
 //                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
                     _viewportW = _viewportH * _canvas.width / _canvas.height;
@@ -723,46 +1004,48 @@
 //                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
                     _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
 //                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+                    if (_outputStorage) {
+//                  if (_outputStorage) {
+                        _outputStorage.destroy();
+//                      _outputStorage.destroy();
+                    }
+//                  }
+                    _outputStorage = _device.createBuffer({
+//                  _outputStorage = _device.createBuffer({
+                        label: "GPU_STORAGE_OUTPUT",
+//                      label: "GPU_STORAGE_OUTPUT",
+                        size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+//                      size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+                        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+//                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+                    });
+//                  });
+                    _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+//                  _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
                     if (_outputTexture) {
 //                  if (_outputTexture) {
                         _outputTexture.destroy();
 //                      _outputTexture.destroy();
                     }
+//                  }
                     _outputTexture = _device.createTexture({
 //                  _outputTexture = _device.createTexture({
-                        label: "OUTPUT_TEXTURE",
-//                      label: "OUTPUT_TEXTURE",
+                        label: "GPU_TEXTURE_OUTPUT",
+//                      label: "GPU_TEXTURE_OUTPUT",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
                         format: "rgba8unorm",
 //                      format: "rgba8unorm",
-                        usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
-//                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING, /* fragment shader samples */
+                        usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
+//                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
-                    const outputTextureView: GPUTextureView = _outputTexture.createView();
+//                  });
+//                  const atlasTextureView: GPUTextureView = _atlasTexture.createView();
+//                  const atlasTextureView: GPUTextureView = _atlasTexture.createView();
+//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
+//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
 //                  const outputTextureView: GPUTextureView = _outputTexture.createView();
-                    _renderBindGroup0 = _device.createBindGroup({
-//                  _renderBindGroup0 = _device.createBindGroup({
-                        label: "GPU_BIND_GROUP_0_RENDER",
-//                      label: "GPU_BIND_GROUP_0_RENDER",
-                        layout: _renderPipeline.getBindGroupLayout(0),
-//                      layout: _renderPipeline.getBindGroupLayout(0),
-                        entries: [
-//                      entries: [
-                            {
-                                binding: 0,
-//                              binding: 0,
-                                resource: _outputSampler,
-//                              resource: _outputSampler,
-                            },
-                            {
-                                binding: 1,
-//                              binding: 1,
-                                resource: outputTextureView,
-//                              resource: outputTextureView,
-                            },
-                        ],
-                    });
+//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
                     _computeBindGroup0 = _device.createBindGroup({
 //                  _computeBindGroup0 = _device.createBindGroup({
                         label: "GPU_BIND_GROUP_0_COMPUTE",
@@ -772,20 +1055,155 @@
                         entries: [
 //                      entries: [
                             {
+//                          {
                                 binding: 0,
 //                              binding: 0,
                                 resource: _dataStorageBuffer,
 //                              resource: _dataStorageBuffer,
                             },
+//                          },
                             {
+//                          {
                                 binding: 1,
 //                              binding: 1,
-                                resource: outputTextureView,
-//                              resource: outputTextureView,
+                                resource: _outputStorage,
+//                              resource: _outputStorage,
                             },
+//                          },
+                            {
+//                          {
+                                binding: 2,
+//                              binding: 2,
+                                resource: _spheresStorageBuffer,
+//                              resource: _spheresStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 3,
+//                              binding: 3,
+                                resource: _materialsStorageBuffer,
+//                              resource: _materialsStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 4,
+//                              binding: 4,
+                                resource: _texturesStorageBuffer,
+//                              resource: _texturesStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 5,
+//                              binding: 5,
+                                resource: _atlasSampler,
+//                              resource: _atlasSampler,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 6,
+//                              binding: 6,
+                                resource: _atlasTexture,
+//                              resource: _atlasTexture,
+//                              resource:  atlasTextureView,
+//                              resource:  atlasTextureView,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 7,
+//                              binding: 7,
+                                resource: _hdriSampler,
+//                              resource: _hdriSampler,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 8,
+//                              binding: 8,
+                                resource: _hdriTexture,
+//                              resource: _hdriTexture,
+//                              resource:  hdriTextureView,
+//                              resource:  hdriTextureView,
+                            },
+//                          },
                         ],
+//                      ],
                     });
+//                  });
+                    _gatherBindGroup0 = _device.createBindGroup({
+//                  _gatherBindGroup0 = _device.createBindGroup({
+                        label: "GPU_BIND_GROUP_0_GATHER",
+//                      label: "GPU_BIND_GROUP_0_GATHER",
+                        layout: _gatherPipeline.getBindGroupLayout(0),
+//                      layout: _gatherPipeline.getBindGroupLayout(0),
+                        entries: [
+//                      entries: [
+                            {
+//                          {
+                                binding: 0,
+//                              binding: 0,
+                                resource: _dataStorageBuffer,
+//                              resource: _dataStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 1,
+//                              binding: 1,
+                                resource: _outputStorage,
+//                              resource: _outputStorage,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 2,
+//                              binding: 2,
+                                resource: _outputTexture,
+//                              resource: _outputTexture,
+//                              resource:  outputTextureView,
+//                              resource:  outputTextureView,
+                            },
+//                          },
+                        ],
+//                      ],
+                    });
+//                  });
+                    _renderBindGroup0 = _device.createBindGroup({
+//                  _renderBindGroup0 = _device.createBindGroup({
+                        label: "GPU_BIND_GROUP_0_RENDER",
+//                      label: "GPU_BIND_GROUP_0_RENDER",
+                        layout: _renderPipeline.getBindGroupLayout(0),
+//                      layout: _renderPipeline.getBindGroupLayout(0),
+                        entries: [
+//                      entries: [
+                            {
+//                          {
+                                binding: 0,
+//                              binding: 0,
+                                resource: _outputSampler,
+//                              resource: _outputSampler,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 1,
+//                              binding: 1,
+                                resource: _outputTexture,
+//                              resource: _outputTexture,
+//                              resource:  outputTextureView,
+//                              resource:  outputTextureView,
+                            },
+//                          },
+                        ],
+//                      ],
+                    });
+//                  });
                 }
+//              }
                 // prepare();
                 // prepare();
                 // render();
@@ -795,11 +1213,13 @@
             },
 //          },
         );
+//      );
 
 
         _resizeObserver.observe(_canvas);
 //      _resizeObserver.observe(_canvas);
     });
+//  });
 
 
 
@@ -811,16 +1231,22 @@
 //          _outputTexture.destroy();
         }
 //      }
-        if (_atlasTexture) {
-//      if (_atlasTexture) {
-            _atlasTexture.destroy();
-//          _atlasTexture.destroy();
+        if (_outputStorage) {
+//      if (_outputStorage) {
+            _outputStorage.destroy();
+//          _outputStorage.destroy();
         }
 //      }
         if (_hdriTexture) {
 //      if (_hdriTexture) {
             _hdriTexture.destroy();
 //          _hdriTexture.destroy();
+        }
+//      }
+        if (_atlasTexture) {
+//      if (_atlasTexture) {
+            _atlasTexture.destroy();
+//          _atlasTexture.destroy();
         }
 //      }
         if (_texturesStorageBuffer) {
@@ -854,6 +1280,7 @@
         }
 //      }
     });
+//  });
 
 
 
@@ -875,6 +1302,18 @@
 //      _computePass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
         _computePass.end();
 //      _computePass.end();
+
+
+        _gatherPass = _commandEncoder.beginComputePass(_gatherPassDescriptor);
+//      _gatherPass = _commandEncoder.beginComputePass(_gatherPassDescriptor);
+        _gatherPass.setPipeline(_gatherPipeline);
+//      _gatherPass.setPipeline(_gatherPipeline);
+        _gatherPass.setBindGroup(0, _gatherBindGroup0);
+//      _gatherPass.setBindGroup(0, _gatherBindGroup0);
+        _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
+//      _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
+        _gatherPass.end();
+//      _gatherPass.end();
 
 
         _renderPass = _commandEncoder.beginRenderPass(_renderPassDescriptor);
@@ -906,16 +1345,16 @@
 //      _dataStorageValues.set(
             [
 //          [
+                _canvas.width, _canvas.height, _stratifiedSamplesPerPixel, _inverseStratifiedSamplesPerPixel,
+//              _canvas.width, _canvas.height, _stratifiedSamplesPerPixel, _inverseStratifiedSamplesPerPixel,
                 ..._cameraCenter, _pixelSamplesScale,
 //              ..._cameraCenter, _pixelSamplesScale,
                 ..._fromPixelToPixelDeltaU, _stratifiedSampleX,
 //              ..._fromPixelToPixelDeltaU, _stratifiedSampleX,
                 ..._fromPixelToPixelDeltaV, _stratifiedSampleY,
 //              ..._fromPixelToPixelDeltaV, _stratifiedSampleY,
-                ..._pixel00Coordinates, _inverseStratifiedSamplesPerPixel,
-//              ..._pixel00Coordinates, _inverseStratifiedSamplesPerPixel,
-                _canvas.width, _canvas.height, 0.0, 0.0,
-//              _canvas.width, _canvas.height, 0.0, 0.0,
+                ..._pixel00Coordinates, _backgroundType,
+//              ..._pixel00Coordinates, _backgroundType,
             ],
 //          ],
             0,
@@ -929,7 +1368,19 @@
 
 
     
+    const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
+//  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
+
+    };
+//  };
+
+
+
 </script>
+
+<!--<svelte:window on:keydown={OnKeydown} />-->
+    <svelte:window on:keydown={OnKeydown} />
+<!--<svelte:window on:keydown={OnKeydown} />-->
 
 <!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
     <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>

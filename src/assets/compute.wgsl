@@ -88,9 +88,6 @@
 //  materialType: u32,
 }
 
-    @group(0) @binding(3) var<storage, read> materials: array<Material>;
-//  @group(0) @binding(3) var<storage, read> materials: array<Material>;
-
     struct Interval
 //  struct Interval
 {
@@ -129,9 +126,6 @@
     return dot(value, value);
 //  return dot(value, value);
 }
-
-    @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-//  @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 
     fn _rayHitSphere(ray: Ray, sphere: Sphere, rayDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitSphere(ray: Ray, sphere: Sphere, rayDistanceLimit: Interval) -> RayHitResult
@@ -457,11 +451,6 @@
 //  return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
 }
 
-    @group(0) @binding(7) var hdriSampler: sampler;
-//  @group(0) @binding(7) var hdriSampler: sampler;
-    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-
     fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
 //  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
 {
@@ -476,8 +465,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-4, 1.0e+4));
+            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -570,18 +559,40 @@
 
 }
 
-//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+emptySlot:<f32>+emptySlot:<f32>
-//  [0]=cameraCenter:vec3<f32>+pixelSamplesScale:<f32>, [1]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:<f32>, [2]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:<f32>, [3]=pixel00Coordinates:vec3<f32>+inverseStratifiedSamplesPerPixel:<f32>, [4]=canvasWidth&Height:vec2<f32>+emptySlot:<f32>+emptySlot:<f32>
+//  [0]=canvasWidth&Height:vec2<f32>+stratifiedSamplesPerPixel:f32+inverseStratifiedSamplesPerPixel:f32,
+//  [0]=canvasWidth&Height:vec2<f32>+stratifiedSamplesPerPixel:f32+inverseStratifiedSamplesPerPixel:f32,
+//  [1]=cameraCenter:vec3<f32>+pixelSamplesScale:f32,
+//  [1]=cameraCenter:vec3<f32>+pixelSamplesScale:f32,
+//  [2]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:f32,
+//  [2]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:f32,
+//  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
+//  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
+//  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
+//  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
     @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
 //  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
-    @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
-//  @group(0) @binding(1) var outputTexture: texture_storage_2d<rgba8unorm, write>;
+    @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
+//  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
+    @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
+//  @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
+    @group(0) @binding(3) var<storage, read> materials: array<Material>;
+//  @group(0) @binding(3) var<storage, read> materials: array<Material>;
+    @group(0) @binding(4) var<storage, read> textures: array<Texture>;
+//  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
+    @group(0) @binding(5) var atlasSampler: sampler;
+//  @group(0) @binding(5) var atlasSampler: sampler;
+    @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
+//  @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
+    @group(0) @binding(7) var hdriSampler: sampler;
+//  @group(0) @binding(7) var hdriSampler: sampler;
+    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
+//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 
     @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 {
-    let canvasSize: vec2<u32> = vec2<u32>(data[4].xy);
-//  let canvasSize: vec2<u32> = vec2<u32>(data[4].xy);
+    let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
+//  let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
 
     if (gid.x >= canvasSize.x || gid.y >= canvasSize.y)
 //  if (gid.x >= canvasSize.x || gid.y >= canvasSize.y)
@@ -590,36 +601,62 @@
 //      return;
     }
 
-    let pixelSamplesScale: f32 = data[0].w;
-//  let pixelSamplesScale: f32 = data[0].w;
-    let stratifiedSampleX: f32 = data[1].w;
-//  let stratifiedSampleX: f32 = data[1].w;
-    let stratifiedSampleY: f32 = data[2].w;
-//  let stratifiedSampleY: f32 = data[2].w;
-    let inverseStratifiedSamplesPerPixel: f32 = data[3].w;
-//  let inverseStratifiedSamplesPerPixel: f32 = data[3].w;
+    let stratifiedSamplesPerPixel: f32 = data[0].z;
+//  let stratifiedSamplesPerPixel: f32 = data[0].z;
+    let inverseStratifiedSamplesPerPixel: f32 = data[0].w;
+//  let inverseStratifiedSamplesPerPixel: f32 = data[0].w;
+    let cameraCenter: vec3<f32> = data[1].xyz;
+//  let cameraCenter: vec3<f32> = data[1].xyz;
+    let pixelSamplesScale: f32 = data[1].w;
+//  let pixelSamplesScale: f32 = data[1].w;
+    let fromPixelToPixelDeltaU: vec3<f32> = data[2].xyz;
+//  let fromPixelToPixelDeltaU: vec3<f32> = data[2].xyz;
+    let stratifiedSampleX: f32 = data[2].w;
+//  let stratifiedSampleX: f32 = data[2].w;
+    let fromPixelToPixelDeltaV: vec3<f32> = data[3].xyz;
+//  let fromPixelToPixelDeltaV: vec3<f32> = data[3].xyz;
+    let stratifiedSampleY: f32 = data[3].w;
+//  let stratifiedSampleY: f32 = data[3].w;
+    let pixel00Coordinates: vec3<f32> = data[4].xyz;
+//  let pixel00Coordinates: vec3<f32> = data[4].xyz;
+    let backgroundType: u32 = u32(data[4].w);
+//  let backgroundType: u32 = u32(data[4].w);
 
-    let cameraCenter          : vec3<f32> = data[0].xyz;
-//  let cameraCenter          : vec3<f32> = data[0].xyz;
-    let fromPixelToPixelDeltaU: vec3<f32> = data[1].xyz;
-//  let fromPixelToPixelDeltaU: vec3<f32> = data[1].xyz;
-    let fromPixelToPixelDeltaV: vec3<f32> = data[2].xyz;
-//  let fromPixelToPixelDeltaV: vec3<f32> = data[2].xyz;
-    let pixel00Coordinates    : vec3<f32> = data[3].xyz;
-//  let pixel00Coordinates    : vec3<f32> = data[3].xyz;
+    let frameIndexForSeed: u32 = u32((stratifiedSampleY * stratifiedSamplesPerPixel + stratifiedSampleX) * 10000.0);
+//  let frameIndexForSeed: u32 = u32((stratifiedSampleY * stratifiedSamplesPerPixel + stratifiedSampleX) * 10000.0);
+    var rng: RNG = _rngInit(gid.x, gid.y, canvasSize.x, frameIndexForSeed);
+//  var rng: RNG = _rngInit(gid.x, gid.y, canvasSize.x, frameIndexForSeed);
+    _ = _pcg32Next(&rng);
+//  _ = _pcg32Next(&rng);
+    let ray: Ray = _generatePrimaryRay(
+//  let ray: Ray = _generatePrimaryRay(
+        stratifiedSampleX,
+//      stratifiedSampleX,
+        stratifiedSampleY,
+//      stratifiedSampleY,
+        inverseStratifiedSamplesPerPixel,
+//      inverseStratifiedSamplesPerPixel,
+        pixel00Coordinates,
+//      pixel00Coordinates,
+        fromPixelToPixelDeltaU,
+//      fromPixelToPixelDeltaU,
+        fromPixelToPixelDeltaV,
+//      fromPixelToPixelDeltaV,
+        f32(gid.x),
+//      f32(gid.x),
+        f32(gid.y),
+//      f32(gid.y),
+        cameraCenter,
+//      cameraCenter,
+        &rng,
+//      &rng,
+    );
+//  );
+    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
 
-    let pixelCenter : vec3<f32> = pixel00Coordinates + (f32(gid.x) * fromPixelToPixelDeltaU) + (f32(gid.y) * fromPixelToPixelDeltaV);
-//  let pixelCenter : vec3<f32> = pixel00Coordinates + (f32(gid.x) * fromPixelToPixelDeltaU) + (f32(gid.y) * fromPixelToPixelDeltaV);
-    let rayDirection: vec3<f32> = normalize(pixelCenter - cameraCenter);
-//  let rayDirection: vec3<f32> = normalize(pixelCenter - cameraCenter);
-
-    let ray: Ray = Ray(cameraCenter, rayDirection);
-//  let ray: Ray = Ray(cameraCenter, rayDirection);
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColor(ray), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColor(ray), 1.0);
-
-    textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-//  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
+    outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
+//  outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
 }
 
     fn _generatePrimaryRay(
@@ -705,6 +742,50 @@
 //  return min +    (_pcg32Next(rng) *    (max - min));
 }
 
+// A helper "constructor" to build a highly randomized RNG state from specific inputs.
+// A helper "constructor" to build a highly randomized RNG state from specific inputs.
+    fn _rngInit(pixelX: u32, pixelY: u32, canvasWidth: u32, frameIndex: u32) -> RNG
+//  fn _rngInit(pixelX: u32, pixelY: u32, canvasWidth: u32, frameIndex: u32) -> RNG
+{
+    // 1. Create a unique linear index for this pixel.
+    // 1. Create a unique linear index for this pixel.
+    let pixelId: u32 = pixelY * canvasWidth + pixelX;
+//  let pixelId: u32 = pixelY * canvasWidth + pixelX;
+
+    // 2. We need to mix the pixelId and the frameIndex together securely.
+    // 2. We need to mix the pixelId and the frameIndex together securely.
+    // A simple addition (pixelId + frameIndex) creates diagonal artifacts.
+    // A simple addition (pixelId + frameIndex) creates diagonal artifacts.
+    // We use a hashing step (borrowing PCG's own math) to scramble the bits.
+    // We use a hashing step (borrowing PCG's own math) to scramble the bits.
+
+    // Initialize state with pixel ID and scramble
+    // Initialize state with pixel ID and scramble
+    var state: u32 = pixelId;
+//  var state: u32 = pixelId;
+    state = state * 747796405u + 2891336453u;
+//  state = state * 747796405u + 2891336453u;
+    state = (state >> 22u) ^ state;
+//  state = (state >> 22u) ^ state;
+
+    // Mix in the frame index (using XOR to avoid carrying patterns)
+    // Mix in the frame index (using XOR to avoid carrying patterns)
+    state = state ^ frameIndex;
+//  state = state ^ frameIndex;
+
+    // Scramble again to ensure the frame bits are thoroughly mixed
+    // Scramble again to ensure the frame bits are thoroughly mixed
+    state = state * 747796405u + 2891336453u;
+//  state = state * 747796405u + 2891336453u;
+    state = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+//  state = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    state = (state >> 22u) ^ state;
+//  state = (state >> 22u) ^ state;
+
+    return RNG(state);
+//  return RNG(state);
+}
+
     fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 //  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 
@@ -776,13 +857,6 @@
 //  fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
     fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
 //  fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
-
-    @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-//  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var atlasSampler: sampler;
-//  @group(0) @binding(5) var atlasSampler: sampler;
-    @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
-//  @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
 
     fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
 //  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
