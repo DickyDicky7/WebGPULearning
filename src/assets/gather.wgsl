@@ -15,8 +15,8 @@
     @group(0) @binding(2) var outputTexture: texture_storage_2d<rgba8unorm, write>;
 //  @group(0) @binding(2) var outputTexture: texture_storage_2d<rgba8unorm, write>;
 
-    @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
-//  @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
+    @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
+//  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 {
     let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
 //  let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);

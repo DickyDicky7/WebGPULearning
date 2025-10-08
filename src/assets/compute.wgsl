@@ -20,6 +20,10 @@
 //  const TEXTURE_TYPE_COLOR: u32 = 0u;
     const TEXTURE_TYPE_IMAGE: u32 = 1u;
 //  const TEXTURE_TYPE_IMAGE: u32 = 1u;
+    const TEXTURE_TYPE_CHECKER_STYLE_A: u32 = 2u;
+//  const TEXTURE_TYPE_CHECKER_STYLE_A: u32 = 2u;
+    const TEXTURE_TYPE_CHECKER_STYLE_B: u32 = 3u;
+//  const TEXTURE_TYPE_CHECKER_STYLE_B: u32 = 3u;
 
     struct Ray
 //  struct Ray
@@ -111,6 +115,12 @@
 //  imageIndex: u32,
     textureType: u32,
 //  textureType: u32,
+    scale: f32,
+//  scale: f32,
+    oTileTextureIndex: u32,
+//  oTileTextureIndex: u32,
+    eTileTextureIndex: u32,
+//  eTileTextureIndex: u32,
 }
 
     const      PI: f32 = 3.1415926535897930; // 1*π
@@ -261,8 +271,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //          materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -275,8 +285,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
 //          materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -326,8 +336,8 @@
             {
                 scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //              scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
-                attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
-//              attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+                attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//              attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             }
 
             if (materialLightScatteringResult.isScattered)
@@ -386,8 +396,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
 //          materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -418,8 +428,8 @@
 //          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
-            materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
-//          materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate);
+            materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.isScattered = false;
 //          materialLightScatteringResult.isScattered = false;
         }
@@ -588,8 +598,8 @@
     @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 
-    @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
-//  @compute @workgroup_size(16, 16) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
+    @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
+//  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 {
     let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
 //  let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
@@ -858,8 +868,8 @@
     fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
 //  fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
 
-    fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
-//  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>) -> vec3<f32>
+    fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
+//  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
 {
     var textureSampleValue: vec3<f32>;
 //  var textureSampleValue: vec3<f32>;
@@ -883,6 +893,30 @@
 //          uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
             textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
 //          textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
+        }
+        case TEXTURE_TYPE_CHECKER_STYLE_A:
+//      case TEXTURE_TYPE_CHECKER_STYLE_A:
+        {
+            let oTileTexture: Texture = textures[texture.oTileTextureIndex];
+//          let oTileTexture: Texture = textures[texture.oTileTextureIndex];
+            let eTileTexture: Texture = textures[texture.eTileTextureIndex];
+//          let eTileTexture: Texture = textures[texture.eTileTextureIndex];
+            let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.scale * surfaceCoordinate));
+//          let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.scale * surfaceCoordinate));
+            textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
+//          textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
+        }
+        case TEXTURE_TYPE_CHECKER_STYLE_B:
+//      case TEXTURE_TYPE_CHECKER_STYLE_B:
+        {
+            let oTileTexture: Texture = textures[texture.oTileTextureIndex];
+//          let oTileTexture: Texture = textures[texture.oTileTextureIndex];
+            let eTileTexture: Texture = textures[texture.eTileTextureIndex];
+//          let eTileTexture: Texture = textures[texture.eTileTextureIndex];
+            let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.scale * uvSurfaceCoordinate));
+//          let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.scale * uvSurfaceCoordinate));
+            textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
+//          textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
         }
         case default:
 //      case default:

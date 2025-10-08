@@ -103,6 +103,10 @@
 //      COLOR: 0,
         IMAGE: 1,
 //      IMAGE: 1,
+        CHECKER_STYLE_A: 2,
+//      CHECKER_STYLE_A: 2,
+        CHECKER_STYLE_B: 3,
+//      CHECKER_STYLE_B: 3,
     } as const;
 //  } as const;
     type TextureType = typeof TextureType[keyof typeof TextureType];
@@ -115,6 +119,12 @@
 //      imageIndex: number,
         textureType: TextureType,
 //      textureType: TextureType,
+        scale: number,
+//      scale: number,
+        oTileTextureIndex: number,
+//      oTileTextureIndex: number,
+        eTileTextureIndex: number,
+//      eTileTextureIndex: number,
     };
 //  };
 
@@ -449,6 +459,12 @@
 //              imageIndex,
                 textureType,
 //              textureType,
+                scale,
+//              scale,
+                oTileTextureIndex,
+//              oTileTextureIndex,
+                eTileTextureIndex,
+//              eTileTextureIndex,
             }
             : Texture, textureIndex: number): void => {
 //          : Texture, textureIndex: number): void => {
@@ -464,6 +480,12 @@
 //              _texturesStorageValuesDataView.setUint32(base + 12, imageIndex, true);
                 _texturesStorageValuesDataView.setUint32(base + 16, textureType, true);
 //              _texturesStorageValuesDataView.setUint32(base + 16, textureType, true);
+                _texturesStorageValuesDataView.setFloat32(base + 20, scale, true);
+//              _texturesStorageValuesDataView.setFloat32(base + 20, scale, true);
+                _texturesStorageValuesDataView.setUint32(base + 24, oTileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 24, oTileTextureIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 28, eTileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 28, eTileTextureIndex, true);
         });
 //      });
         _device.queue.writeBuffer(_texturesStorageBuffer, 0, _texturesStorageValues as GPUAllowSharedBufferSource);
@@ -477,8 +499,16 @@
 //  const initOnce = async (): Promise<void> => {
         _adapter = (await navigator.gpu.requestAdapter())!;
 //      _adapter = (await navigator.gpu.requestAdapter())!;
-        _device = await _adapter.requestDevice();
-//      _device = await _adapter.requestDevice();
+        _device = await _adapter.requestDevice({
+//      _device = await _adapter.requestDevice({
+            requiredLimits: {
+//          requiredLimits: {
+                maxComputeInvocationsPerWorkgroup: 1024,
+//              maxComputeInvocationsPerWorkgroup: 1024,
+            },
+//          },
+        });
+//      });
         _canvasContext = _canvas.getContext("webgpu")!;
 //      _canvasContext = _canvas.getContext("webgpu")!;
         _presentationFormat = navigator.gpu.getPreferredCanvasFormat();
@@ -752,8 +782,8 @@
 //          {
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
-                layer1IOR: RefractiveIndex.MARBLE,
-//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1IOR: RefractiveIndex.NOTHING,
+//              layer1IOR: RefractiveIndex.NOTHING,
                 layer1Roughness: 0.1,
 //              layer1Roughness: 0.1,
                 materialType: MaterialType.DIFFUSE,
@@ -770,8 +800,8 @@
 //              layer1IOR: RefractiveIndex.MARBLE,
                 layer1Roughness: 0.1,
 //              layer1Roughness: 0.1,
-                materialType: MaterialType.METAL,
-//              materialType: MaterialType.METAL,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 1,
 //              textureIndex: 1,
             },
@@ -784,8 +814,8 @@
 //              layer1IOR: RefractiveIndex.MARBLE,
                 layer1Roughness: 0.1,
 //              layer1Roughness: 0.1,
-                materialType: MaterialType.METAL,
-//              materialType: MaterialType.METAL,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 2,
 //              textureIndex: 2,
             },
@@ -798,8 +828,8 @@
 //              layer1IOR: RefractiveIndex.MARBLE,
                 layer1Roughness: 0.1,
 //              layer1Roughness: 0.1,
-                materialType: MaterialType.METAL,
-//              materialType: MaterialType.METAL,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 3,
 //              textureIndex: 3,
             },
@@ -810,12 +840,18 @@
 //      _textures.push(
             {
 //          {
-                albedo: [ 0.5, 0.5, 0.5 ],
-//              albedo: [ 0.5, 0.5, 0.5 ],
+                albedo: [ 1.0, 1.0, 1.0 ],
+//              albedo: [ 1.0, 1.0, 1.0 ],
                 imageIndex: 0,
 //              imageIndex: 0,
                 textureType: TextureType.COLOR,
 //              textureType: TextureType.COLOR,
+                scale: 1.0,
+//              scale: 1.0,
+                oTileTextureIndex: 0,
+//              oTileTextureIndex: 0,
+                eTileTextureIndex: 0,
+//              eTileTextureIndex: 0,
             },
 //          },
             {
@@ -826,6 +862,12 @@
 //              imageIndex: 1,
                 textureType: TextureType.COLOR,
 //              textureType: TextureType.COLOR,
+                scale: 1.0,
+//              scale: 1.0,
+                oTileTextureIndex: 0,
+//              oTileTextureIndex: 0,
+                eTileTextureIndex: 0,
+//              eTileTextureIndex: 0,
             },
 //          },
             {
@@ -836,16 +878,28 @@
 //              imageIndex: 2,
                 textureType: TextureType.COLOR,
 //              textureType: TextureType.COLOR,
+                scale: 1.0,
+//              scale: 1.0,
+                oTileTextureIndex: 0,
+//              oTileTextureIndex: 0,
+                eTileTextureIndex: 0,
+//              eTileTextureIndex: 0,
             },
 //          },
             {
 //          {
-                albedo: [ 0.0, 1.0, 0.5 ],
-//              albedo: [ 0.0, 1.0, 0.5 ],
+                albedo: [ 1.0, 0.5, 0.5 ],
+//              albedo: [ 1.0, 0.5, 0.5 ],
                 imageIndex: 3,
 //              imageIndex: 3,
                 textureType: TextureType.COLOR,
 //              textureType: TextureType.COLOR,
+                scale: 1.0,
+//              scale: 1.0,
+                oTileTextureIndex: 0,
+//              oTileTextureIndex: 0,
+                eTileTextureIndex: 0,
+//              eTileTextureIndex: 0,
             },
 //          },
         );
@@ -1130,8 +1184,8 @@
 //                              resource:  hdriTextureView,
                             },
 //                          },
-                        ],
-//                      ],
+                        ] as Iterable<GPUBindGroupEntry>,
+//                      ] as Iterable<GPUBindGroupEntry>,
                     });
 //                  });
                     _gatherBindGroup0 = _device.createBindGroup({
@@ -1168,8 +1222,8 @@
 //                              resource:  outputTextureView,
                             },
 //                          },
-                        ],
-//                      ],
+                        ] as Iterable<GPUBindGroupEntry>,
+//                      ] as Iterable<GPUBindGroupEntry>,
                     });
 //                  });
                     _renderBindGroup0 = _device.createBindGroup({
@@ -1198,8 +1252,8 @@
 //                              resource:  outputTextureView,
                             },
 //                          },
-                        ],
-//                      ],
+                        ] as Iterable<GPUBindGroupEntry>,
+//                      ] as Iterable<GPUBindGroupEntry>,
                     });
 //                  });
                 }
@@ -1279,6 +1333,10 @@
 //          _device.destroy();
         }
 //      }
+        _resizeObserver.unobserve(_canvas);
+//      _resizeObserver.unobserve(_canvas);
+        _canvas = null!;
+//      _canvas = null!;
     });
 //  });
 
@@ -1298,8 +1356,8 @@
 //      _computePass.setPipeline(_computePipeline);
         _computePass.setBindGroup(0, _computeBindGroup0);
 //      _computePass.setBindGroup(0, _computeBindGroup0);
-        _computePass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
-//      _computePass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
+        _computePass.dispatchWorkgroups(Math.ceil(_canvas.width / 32), Math.ceil(_canvas.height / 32),);
+//      _computePass.dispatchWorkgroups(Math.ceil(_canvas.width / 32), Math.ceil(_canvas.height / 32),);
         _computePass.end();
 //      _computePass.end();
 
@@ -1310,8 +1368,8 @@
 //      _gatherPass.setPipeline(_gatherPipeline);
         _gatherPass.setBindGroup(0, _gatherBindGroup0);
 //      _gatherPass.setBindGroup(0, _gatherBindGroup0);
-        _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
-//      _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 16), Math.ceil(_canvas.height / 16),);
+        _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 32), Math.ceil(_canvas.height / 32),);
+//      _gatherPass.dispatchWorkgroups(Math.ceil(_canvas.width / 32), Math.ceil(_canvas.height / 32),);
         _gatherPass.end();
 //      _gatherPass.end();
 
