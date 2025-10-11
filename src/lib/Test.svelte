@@ -501,6 +501,12 @@
 //      _adapter = (await navigator.gpu.requestAdapter())!;
         _device = await _adapter.requestDevice({
 //      _device = await _adapter.requestDevice({
+            requiredFeatures: [
+//          requiredFeatures: [
+                "shader-f16",
+//              "shader-f16",
+            ] as Iterable<GPUFeatureName>,
+//          ] as Iterable<GPUFeatureName>,
             requiredLimits: {
 //          requiredLimits: {
                 maxComputeInvocationsPerWorkgroup: 1024,
@@ -511,10 +517,10 @@
 //      });
         _canvasContext = _canvas.getContext("webgpu")!;
 //      _canvasContext = _canvas.getContext("webgpu")!;
-        _presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-//      _presentationFormat = navigator.gpu.getPreferredCanvasFormat();
-        _canvasContext.configure({ device: _device, format: _presentationFormat, });
-//      _canvasContext.configure({ device: _device, format: _presentationFormat, });
+        _presentationFormat = "rgba16float"; // navigator.gpu.getPreferredCanvasFormat();
+//      _presentationFormat = "rgba16float"; // navigator.gpu.getPreferredCanvasFormat();
+        _canvasContext.configure({ alphaMode: "opaque", colorSpace: "display-p3", device: _device, format: _presentationFormat, toneMapping: { mode: "extended", }, usage: GPUTextureUsage.RENDER_ATTACHMENT, viewFormats: [ "rgba16float", ], });
+//      _canvasContext.configure({ alphaMode: "opaque", colorSpace: "display-p3", device: _device, format: _presentationFormat, toneMapping: { mode: "extended", }, usage: GPUTextureUsage.RENDER_ATTACHMENT, viewFormats: [ "rgba16float", ], });
         _computeShaderModule = _device.createShaderModule({
 //      _computeShaderModule = _device.createShaderModule({
             label: "GPU_SHADER_MODULE_COMPUTE",
@@ -713,8 +719,8 @@
 //          label: "GPU_TEXTURE_ATLAS",
             size: [ 1, 1, ],
 //          size: [ 1, 1, ],
-            format: "rgba8unorm",
-//          format: "rgba8unorm",
+            format: "rgba16float",
+//          format: "rgba16float",
             usage: GPUTextureUsage.TEXTURE_BINDING,
 //          usage: GPUTextureUsage.TEXTURE_BINDING,
         });
@@ -725,8 +731,8 @@
 //          label: "GPU_TEXTURE_HDRI",
             size: [ 1, 1, ],
 //          size: [ 1, 1, ],
-            format: "rgba8unorm",
-//          format: "rgba8unorm",
+            format: "rgba16float",
+//          format: "rgba16float",
             usage: GPUTextureUsage.TEXTURE_BINDING,
 //          usage: GPUTextureUsage.TEXTURE_BINDING,
         });
@@ -1007,12 +1013,14 @@
         await initOnce();
 //      await initOnce();
 
+
         prepareSpheres();
 //      prepareSpheres();
         prepareMaterials();
 //      prepareMaterials();
         prepareTextures();
 //      prepareTextures();
+
 
         _resizeObserver = new ResizeObserver(
 //      _resizeObserver = new ResizeObserver(
@@ -1088,8 +1096,8 @@
 //                      label: "GPU_TEXTURE_OUTPUT",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba8unorm",
-//                      format: "rgba8unorm",
+                        format: "rgba16float",
+//                      format: "rgba16float",
                         usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
@@ -1344,8 +1352,10 @@
 
     const render = (): void => {
 //  const render = (): void => {
-        (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
 //      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
+//      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
+        (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture();
+//      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture();
         _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
 //      _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
 

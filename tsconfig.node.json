@@ -38,6 +38,8 @@
 //      "noFallthroughCasesInSwitch": true,
         "noUncheckedSideEffectImports": true,
 //      "noUncheckedSideEffectImports": true,
+        "composite": true,
+//      "composite": true,
     }
     ,
     "include": [ "vite.config.ts" ],

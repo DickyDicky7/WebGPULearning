@@ -28,6 +28,8 @@
 //      "isolatedModules": true,
         "moduleDetection": "force",
 //      "moduleDetection": "force",
+        "composite": true,
+//      "composite": true,
     }
     ,
     "include":
