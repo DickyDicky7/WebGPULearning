@@ -11,6 +11,10 @@
 //  import shaderStringRender from "../assets/render.wgsl?raw";
     import * as m from "mathjs";
 //  import * as m from "mathjs";
+    import * as csvWorkerWrapper from "./csv/csvWorkerWrapper";
+//  import * as csvWorkerWrapper from "./csv/csvWorkerWrapper";
+    import * as helper from "./Helper.svelte";
+//  import * as helper from "./Helper.svelte";
 
 
 
@@ -127,6 +131,54 @@
 //      eTileTextureIndex: number,
     };
 //  };
+    type CompositeData = {
+//  type CompositeData = {
+        atX: number,
+//      atX: number,
+        atY: number,
+//      atY: number,
+        atZ: number,
+//      atZ: number,
+        isHitted: number,
+//      isHitted: number,
+        hittedSideNormalX: number,
+//      hittedSideNormalX: number,
+        hittedSideNormalY: number,
+//      hittedSideNormalY: number,
+        hittedSideNormalZ: number,
+//      hittedSideNormalZ: number,
+        isFrontFaceHitted: number,
+//      isFrontFaceHitted: number,
+        uvSurfaceCoordinateU: number,
+//      uvSurfaceCoordinateU: number,
+        uvSurfaceCoordinateV: number,
+//      uvSurfaceCoordinateV: number,
+        minDistance: number,
+//      minDistance: number,
+        materialIndex: number,
+//      materialIndex: number,
+
+        originX: number,
+//      originX: number,
+        originY: number,
+//      originY: number,
+        originZ: number,
+//      originZ: number,
+        directionX: number,
+//      directionX: number,
+        directionY: number,
+//      directionY: number,
+        directionZ: number,
+//      directionZ: number,
+
+        accumulatedColorR: number,
+//      accumulatedColorR: number,
+        accumulatedColorG: number,
+//      accumulatedColorG: number,
+        accumulatedColorB: number,
+//      accumulatedColorB: number,
+    };
+//  };
 
 
 
@@ -232,8 +284,18 @@
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(100.0);
-//  let _samplesPerPixel: number = $state(100.0);
+    let _wCompositeDataListStorageBuffer: GPUBuffer;
+//  let _wCompositeDataListStorageBuffer: GPUBuffer;
+    let _rCompositeDataListStorageBuffer: GPUBuffer;
+//  let _rCompositeDataListStorageBuffer: GPUBuffer;
+    let _compositeDataList: CompositeData[];
+//  let _compositeDataList: CompositeData[];
+    let _compositeDataListLength: number = $state(0);
+//  let _compositeDataListLength: number = $state(0);
+    let _compositeDataListStorageBufferSize: number = $state(0);
+//  let _compositeDataListStorageBufferSize: number = $state(0);
+    let _samplesPerPixel: number = $state(1.0);
+//  let _samplesPerPixel: number = $state(1.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -244,8 +306,8 @@
 //  let _stratifiedSampleX: number;
     let _stratifiedSampleY: number;
 //  let _stratifiedSampleY: number;
-    let _lookFrom: Vec3 = $state([-28.284, 0.0, -28.284]);
-//  let _lookFrom: Vec3 = $state([-28.284, 0.0, -28.284]);
+    let _lookFrom: Vec3 = $state([0.0, 0.0, +40.0]);
+//  let _lookFrom: Vec3 = $state([0.0, 0.0, +40.0]);
     let _lookAt: Vec3 = $state([0.0, 0.0, 0.0]);
 //  let _lookAt: Vec3 = $state([0.0, 0.0, 0.0]);
     let _viewUp: Vec3 = $state([0.0, 1.0, 0.0]);
@@ -258,10 +320,10 @@
 //  let _lookFromSubtractLookAt: Vec3 = $derived(m.subtract(_lookFrom, _lookAt));
     let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
 //  let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
-    let _vFOV: number = $state(m.pi / 2.5);
-//  let _vFOV: number = $state(m.pi / 2.5);
-    let _hFOV: number = $state(m.pi / 2.5);
-//  let _hFOV: number = $state(m.pi / 2.5);
+    let _vFOV: number = $state(m.pi / 2.0);
+//  let _vFOV: number = $state(m.pi / 2.0);
+    let _hFOV: number = $state(m.pi / 2.0);
+//  let _hFOV: number = $state(m.pi / 2.0);
     let _h: number = $derived(m.tan(_vFOV / 2.0));
 //  let _h: number = $derived(m.tan(_vFOV / 2.0));
     let _w: number = $derived(m.tan(_hFOV / 2.0));
@@ -569,6 +631,8 @@
 //              { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
                 { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
 //              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+                { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
+//              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
             ],
 //          ],
         });
@@ -788,10 +852,10 @@
 //          {
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
-                layer1IOR: RefractiveIndex.NOTHING,
-//              layer1IOR: RefractiveIndex.NOTHING,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.DIFFUSE,
 //              materialType: MaterialType.DIFFUSE,
                 textureIndex: 0,
@@ -804,10 +868,10 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
-                materialType: MaterialType.GLOSS,
-//              materialType: MaterialType.GLOSS,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 1,
 //              textureIndex: 1,
             },
@@ -818,10 +882,10 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
-                materialType: MaterialType.GLOSS,
-//              materialType: MaterialType.GLOSS,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 2,
 //              textureIndex: 2,
             },
@@ -832,10 +896,10 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
-                materialType: MaterialType.GLOSS,
-//              materialType: MaterialType.GLOSS,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 3,
 //              textureIndex: 3,
             },
@@ -846,8 +910,8 @@
 //      _textures.push(
             {
 //          {
-                albedo: [ 1.0, 1.0, 1.0 ],
-//              albedo: [ 1.0, 1.0, 1.0 ],
+                albedo: [ 0.5, 0.5, 0.5 ],
+//              albedo: [ 0.5, 0.5, 0.5 ],
                 imageIndex: 0,
 //              imageIndex: 0,
                 textureType: TextureType.COLOR,
@@ -919,8 +983,8 @@
 
 
 
-    const renderLoop = (time: number): void => {
-//  const renderLoop = (time: number): void => {
+    const renderLoop = async (time: number): Promise<void> => {
+//  const renderLoop = async (time: number): Promise<void> => {
         if (!_isRunning) {
 //      if (!_isRunning) {
             return;
@@ -949,6 +1013,68 @@
 //          if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
                 stopLoop();
 //              stopLoop();
+                _compositeDataList = [];
+//              _compositeDataList = [];
+                _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
+//              _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
+                _commandEncoder.copyBufferToBuffer(
+//              _commandEncoder.copyBufferToBuffer(
+                    _wCompositeDataListStorageBuffer,
+//                  _wCompositeDataListStorageBuffer,
+                    _rCompositeDataListStorageBuffer,
+//                  _rCompositeDataListStorageBuffer,
+                );
+//              );
+                _commandBuffer = _commandEncoder.finish();
+//              _commandBuffer = _commandEncoder.finish();
+                _device.queue.submit([_commandBuffer]);
+//              _device.queue.submit([_commandBuffer]);
+                await _rCompositeDataListStorageBuffer.mapAsync(GPUMapMode.READ);
+//              await _rCompositeDataListStorageBuffer.mapAsync(GPUMapMode.READ);
+                const dataView: DataView = new DataView(_rCompositeDataListStorageBuffer.getMappedRange());
+//              const dataView: DataView = new DataView(_rCompositeDataListStorageBuffer.getMappedRange());
+                for (let compositeDataIndex: number = 0; compositeDataIndex < _compositeDataListLength; ++compositeDataIndex) {
+//              for (let compositeDataIndex: number = 0; compositeDataIndex < _compositeDataListLength; ++compositeDataIndex) {
+                    const base: number = compositeDataIndex * 96;
+//                  const base: number = compositeDataIndex * 96;
+                    _compositeDataList.push(
+//                  _compositeDataList.push(
+                        {
+//                      {
+                            atX: dataView.getFloat32(base + 0, true), atY: dataView.getFloat32(base + 4, true), atZ: dataView.getFloat32(base + 8, true),
+//                          atX: dataView.getFloat32(base + 0, true), atY: dataView.getFloat32(base + 4, true), atZ: dataView.getFloat32(base + 8, true),
+                            isHitted: dataView.getUint32(base + 12, true),
+//                          isHitted: dataView.getUint32(base + 12, true),
+                            hittedSideNormalX: dataView.getFloat32(base + 16, true), hittedSideNormalY: dataView.getFloat32(base + 20, true), hittedSideNormalZ: dataView.getFloat32(base + 24, true),
+//                          hittedSideNormalX: dataView.getFloat32(base + 16, true), hittedSideNormalY: dataView.getFloat32(base + 20, true), hittedSideNormalZ: dataView.getFloat32(base + 24, true),
+                            isFrontFaceHitted: dataView.getUint32(base + 28, true),
+//                          isFrontFaceHitted: dataView.getUint32(base + 28, true),
+                            uvSurfaceCoordinateU: dataView.getFloat32(base + 32, true), uvSurfaceCoordinateV: dataView.getFloat32(base + 36, true),
+//                          uvSurfaceCoordinateU: dataView.getFloat32(base + 32, true), uvSurfaceCoordinateV: dataView.getFloat32(base + 36, true),
+                            minDistance: dataView.getFloat32(base + 40, true),
+//                          minDistance: dataView.getFloat32(base + 40, true),
+                            materialIndex: dataView.getUint32(base + 44, true),
+//                          materialIndex: dataView.getUint32(base + 44, true),
+
+                            originX: dataView.getFloat32(base + 48, true), originY: dataView.getFloat32(base + 52, true), originZ: dataView.getFloat32(base + 56, true),
+//                          originX: dataView.getFloat32(base + 48, true), originY: dataView.getFloat32(base + 52, true), originZ: dataView.getFloat32(base + 56, true),
+                            directionX: dataView.getFloat32(base + 64, true), directionY: dataView.getFloat32(base + 68, true), directionZ: dataView.getFloat32(base + 72, true),
+//                          directionX: dataView.getFloat32(base + 64, true), directionY: dataView.getFloat32(base + 68, true), directionZ: dataView.getFloat32(base + 72, true),
+
+                            accumulatedColorR: dataView.getFloat32(base + 80, true), accumulatedColorG: dataView.getFloat32(base + 84, true), accumulatedColorB: dataView.getFloat32(base + 88, true),
+//                          accumulatedColorR: dataView.getFloat32(base + 80, true), accumulatedColorG: dataView.getFloat32(base + 84, true), accumulatedColorB: dataView.getFloat32(base + 88, true),
+                        },
+//                      },
+                    );
+//                  );
+                }
+//              }
+                _rCompositeDataListStorageBuffer.unmap();
+//              _rCompositeDataListStorageBuffer.unmap();
+                const csv: string = await csvWorkerWrapper.generateCsvInWorker({ rows: _compositeDataList, headers: Object.keys(_compositeDataList[0]) as (keyof CompositeData)[], });
+//              const csv: string = await csvWorkerWrapper.generateCsvInWorker({ rows: _compositeDataList, headers: Object.keys(_compositeDataList[0]) as (keyof CompositeData)[], });
+                csvWorkerWrapper.downloadBlob(`${helper.getDetailedTimestamp()}.csv`, csv);
+//              csvWorkerWrapper.downloadBlob(`${helper.getDetailedTimestamp()}.csv`, csv);
                 return;
 //              return;
             }
@@ -1102,6 +1228,42 @@
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
 //                  });
+                    _compositeDataListLength = _canvas.width * _canvas.height * _samplesPerPixel;
+//                  _compositeDataListLength = _canvas.width * _canvas.height * _samplesPerPixel;
+                    _compositeDataListStorageBufferSize = _compositeDataListLength * 96;
+//                  _compositeDataListStorageBufferSize = _compositeDataListLength * 96;
+                    if (_wCompositeDataListStorageBuffer) {
+//                  if (_wCompositeDataListStorageBuffer) {
+                        _wCompositeDataListStorageBuffer.destroy();
+//                      _wCompositeDataListStorageBuffer.destroy();
+                    }
+//                  }
+                    _wCompositeDataListStorageBuffer = _device.createBuffer({
+//                  _wCompositeDataListStorageBuffer = _device.createBuffer({
+                        label: "GPU_STORAGE_BUFFER_W_COMPOSITE_DATA_LIST",
+//                      label: "GPU_STORAGE_BUFFER_W_COMPOSITE_DATA_LIST",
+                        size: _compositeDataListStorageBufferSize,
+//                      size: _compositeDataListStorageBufferSize,
+                        usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE,
+//                      usage: GPUBufferUsage.COPY_SRC | GPUBufferUsage.STORAGE,
+                    });
+//                  });
+                    if (_rCompositeDataListStorageBuffer) {
+//                  if (_rCompositeDataListStorageBuffer) {
+                        _rCompositeDataListStorageBuffer.destroy();
+//                      _rCompositeDataListStorageBuffer.destroy();
+                    }
+//                  }
+                    _rCompositeDataListStorageBuffer = _device.createBuffer({
+//                  _rCompositeDataListStorageBuffer = _device.createBuffer({
+                        label: "GPU_STORAGE_BUFFER_R_COMPOSITE_DATA_LIST",
+//                      label: "GPU_STORAGE_BUFFER_R_COMPOSITE_DATA_LIST",
+                        size: _compositeDataListStorageBufferSize,
+//                      size: _compositeDataListStorageBufferSize,
+                        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+//                      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+                    });
+//                  });
 //                  const atlasTextureView: GPUTextureView = _atlasTexture.createView();
 //                  const atlasTextureView: GPUTextureView = _atlasTexture.createView();
 //                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
@@ -1190,6 +1352,14 @@
 //                              resource: _hdriTexture,
 //                              resource:  hdriTextureView,
 //                              resource:  hdriTextureView,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 9,
+//                              binding: 9,
+                                resource: _wCompositeDataListStorageBuffer,
+//                              resource: _wCompositeDataListStorageBuffer,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -1287,6 +1457,10 @@
 
     onDestroy(async (): Promise<void> => {
 //  onDestroy(async (): Promise<void> => {
+        _resizeObserver.unobserve(_canvas);
+//      _resizeObserver.unobserve(_canvas);
+        _canvas = null!;
+//      _canvas = null!;
         if (_outputTexture) {
 //      if (_outputTexture) {
             _outputTexture.destroy();
@@ -1341,10 +1515,7 @@
 //          _device.destroy();
         }
 //      }
-        _resizeObserver.unobserve(_canvas);
-//      _resizeObserver.unobserve(_canvas);
-        _canvas = null!;
-//      _canvas = null!;
+
     });
 //  });
 
@@ -1435,10 +1606,68 @@
 //  };
 
 
-    
+
+    function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+//  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+        stopLoop();
+//      stopLoop();
+        _lookFrom = newLookFrom;
+//      _lookFrom = newLookFrom;
+        _lookAt = newLookAt;
+//      _lookAt = newLookAt;
+        _viewUp = newViewUp;
+//      _viewUp = newViewUp;
+        _viewportW = _viewportH * _canvas.width / _canvas.height;
+//      _viewportW = _viewportH * _canvas.width / _canvas.height;
+        _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+//      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+        _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+//      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+        _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+//      _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+        startLoop();
+//      startLoop();
+    };
+//  };
+
+
+
     const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
 //  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
-
+        if (keyboardEvent.key === "1") {
+//      if (keyboardEvent.key === "1") {
+            moveCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "2") {
+//      } else if (keyboardEvent.key === "2") {
+            moveCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "3") {
+//      } else if (keyboardEvent.key === "3") {
+            moveCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "4") {
+//      } else if (keyboardEvent.key === "4") {
+            moveCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "5") {
+//      } else if (keyboardEvent.key === "5") {
+            moveCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "6") {
+//      } else if (keyboardEvent.key === "6") {
+            moveCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "7") {
+//      } else if (keyboardEvent.key === "7") {
+            moveCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "8") {
+//      } else if (keyboardEvent.key === "8") {
+            moveCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]);
+//          moveCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]);
+        }
+//      }
     };
 //  };
 
@@ -1450,9 +1679,9 @@
     <svelte:window on:keydown={OnKeydown} />
 <!--<svelte:window on:keydown={OnKeydown} />-->
 
-<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
-    <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
-<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+<!--<canvas class="large-elevate" bind:this={_canvas} width="300px" height="300px" style:width="300px" style:height="300px" style:display="block"></canvas>-->
+    <canvas class="large-elevate" bind:this={_canvas} width="300px" height="300px" style:width="300px" style:height="300px" style:display="block"></canvas>
+<!--<canvas class="large-elevate" bind:this={_canvas} width="300px" height="300px" style:width="300px" style:height="300px" style:display="block"></canvas>-->
 <!--<svelte:options runes={true}></svelte:options>-->
     <svelte:options runes={true}></svelte:options>
 <!--<svelte:options runes={true}></svelte:options>-->
