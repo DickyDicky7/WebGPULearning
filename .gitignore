@@ -52,3 +52,6 @@ helper_server/__pycache__/*
 helper_server/__pycache__/*
 helper_server/venv/*
 helper_server/venv/*
+
+# train_data/*
+# train_data/*

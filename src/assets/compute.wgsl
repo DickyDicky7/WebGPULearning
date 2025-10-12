@@ -461,8 +461,35 @@
 //  return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
 }
 
-    fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
-//  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+    struct CompositeData
+//  struct CompositeData
+{
+    at: vec3<f32>,
+//  at: vec3<f32>,
+    isHitted: u32,
+//  isHitted: u32,
+    hittedSideNormal: vec3<f32>,
+//  hittedSideNormal: vec3<f32>,
+    isFrontFaceHitted: u32,
+//  isFrontFaceHitted: u32,
+    uvSurfaceCoordinate: vec2<f32>,
+//  uvSurfaceCoordinate: vec2<f32>,
+    minDistance: f32,
+//  minDistance: f32,
+    materialIndex: u32,
+//  materialIndex: u32,
+
+    origin: vec3<f32>,
+//  origin: vec3<f32>,
+    direction: vec3<f32>,
+//  direction: vec3<f32>,
+
+    accumulatedColor: vec3<f32>,
+//  accumulatedColor: vec3<f32>,
+}
+
+    fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> CompositeData
+//  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> CompositeData
 {
         var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
 //      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
@@ -470,14 +497,18 @@
 //      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00);
         var currentRay: Ray = initialRay;
 //      var currentRay: Ray = initialRay;
-
+        var compositeData: CompositeData;
+//      var compositeData: CompositeData;
+        var firstRayHitResult: RayHitResult;
+//      var firstRayHitResult: RayHitResult;
 
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
             let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
 //          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
-
+            if (depth == 0u) { firstRayHitResult = rayHitResult; }
+//          if (depth == 0u) { firstRayHitResult = rayHitResult; }
 
             if (!rayHitResult.isHitted)
 //          if (!rayHitResult.isHitted)
@@ -564,8 +595,31 @@
 //          currentRay   = materialLightScatteringResult.scatteredRay;
         }
 
-        return accumulatedColor;
-//      return accumulatedColor;
+        compositeData.at = firstRayHitResult.at;
+//      compositeData.at = firstRayHitResult.at;
+        compositeData.isHitted = select(0u, 1u, firstRayHitResult.isHitted);
+//      compositeData.isHitted = select(0u, 1u, firstRayHitResult.isHitted);
+        compositeData.hittedSideNormal = firstRayHitResult.hittedSideNormal;
+//      compositeData.hittedSideNormal = firstRayHitResult.hittedSideNormal;
+        compositeData.isFrontFaceHitted = select(0u, 1u, firstRayHitResult.isFrontFaceHitted);
+//      compositeData.isFrontFaceHitted = select(0u, 1u, firstRayHitResult.isFrontFaceHitted);
+        compositeData.uvSurfaceCoordinate = firstRayHitResult.uvSurfaceCoordinate;
+//      compositeData.uvSurfaceCoordinate = firstRayHitResult.uvSurfaceCoordinate;
+        compositeData.minDistance = firstRayHitResult.minDistance;
+//      compositeData.minDistance = firstRayHitResult.minDistance;
+        compositeData.materialIndex = firstRayHitResult.materialIndex;
+//      compositeData.materialIndex = firstRayHitResult.materialIndex;
+
+        compositeData.origin = initialRay.origin;
+//      compositeData.origin = initialRay.origin;
+        compositeData.direction = initialRay.direction;
+//      compositeData.direction = initialRay.direction;
+
+        compositeData.accumulatedColor = accumulatedColor;
+//      compositeData.accumulatedColor = accumulatedColor;
+
+        return compositeData;
+//      return compositeData;
 
 }
 
@@ -597,6 +651,8 @@
 //  @group(0) @binding(7) var hdriSampler: sampler;
     @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
+    @group(0) @binding(9) var<storage, read_write> compositeDataList: array<CompositeData>;
+//  @group(0) @binding(9) var<storage, read_write> compositeDataList: array<CompositeData>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
@@ -662,11 +718,21 @@
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
+    let compositeData: CompositeData = _rayColorMain(ray, 100, backgroundType, &rng);
+//  let compositeData: CompositeData = _rayColorMain(ray, 100, backgroundType, &rng);
+    let pixelColor: vec4<f32> = vec4<f32>(compositeData.accumulatedColor, 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(compositeData.accumulatedColor, 1.0);
+    let pixelIndex: u32 = gid.y * canvasSize.x + gid.x;
+//  let pixelIndex: u32 = gid.y * canvasSize.x + gid.x;
+    let stratifiedSampleIndex: u32 = u32(stratifiedSampleY) * u32(stratifiedSamplesPerPixel) + u32(stratifiedSampleX);
+//  let stratifiedSampleIndex: u32 = u32(stratifiedSampleY) * u32(stratifiedSamplesPerPixel) + u32(stratifiedSampleX);
+    let trainSampleIndex: u32 = pixelIndex + stratifiedSampleIndex;
+//  let trainSampleIndex: u32 = pixelIndex + stratifiedSampleIndex;
+    compositeDataList[trainSampleIndex] = compositeData;
+//  compositeDataList[trainSampleIndex] = compositeData;
 
-    outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
-//  outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
+    outputStorage[pixelIndex] += pixelColor;
+//  outputStorage[pixelIndex] += pixelColor;
 }
 
     fn _generatePrimaryRay(
