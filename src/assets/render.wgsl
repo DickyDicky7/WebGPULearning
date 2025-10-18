@@ -151,22 +151,22 @@
 */
 };
 
-    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
-//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
-    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
-//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
-    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
-//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
-    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-    fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
-//  fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
-    fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
-//  fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
+    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
+//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
+    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
+//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
+    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
+//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
+    fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
+//  fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
+    fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
+//  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
 
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
 //  fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
