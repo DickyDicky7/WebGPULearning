@@ -53,5 +53,8 @@ helper_server/__pycache__/*
 helper_server/venv/*
 helper_server/venv/*
 
+public/**/*.exr
+public/**/*.exr
+
 # train_data/*
 # train_data/*
