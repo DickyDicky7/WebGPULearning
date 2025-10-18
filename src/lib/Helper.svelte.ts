@@ -30,3 +30,23 @@
 //      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}${sign}${offsetHours}${offsetMinutes}`;
     }
 //  }
+
+    export async function loadPublicFileAsFile(path: string, name?: string): Promise<File> {
+//  export async function loadPublicFileAsFile(path: string, name?: string): Promise<File> {
+        const response: Response = await fetch(path);
+//      const response: Response = await fetch(path);
+        const blob: Blob = await response.blob();
+//      const blob: Blob = await response.blob();
+        const filename: string = name ?? path.split("/").pop() ?? "file.bin"; // Use the provided name or infer from the URL
+//      const filename: string = name ?? path.split("/").pop() ?? "file.bin"; // Use the provided name or infer from the URL
+        return new File([blob], filename, { type: blob.type || "application/octet-stream", });
+//      return new File([blob], filename, { type: blob.type || "application/octet-stream", });
+    }
+//  }
+
+//  // Example usage:
+//  // Example usage:
+//  const file: File = await loadPublicFileAsFile("/weights/model.bin");
+//  const file: File = await loadPublicFileAsFile("/weights/model.bin");
+//  console.log(file.name, file.size, file.type);
+//  console.log(file.name, file.size, file.type);

@@ -520,14 +520,14 @@
                         var v: f32 = theta /        PI ;
 //                      var v: f32 = theta /        PI ;
 
-                        u =       clamp(u, 0.0, 1.0);
-//                      u =       clamp(u, 0.0, 1.0);
-                        v = 1.0 - clamp(v, 0.0, 1.0);
-//                      v = 1.0 - clamp(v, 0.0, 1.0);
+                        u = clamp(u, 0.0, 1.0);
+//                      u = clamp(u, 0.0, 1.0);
+                        v = clamp(v, 0.0, 1.0);
+//                      v = clamp(v, 0.0, 1.0);
 
 
-                        backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
-//                      backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;          
+                        backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
+//                      backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);          
                     }
 
 
@@ -851,22 +851,22 @@
 
     }
 
-    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
-//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return value * value; };
-    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
-//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return value * value; };
-    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
-//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return value * value; };
-    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-    fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
-//  fn _f32LinearToGamma(value: f32) -> f32 { return value * value; };
-    fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
-//  fn _f32GammaToLinear(value: f32) -> f32 { return sqrt(value); };
+    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
+    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
+//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
+    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
+    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
+//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
+    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
+    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
+//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
+    fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
+//  fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
+    fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
+//  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
 
     fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
 //  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
@@ -1177,4 +1177,61 @@
             numerator.y / denominator.y,
             numerator.z / denominator.z,
         );
+    }
+    fn _tonemapNeutral(value: vec3<f32>) -> vec3<f32>
+//  fn _tonemapNeutral(value: vec3<f32>) -> vec3<f32>
+    {
+        const A: f32 = 0.15;
+//      const A: f32 = 0.15;
+        const B: f32 = 0.50;
+//      const B: f32 = 0.50;
+        const C: f32 = 0.10;
+//      const C: f32 = 0.10;
+        const D: f32 = 0.20;
+//      const D: f32 = 0.20;
+        const E: f32 = 0.02;
+//      const E: f32 = 0.02;
+        const F: f32 = 0.30;
+//      const F: f32 = 0.30;
+        const W: f32 = 11.2;
+//      const W: f32 = 11.2;
+        const exposure: f32 = 2.0;
+//      const exposure: f32 = 2.0;
+
+        let exposedColor: vec3<f32> = exposure * value;
+//      let exposedColor: vec3<f32> = exposure * value;
+    
+        let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
+//      let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
+        let VB : vec3<f32> = vec3<f32>(    B,     B,     B);
+//      let VB : vec3<f32> = vec3<f32>(    B,     B,     B);
+        let VDE: vec3<f32> = vec3<f32>(D * E, D * E, D * E);
+//      let VDE: vec3<f32> = vec3<f32>(D * E, D * E, D * E);
+        let VDF: vec3<f32> = vec3<f32>(D * F, D * F, D * F);
+//      let VDF: vec3<f32> = vec3<f32>(D * F, D * F, D * F);
+        let VEF: vec3<f32> = vec3<f32>(E / F, E / F, E / F);
+//      let VEF: vec3<f32> = vec3<f32>(E / F, E / F, E / F);
+
+        let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
+//      let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
+    
+        let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
+//      let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
+        let whitePoint: vec3<f32> = ((whitePointVec * (A * whitePointVec + VCB) + VDE) / (whitePointVec * (A * whitePointVec + VB) + VDF)) - VEF;
+//      let whitePoint: vec3<f32> = ((whitePointVec * (A * whitePointVec + VCB) + VDE) / (whitePointVec * (A * whitePointVec + VB) + VDF)) - VEF;
+
+        return curr / whitePoint;
+//      return curr / whitePoint;
+    }
+    fn _tonemapPerceptual(value: vec3<f32>) -> vec3<f32>
+//  fn _tonemapPerceptual(value: vec3<f32>) -> vec3<f32>
+    {
+        let luminance: f32 = dot(value, vec3<f32>(0.2126, 0.7152, 0.0722));
+//      let luminance: f32 = dot(value, vec3<f32>(0.2126, 0.7152, 0.0722));
+        let tonemappedLuminance: f32 = luminance / (1.0 + luminance);
+//      let tonemappedLuminance: f32 = luminance / (1.0 + luminance);
+        let scale: f32 = select(0.0, tonemappedLuminance / luminance, luminance > 0.0);
+//      let scale: f32 = select(0.0, tonemappedLuminance / luminance, luminance > 0.0);
+        return value * scale;
+//      return value * scale;
     }

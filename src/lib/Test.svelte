@@ -11,6 +11,8 @@
 //  import shaderStringRender from "../assets/render.wgsl?raw";
     import * as m from "mathjs";
 //  import * as m from "mathjs";
+    import { parseEXRWithWorker } from "./parse-exr-worker-wrapper";
+//  import { parseEXRWithWorker } from "./parse-exr-worker-wrapper";
 
 
 
@@ -294,8 +296,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
     let _isRunning: boolean;
 //  let _isRunning: boolean;
     let _frameHandle: number;
@@ -505,6 +507,8 @@
 //          requiredFeatures: [
                 "shader-f16",
 //              "shader-f16",
+                "float32-filterable",
+//              "float32-filterable",
             ] as Iterable<GPUFeatureName>,
 //          ] as Iterable<GPUFeatureName>,
             requiredLimits: {
@@ -719,24 +723,81 @@
 //          label: "GPU_TEXTURE_ATLAS",
             size: [ 1, 1, ],
 //          size: [ 1, 1, ],
-            format: "rgba16float",
-//          format: "rgba16float",
-            usage: GPUTextureUsage.TEXTURE_BINDING,
-//          usage: GPUTextureUsage.TEXTURE_BINDING,
+            format: "rgba32float",
+//          format: "rgba32float",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+//          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 //      });
+        const skyboxImage: ArrayBuffer = await (await fetch("/studio_garden_4k.exr")).arrayBuffer();
+//      const skyboxImage: ArrayBuffer = await (await fetch("/studio_garden_4k.exr")).arrayBuffer();
+        const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
+//      const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
         _hdriTexture = _device.createTexture({
 //      _hdriTexture = _device.createTexture({
             label: "GPU_TEXTURE_HDRI",
 //          label: "GPU_TEXTURE_HDRI",
-            size: [ 1, 1, ],
-//          size: [ 1, 1, ],
-            format: "rgba16float",
-//          format: "rgba16float",
-            usage: GPUTextureUsage.TEXTURE_BINDING,
-//          usage: GPUTextureUsage.TEXTURE_BINDING,
+            size: [ width, height, ],
+//          size: [ width, height, ],
+            format: "rgba32float",
+//          format: "rgba32float",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+//          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 //      });
+/*
+        // Corrected bytesPerPixel for rgba16float
+        // Corrected bytesPerPixel for rgba16float
+        const bytesPerPixel: number =  8; // 4 channels * 2 bytes per channel (16-bit float)
+//      const bytesPerPixel: number =  8; // 4 channels * 2 bytes per channel (16-bit float)
+*/
+        // Corrected bytesPerPixel for rgba32float
+        const bytesPerPixel: number = 16; // 4 channels * 4 bytes per channel (32-bit float)
+//      const bytesPerPixel: number = 16; // 4 channels * 4 bytes per channel (32-bit float)
+        const unaligned: number = width * bytesPerPixel;
+//      const unaligned: number = width * bytesPerPixel;
+        const alignedBytesPerRow: number = Math.ceil(unaligned / 256) * 256;
+//      const alignedBytesPerRow: number = Math.ceil(unaligned / 256) * 256;
+        _device.queue.writeTexture(
+//      _device.queue.writeTexture(
+            {
+//          {
+                aspect: "all",
+//              aspect: "all",
+                mipLevel: 0,
+//              mipLevel: 0,
+                origin: undefined,
+//              origin: undefined,
+                texture: _hdriTexture,
+//              texture: _hdriTexture,
+            },
+//          },
+            data as GPUAllowSharedBufferSource,
+//          data as GPUAllowSharedBufferSource,
+            {
+//          {
+                bytesPerRow: alignedBytesPerRow,
+//              bytesPerRow: alignedBytesPerRow,
+                offset: undefined,
+//              offset: undefined,
+                rowsPerImage: height,
+//              rowsPerImage: height,
+            },
+//          },
+            {
+//          {
+                depthOrArrayLayers: undefined,
+//              depthOrArrayLayers: undefined,
+                height: height,
+//              height: height,
+                width: width,
+//              width: width,
+                depth: undefined,
+//              depth: undefined,
+            },
+//          },
+        );
+//      );
         _spheres.push(
 //      _spheres.push(
             {
@@ -790,8 +851,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.DIFFUSE,
 //              materialType: MaterialType.DIFFUSE,
                 textureIndex: 0,
@@ -804,8 +865,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 1,
@@ -818,8 +879,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 2,
@@ -832,8 +893,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 3,
@@ -1096,8 +1157,8 @@
 //                      label: "GPU_TEXTURE_OUTPUT",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba16float",
-//                      format: "rgba16float",
+                        format: "rgba32float",
+//                      format: "rgba32float",
                         usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
@@ -1435,10 +1496,65 @@
 //  };
 
 
-    
+
+    function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+//  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+        stopLoop();
+//      stopLoop();
+        _lookFrom = newLookFrom;
+//      _lookFrom = newLookFrom;
+        _lookAt = newLookAt;
+//      _lookAt = newLookAt;
+        _viewUp = newViewUp;
+//      _viewUp = newViewUp;
+        _viewportW = _viewportH * _canvas.width / _canvas.height;
+//      _viewportW = _viewportH * _canvas.width / _canvas.height;
+        _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+//      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+        _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+//      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+        _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+//      _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+        startLoop();
+//      startLoop();
+    };
+//  };
     const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
 //  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
-
+        if (keyboardEvent.key === "1") {
+//      if (keyboardEvent.key === "1") {
+            moveCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "2") {
+//      } else if (keyboardEvent.key === "2") {
+            moveCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "3") {
+//      } else if (keyboardEvent.key === "3") {
+            moveCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "4") {
+//      } else if (keyboardEvent.key === "4") {
+            moveCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "5") {
+//      } else if (keyboardEvent.key === "5") {
+            moveCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "6") {
+//      } else if (keyboardEvent.key === "6") {
+            moveCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "7") {
+//      } else if (keyboardEvent.key === "7") {
+            moveCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+//          moveCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        } else if (keyboardEvent.key === "8") {
+//      } else if (keyboardEvent.key === "8") {
+            moveCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]);
+//          moveCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0]);
+        }
+//      }
     };
 //  };
 
