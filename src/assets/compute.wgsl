@@ -526,8 +526,8 @@
 //                      v = clamp(v, 0.0, 1.0);
 
 
-                        backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
-//                      backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);          
+                        backgroundColor = _tonemapReinhard(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
+//                      backgroundColor = _tonemapReinhard(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);          
                     }
 
 
