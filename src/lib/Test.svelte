@@ -21,6 +21,8 @@
 //  import * as t from "@tweenjs/tween.js";
     import type { EasingFunction } from "svelte/transition";
 //  import type { EasingFunction } from "svelte/transition";
+    import { compareArrays, isEqual } from "./Helper.svelte";
+//  import { compareArrays, isEqual } from "./Helper.svelte";
 
 
 
@@ -1581,16 +1583,16 @@
 //  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
         if (keyboardEvent.key === "1") {
 //      if (keyboardEvent.key === "1") {
-            tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "2") {
 //      } else if (keyboardEvent.key === "2") {
             tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
 //          tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "3") {
 //      } else if (keyboardEvent.key === "3") {
-            tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "4") {
 //      } else if (keyboardEvent.key === "4") {
             tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
@@ -1601,14 +1603,18 @@
 //          tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "6") {
 //      } else if (keyboardEvent.key === "6") {
-            tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "7") {
 //      } else if (keyboardEvent.key === "7") {
             tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
 //          tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "8") {
 //      } else if (keyboardEvent.key === "8") {
+            tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "9") {
+//      } else if (keyboardEvent.key === "9") {
             tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
 //          tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
         }
@@ -1649,8 +1655,8 @@
 
     function tweenCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3, durationTweenLookFrom: number, durationTweenLookAt: number, durationTweenViewUp: number, easingFunctionTweenLookFrom: EasingFunction, easingFunctionTweenLookAt: EasingFunction, easingFunctionTweenViewUp: EasingFunction): void {
 //  function tweenCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3, durationTweenLookFrom: number, durationTweenLookAt: number, durationTweenViewUp: number, easingFunctionTweenLookFrom: EasingFunction, easingFunctionTweenLookAt: EasingFunction, easingFunctionTweenViewUp: EasingFunction): void {
-        if (newLookFrom !== _lookFrom && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
-//      if (newLookFrom !== _lookFrom && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
+        if (!compareArrays(newLookFrom, _lookFrom, isEqual) && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
+//      if (!compareArrays(newLookFrom, _lookFrom, isEqual) && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
             const lookFrom: Vec3 = _lookFrom;
 //          const lookFrom: Vec3 = _lookFrom;
             _tweenCameraLookFrom = new t.Tween(lookFrom)
@@ -1687,8 +1693,8 @@
 //              .start();
         }
 //      }
-        if (newLookAt !== _lookAt && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
-//      if (newLookAt !== _lookAt && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
+        if (!compareArrays(newLookAt, _lookAt, isEqual) && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
+//      if (!compareArrays(newLookAt, _lookAt, isEqual) && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
             const lookAt: Vec3 = _lookAt;
 //          const lookAt: Vec3 = _lookAt;
             _tweenCameraLookAt = new t.Tween(lookAt)
@@ -1725,8 +1731,8 @@
 //              .start();
         }
 //      }
-        if (newViewUp !== _viewUp && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
-//      if (newViewUp !== _viewUp && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
+        if (!compareArrays(newViewUp, _viewUp, isEqual) && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
+//      if (!compareArrays(newViewUp, _viewUp, isEqual) && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
             const viewUp: Vec3 = _viewUp;
 //          const viewUp: Vec3 = _viewUp;
             _tweenCameraViewUp = new t.Tween(viewUp)
