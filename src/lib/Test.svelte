@@ -14,6 +14,16 @@
 
 
 
+
+    import { parseEXRWithWorker } from "./parse-exr-worker-wrapper";
+//  import { parseEXRWithWorker } from "./parse-exr-worker-wrapper";
+    import * as t from "@tweenjs/tween.js";
+//  import * as t from "@tweenjs/tween.js";
+    import type { EasingFunction } from "svelte/transition";
+//  import type { EasingFunction } from "svelte/transition";
+
+
+
     type Vec2 = [number, number];
 //  type Vec2 = [number, number];
     type Vec3 = [number, number, number];
@@ -294,13 +304,28 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_BLUE);
-    let _isRunning: boolean;
-//  let _isRunning: boolean;
-    let _frameHandle: number;
-//  let _frameHandle: number;
-
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+    let _isRunningRenderLoop: boolean;
+//  let _isRunningRenderLoop: boolean;
+    let _frameHandleRenderLoop: number;
+//  let _frameHandleRenderLoop: number;
+//     let _isRunningGeneralLoop: boolean;
+// //  let _isRunningGeneralLoop: boolean;
+//     let _frameHandleGeneralLoop: number;
+// //  let _frameHandleGeneralLoop: number;
+    let _tweenCameraLookFrom: t.Tween<Vec3> = null!;
+//  let _tweenCameraLookFrom: t.Tween<Vec3> = null!;
+    let _tweenCameraLookAt: t.Tween<Vec3> = null!;
+//  let _tweenCameraLookAt: t.Tween<Vec3> = null!;
+    let _tweenCameraViewUp: t.Tween<Vec3> = null!;
+//  let _tweenCameraViewUp: t.Tween<Vec3> = null!;
+    let _tweenCameraLookFromIsBusy: boolean = false;
+//  let _tweenCameraLookFromIsBusy: boolean = false;
+    let _tweenCameraLookAtIsBusy: boolean = false;
+//  let _tweenCameraLookAtIsBusy: boolean = false;
+    let _tweenCameraViewUpIsBusy: boolean = false;
+//  let _tweenCameraViewUpIsBusy: boolean = false;
 
 
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
@@ -505,6 +530,8 @@
 //          requiredFeatures: [
                 "shader-f16",
 //              "shader-f16",
+                "float32-filterable",
+//              "float32-filterable",
             ] as Iterable<GPUFeatureName>,
 //          ] as Iterable<GPUFeatureName>,
             requiredLimits: {
@@ -719,24 +746,81 @@
 //          label: "GPU_TEXTURE_ATLAS",
             size: [ 1, 1, ],
 //          size: [ 1, 1, ],
-            format: "rgba16float",
-//          format: "rgba16float",
-            usage: GPUTextureUsage.TEXTURE_BINDING,
-//          usage: GPUTextureUsage.TEXTURE_BINDING,
+            format: "rgba32float",
+//          format: "rgba32float",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+//          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 //      });
+        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/table_mountain_1_puresky_4k.exr")).arrayBuffer();
+//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/table_mountain_1_puresky_4k.exr")).arrayBuffer();
+        const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
+//      const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
         _hdriTexture = _device.createTexture({
 //      _hdriTexture = _device.createTexture({
             label: "GPU_TEXTURE_HDRI",
 //          label: "GPU_TEXTURE_HDRI",
-            size: [ 1, 1, ],
-//          size: [ 1, 1, ],
-            format: "rgba16float",
-//          format: "rgba16float",
-            usage: GPUTextureUsage.TEXTURE_BINDING,
-//          usage: GPUTextureUsage.TEXTURE_BINDING,
+            size: [ width, height, ],
+//          size: [ width, height, ],
+            format: "rgba32float",
+//          format: "rgba32float",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+//          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 //      });
+/*
+        // Corrected bytesPerPixel for rgba16float
+        // Corrected bytesPerPixel for rgba16float
+        const bytesPerPixel: number =  8; // 4 channels * 2 bytes per channel (16-bit float)
+//      const bytesPerPixel: number =  8; // 4 channels * 2 bytes per channel (16-bit float)
+*/
+        // Corrected bytesPerPixel for rgba32float
+        const bytesPerPixel: number = 16; // 4 channels * 4 bytes per channel (32-bit float)
+//      const bytesPerPixel: number = 16; // 4 channels * 4 bytes per channel (32-bit float)
+        const unaligned: number = width * bytesPerPixel;
+//      const unaligned: number = width * bytesPerPixel;
+        const alignedBytesPerRow: number = Math.ceil(unaligned / 256) * 256;
+//      const alignedBytesPerRow: number = Math.ceil(unaligned / 256) * 256;
+        _device.queue.writeTexture(
+//      _device.queue.writeTexture(
+            {
+//          {
+                aspect: "all",
+//              aspect: "all",
+                mipLevel: 0,
+//              mipLevel: 0,
+                origin: undefined,
+//              origin: undefined,
+                texture: _hdriTexture,
+//              texture: _hdriTexture,
+            },
+//          },
+            data as GPUAllowSharedBufferSource,
+//          data as GPUAllowSharedBufferSource,
+            {
+//          {
+                bytesPerRow: alignedBytesPerRow,
+//              bytesPerRow: alignedBytesPerRow,
+                offset: undefined,
+//              offset: undefined,
+                rowsPerImage: height,
+//              rowsPerImage: height,
+            },
+//          },
+            {
+//          {
+                depthOrArrayLayers: undefined,
+//              depthOrArrayLayers: undefined,
+                height: height,
+//              height: height,
+                width: width,
+//              width: width,
+                depth: undefined,
+//              depth: undefined,
+            },
+//          },
+        );
+//      );
         _spheres.push(
 //      _spheres.push(
             {
@@ -790,8 +874,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.DIFFUSE,
 //              materialType: MaterialType.DIFFUSE,
                 textureIndex: 0,
@@ -804,8 +888,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 1,
@@ -818,8 +902,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 2,
@@ -832,8 +916,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 3,
@@ -942,10 +1026,10 @@
 //          },
         );
 //      );
-        _isRunning = false;
-//      _isRunning = false;
-        _frameHandle = null!;
-//      _frameHandle = null!;
+        _isRunningRenderLoop = false;
+//      _isRunningRenderLoop = false;
+        _frameHandleRenderLoop = null!;
+//      _frameHandleRenderLoop = null!;
     };
 //  };
 
@@ -953,8 +1037,8 @@
 
     const renderLoop = (time: number): void => {
 //  const renderLoop = (time: number): void => {
-        if (!_isRunning) {
-//      if (!_isRunning) {
+        if (!_isRunningRenderLoop) {
+//      if (!_isRunningRenderLoop) {
             return;
 //          return;
         }
@@ -979,54 +1063,54 @@
 //          }
             if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
 //          if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
-                stopLoop();
-//              stopLoop();
+                stopRenderLoop();
+//              stopRenderLoop();
                 return;
 //              return;
             }
 //          }
         } else {
 //      } else {
-            stopLoop();
-//          stopLoop();
+            stopRenderLoop();
+//          stopRenderLoop();
             return;
 //          return;
         }
 //      }
-        _frameHandle = requestAnimationFrame(renderLoop);
-//      _frameHandle = requestAnimationFrame(renderLoop);
+        _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
+//      _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
     };
 //  };
-    const startLoop = (): void => {
-//  const startLoop = (): void => {
-        if (!_isRunning) {
-//      if (!_isRunning) {
-            _isRunning = true;
-//          _isRunning = true;
+    const startRenderLoop = (): void => {
+//  const startRenderLoop = (): void => {
+        if (!_isRunningRenderLoop) {
+//      if (!_isRunningRenderLoop) {
+            _isRunningRenderLoop = true;
+//          _isRunningRenderLoop = true;
 //          console.info("start loop");
 //          console.info("start loop");
             _stratifiedSampleX = 0.0;
 //          _stratifiedSampleX = 0.0;
             _stratifiedSampleY = 0.0;
 //          _stratifiedSampleY = 0.0;
-            _frameHandle = requestAnimationFrame(renderLoop);
-//          _frameHandle = requestAnimationFrame(renderLoop);
+            _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
+//          _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
         }
 //      }
     };
 //  };
-    const stopLoop = (): void => {
-//  const stopLoop = (): void => {
-        _isRunning = false;
-//      _isRunning = false;
-        if (_frameHandle) {
-//      if (_frameHandle) {
+    const stopRenderLoop = (): void => {
+//  const stopRenderLoop = (): void => {
+        _isRunningRenderLoop = false;
+//      _isRunningRenderLoop = false;
+        if (_frameHandleRenderLoop) {
+//      if (_frameHandleRenderLoop) {
 //          console.info("stop loop");
 //          console.info("stop loop");
-            cancelAnimationFrame(_frameHandle);
-//          cancelAnimationFrame(_frameHandle);
-            _frameHandle = null!;
-//          _frameHandle = null!;
+            cancelAnimationFrame(_frameHandleRenderLoop);
+//          cancelAnimationFrame(_frameHandleRenderLoop);
+            _frameHandleRenderLoop = null!;
+//          _frameHandleRenderLoop = null!;
         }
 //      }
     };
@@ -1058,8 +1142,8 @@
 //      _resizeObserver = new ResizeObserver(
             (entries: ResizeObserverEntry[]) => {
 //          (entries: ResizeObserverEntry[]) => {
-                stopLoop();
-//              stopLoop();
+                stopRenderLoop();
+//              stopRenderLoop();
                 for (const entry of entries) {
 //              for (const entry of entries) {
                     const entryAsCanvas: HTMLCanvasElement = entry.target as HTMLCanvasElement;
@@ -1128,8 +1212,8 @@
 //                      label: "GPU_TEXTURE_OUTPUT",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba16float",
-//                      format: "rgba16float",
+                        format: "rgba32float",
+//                      format: "rgba32float",
                         usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
@@ -1302,8 +1386,8 @@
                 // prepare();
                 // render();
                 // render();
-                startLoop();
-//              startLoop();
+                startRenderLoop();
+//              startRenderLoop();
             },
 //          },
         );
@@ -1467,12 +1551,220 @@
 //  };
 
 
-    
-    const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
-//  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
 
+    function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+//  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+        stopRenderLoop();
+//      stopRenderLoop();
+        _lookFrom = newLookFrom;
+//      _lookFrom = newLookFrom;
+        _lookAt = newLookAt;
+//      _lookAt = newLookAt;
+        _viewUp = newViewUp;
+//      _viewUp = newViewUp;
+        _viewportW = _viewportH * _canvas.width / _canvas.height;
+//      _viewportW = _viewportH * _canvas.width / _canvas.height;
+        _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+//      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
+        _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+//      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+        _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+//      _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+        startRenderLoop();
+//      startRenderLoop();
     };
 //  };
+
+
+
+    const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
+//  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
+        if (keyboardEvent.key === "1") {
+//      if (keyboardEvent.key === "1") {
+            tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "2") {
+//      } else if (keyboardEvent.key === "2") {
+            tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "3") {
+//      } else if (keyboardEvent.key === "3") {
+            tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "4") {
+//      } else if (keyboardEvent.key === "4") {
+            tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "5") {
+//      } else if (keyboardEvent.key === "5") {
+            tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "6") {
+//      } else if (keyboardEvent.key === "6") {
+            tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "7") {
+//      } else if (keyboardEvent.key === "7") {
+            tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+        } else if (keyboardEvent.key === "8") {
+//      } else if (keyboardEvent.key === "8") {
+            tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
+//          tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
+        }
+//      }
+    };
+//  };
+
+
+
+    function generalLoop(time: number): void {
+//  function generalLoop(time: number): void {
+		if (_tweenCameraLookFrom) {
+//      if (_tweenCameraLookFrom) {
+            _tweenCameraLookFrom.update(time);
+//          _tweenCameraLookFrom.update(time);
+        }
+//      }
+		if (_tweenCameraLookAt) {
+//      if (_tweenCameraLookAt) {
+            _tweenCameraLookAt.update(time);
+//          _tweenCameraLookAt.update(time);
+        }
+//      }
+		if (_tweenCameraViewUp) {
+//      if (_tweenCameraViewUp) {
+            _tweenCameraViewUp.update(time);
+//          _tweenCameraViewUp.update(time);
+        }
+//      }
+		requestAnimationFrame(generalLoop);
+//      requestAnimationFrame(generalLoop);
+	}
+//  }
+	requestAnimationFrame(generalLoop);
+//  requestAnimationFrame(generalLoop);
+
+
+
+    function tweenCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3, durationTweenLookFrom: number, durationTweenLookAt: number, durationTweenViewUp: number, easingFunctionTweenLookFrom: EasingFunction, easingFunctionTweenLookAt: EasingFunction, easingFunctionTweenViewUp: EasingFunction): void {
+//  function tweenCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3, durationTweenLookFrom: number, durationTweenLookAt: number, durationTweenViewUp: number, easingFunctionTweenLookFrom: EasingFunction, easingFunctionTweenLookAt: EasingFunction, easingFunctionTweenViewUp: EasingFunction): void {
+        if (newLookFrom !== _lookFrom && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
+//      if (newLookFrom !== _lookFrom && (!_tweenCameraLookFrom || !_tweenCameraLookFromIsBusy)) {
+            const lookFrom: Vec3 = _lookFrom;
+//          const lookFrom: Vec3 = _lookFrom;
+            _tweenCameraLookFrom = new t.Tween(lookFrom)
+//          _tweenCameraLookFrom = new t.Tween(lookFrom)
+                .to(newLookFrom, durationTweenLookFrom)
+//              .to(newLookFrom, durationTweenLookFrom)
+                .easing(easingFunctionTweenLookFrom)
+//              .easing(easingFunctionTweenLookFrom)
+                .onStart((object: Vec3): void => {
+//              .onStart((object: Vec3): void => {
+                    _tweenCameraLookFromIsBusy = true;
+//                  _tweenCameraLookFromIsBusy = true;
+                })
+//              })
+                .onUpdate((object: Vec3, elapsed: number): void => {
+//              .onUpdate((object: Vec3, elapsed: number): void => {
+                    moveCamera(object, _lookAt, _viewUp);
+//                  moveCamera(object, _lookAt, _viewUp);
+                })
+//              })
+                .onStop((object: Vec3): void => {
+//              .onStop((object: Vec3): void => {
+                    _tweenCameraLookFromIsBusy = false;
+//                  _tweenCameraLookFromIsBusy = false;
+                })
+//              })
+                .onComplete((object: Vec3): void => {
+//              .onComplete((object: Vec3): void => {
+                    _tweenCameraLookFromIsBusy = false;
+//                  _tweenCameraLookFromIsBusy = false;
+                })
+//              })
+                .start();
+//              .start();
+        }
+//      }
+        if (newLookAt !== _lookAt && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
+//      if (newLookAt !== _lookAt && (!_tweenCameraLookAt || !_tweenCameraLookAtIsBusy)) {
+            const lookAt: Vec3 = _lookAt;
+//          const lookAt: Vec3 = _lookAt;
+            _tweenCameraLookAt = new t.Tween(lookAt)
+//          _tweenCameraLookAt = new t.Tween(lookAt)
+                .to(newLookAt, durationTweenLookAt)
+//              .to(newLookAt, durationTweenLookAt)
+                .easing(easingFunctionTweenLookAt)
+//              .easing(easingFunctionTweenLookAt)
+                .onStart((object: Vec3): void => {
+//              .onStart((object: Vec3): void => {
+                    _tweenCameraLookAtIsBusy = true;
+//                  _tweenCameraLookAtIsBusy = true;
+                })
+//              })
+                .onUpdate((object: Vec3, elapsed: number): void => {
+//              .onUpdate((object: Vec3, elapsed: number): void => {
+                    moveCamera(_lookFrom, object, _viewUp);
+//                  moveCamera(_lookFrom, object, _viewUp);
+                })
+//              })
+                .onStop((object: Vec3): void => {
+//              .onStop((object: Vec3): void => {
+                    _tweenCameraLookAtIsBusy = false;
+//                  _tweenCameraLookAtIsBusy = false;
+                })
+//              })
+                .onComplete((object: Vec3): void => {
+//              .onComplete((object: Vec3): void => {
+                    _tweenCameraLookAtIsBusy = false;
+//                  _tweenCameraLookAtIsBusy = false;
+                })
+//              })
+                .start();
+//              .start();
+        }
+//      }
+        if (newViewUp !== _viewUp && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
+//      if (newViewUp !== _viewUp && (!_tweenCameraViewUp || !_tweenCameraViewUpIsBusy)) {
+            const viewUp: Vec3 = _viewUp;
+//          const viewUp: Vec3 = _viewUp;
+            _tweenCameraViewUp = new t.Tween(viewUp)
+//          _tweenCameraViewUp = new t.Tween(viewUp)
+                .to(newViewUp, durationTweenViewUp)
+//              .to(newViewUp, durationTweenViewUp)
+                .easing(easingFunctionTweenViewUp)
+//              .easing(easingFunctionTweenViewUp)
+                .onStart((object: Vec3): void => {
+//              .onStart((object: Vec3): void => {
+                    _tweenCameraViewUpIsBusy = true;
+//                  _tweenCameraViewUpIsBusy = true;
+                })
+//              })
+                .onUpdate((object: Vec3, elapsed: number): void => {
+//              .onUpdate((object: Vec3, elapsed: number): void => {
+                    moveCamera(_lookFrom, _lookAt, object);
+//                  moveCamera(_lookFrom, _lookAt, object);
+                })
+//              })
+                .onStop((object: Vec3): void => {
+//              .onStop((object: Vec3): void => {
+                    _tweenCameraViewUpIsBusy = false;
+//                  _tweenCameraViewUpIsBusy = false;
+                })
+//              })
+                .onComplete((object: Vec3): void => {
+//              .onComplete((object: Vec3): void => {
+                    _tweenCameraViewUpIsBusy = false;
+//                  _tweenCameraViewUpIsBusy = false;
+                })
+//              })
+                .start();
+//              .start();
+        }
+//      }
+    }
+//  }
 
 
 

@@ -41,6 +41,10 @@
 //      "src/**/*.js",
         "src/**/*.svelte",
 //      "src/**/*.svelte",
+        "src/**/*.mjs",
+//      "src/**/*.mjs",
+        "src/**/*.wasm",
+//      "src/**/*.wasm",
     ]
     ,
 }
