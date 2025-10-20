@@ -50,3 +50,31 @@
 //  const file: File = await loadPublicFileAsFile("/weights/model.bin");
 //  console.log(file.name, file.size, file.type);
 //  console.log(file.name, file.size, file.type);
+
+    export function compareArrays<T>(a: T[], b: T[], compareFn?: (x: T, y: T) => boolean): boolean {
+//  export function compareArrays<T>(a: T[], b: T[], compareFn?: (x: T, y: T) => boolean): boolean {
+        if (a.length !== b.length) {
+//      if (a.length !== b.length) {
+            return false;
+//          return false;
+        }
+//      }
+        const equals: (x: T, y: T) => boolean = compareFn ?? ((x, y) => x === y);
+//      const equals: (x: T, y: T) => boolean = compareFn ?? ((x, y) => x === y);
+        for (let i = 0; i < a.length; i++) {
+//      for (let i = 0; i < a.length; i++) {
+            if (!equals(a[i], b[i])) {
+//          if (!equals(a[i], b[i])) {
+                return false;
+//              return false;
+            }
+//          }
+        }
+//      }
+        return true;
+//      return true;
+    }
+//  }
+
+    export const isEqual = (x: number, y: number): boolean => x === y;
+//  export const isEqual = (x: number, y: number): boolean => x === y;
