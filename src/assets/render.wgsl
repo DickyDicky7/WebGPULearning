@@ -71,8 +71,8 @@
 {
     let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
 //  let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
-    return vec4<f32>(_vec3LinearToGamma(_tonemapReinhard(rgb)), 1.0);
-//  return vec4<f32>(_vec3LinearToGamma(_tonemapReinhard(rgb)), 1.0);
+    return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
+//  return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
 };
 
     fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
