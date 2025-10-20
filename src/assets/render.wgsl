@@ -69,86 +69,10 @@
     @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
 //  @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
 {
-
-
-
-
-
-
-    // center-based offset so effect radiates from center
-//  // center-based offset so effect radiates from center
-    let center: vec2<f32> = vec2<f32>(0.5, 0.5);
-//  let center: vec2<f32> = vec2<f32>(0.5, 0.5);
-    let direction: vec2<f32> = fragmentShaderInput.uv - center;
-//  let direction: vec2<f32> = fragmentShaderInput.uv - center;
-
-    // direction-scaled offset (so corners shift more)
-//  // direction-scaled offset (so corners shift more)
-    let offset: vec2<f32> = direction * 0.01;
-//  let offset: vec2<f32> = direction * 0.01;
-
-    // optionally curve the offset with a power for nicer falloff
-//  // optionally curve the offset with a power for nicer falloff
-    let powFactor: f32 = pow(length(direction) * 2.0, 1.0); // small non-linear boost
-//  let powFactor: f32 = pow(length(direction) * 2.0, 1.0); // small non-linear boost
-    let finalOffset: vec2<f32> = offset * powFactor;
-//  let finalOffset: vec2<f32> = offset * powFactor;
-
-    // sample channels: red shifted one way, blue opposite, green centered
-//  // sample channels: red shifted one way, blue opposite, green centered
-    let uvR: vec2<f32> = fragmentShaderInput.uv + finalOffset * (0.5 + 0.1);
-//  let uvR: vec2<f32> = fragmentShaderInput.uv + finalOffset * (0.5 + 0.1);
-    let uvG: vec2<f32> = fragmentShaderInput.uv;
-//  let uvG: vec2<f32> = fragmentShaderInput.uv;
-    let uvB: vec2<f32> = fragmentShaderInput.uv - finalOffset * (0.5 + 0.1);
-//  let uvB: vec2<f32> = fragmentShaderInput.uv - finalOffset * (0.5 + 0.1);
-
-    // Sample texture (textureSample clamps or wraps depending on sampler)
-//  // Sample texture (textureSample clamps or wraps depending on sampler)
-    let colorR: vec4<f32> = textureSample(outputTexture, outputSampler, uvR);
-//  let colorR: vec4<f32> = textureSample(outputTexture, outputSampler, uvR);
-    let colorG: vec4<f32> = textureSample(outputTexture, outputSampler, uvG);
-//  let colorG: vec4<f32> = textureSample(outputTexture, outputSampler, uvG);
-    let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
-//  let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
-
-    // Compose RGB from separate samples; keep alpha from green
-//  // Compose RGB from separate samples; keep alpha from green
-    var outputColor: vec3<f32> = _tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b));
-//  var outputColor: vec3<f32> = _tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b));
-
-    // ---- Correct VIGNETTE ----
-//  // ---- Correct VIGNETTE ----
-    let distance: f32 = length(direction); // distance from center (0..~0.7 on screen)
-//  let distance: f32 = length(direction); // distance from center (0..~0.7 on screen)
-    let vignetteRadius: f32 = 0.9; // how far before darkening starts
-//  let vignetteRadius: f32 = 0.9; // how far before darkening starts
-    let vignetteSoftness: f32 = 0.5; // how smooth the fade is
-//  let vignetteSoftness: f32 = 0.5; // how smooth the fade is
-    // fade from center (1.0) to edge (0.0)
-//  // fade from center (1.0) to edge (0.0)
-    let vignette: f32 = smoothstep(vignetteRadius, vignetteRadius - vignetteSoftness, distance);
-//  let vignette: f32 = smoothstep(vignetteRadius, vignetteRadius - vignetteSoftness, distance);
-    outputColor *= vignette;
-//  outputColor *= vignette;
-
-    // Optional gamma correction
-//  // Optional gamma correction
-    // outputColor = pow(outputColor, vec3<f32>(1.0 / 2.2));
-//  // outputColor = pow(outputColor, vec3<f32>(1.0 / 2.2));
-
-    return vec4<f32>(outputColor, 1.0);
-//  return vec4<f32>(outputColor, 1.0);
-
-
-
-
-
-
-/*
-    return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
-//  return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
-*/
+    let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
+//  let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
+    return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
+//  return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
 };
 
     fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
