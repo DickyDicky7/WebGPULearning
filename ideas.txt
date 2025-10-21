@@ -1,0 +1,59 @@
+Advanced Path Tracing Solutions & Ideas
+Advanced Path Tracing Solutions & Ideas
+
+
+Here is a list of advanced rendering techniques to explore for improving realism and performance.
+Here is a list of advanced rendering techniques to explore for improving realism and performance.
+
+
+1. Full Multiple Importance Sampling (MIS)
+1. Full Multiple Importance Sampling (MIS)
+
+   - What it is: The current implementation uses Next Event Estimation (NEE), which is one half of MIS. A full MIS implementation intelligently combines the light from direct shadow rays (NEE) with the light found by random material-based bounces (BRDF sampling).
+   - What it is: The current implementation uses Next Event Estimation (NEE), which is one half of MIS. A full MIS implementation intelligently combines the light from direct shadow rays (NEE) with the light found by random material-based bounces (BRDF sampling).
+
+   - How it works: It uses a "weighting heuristic" (e.g., the power heuristic) to balance the two sampling strategies, ensuring that no light is double-counted or missed.
+   - How it works: It uses a "weighting heuristic" (e.g., the power heuristic) to balance the two sampling strategies, ensuring that no light is double-counted or missed.
+
+   - Benefit: Further reduces noise (variance), especially in scenes with complex lighting and materials. It's considered essential for a robust, physically-based path tracer.
+   - Benefit: Further reduces noise (variance), especially in scenes with complex lighting and materials. It's considered essential for a robust, physically-based path tracer.
+
+
+2. Importance Sampling the Entire Skybox
+2. Importance Sampling the Entire Skybox
+
+   - What it is: Instead of treating the sun as a single special light source, this technique treats the entire HDR skybox as a massive, complex area light.
+   - What it is: Instead of treating the sun as a single special light source, this technique treats the entire HDR skybox as a massive, complex area light.
+
+   - How it works: It involves pre-processing the skybox texture to build a 2D probability distribution function (PDF). This data structure allows you to sample random directions from the sky with a probability proportional to their actual brightness.
+   - How it works: It involves pre-processing the skybox texture to build a 2D probability distribution function (PDF). This data structure allows you to sample random directions from the sky with a probability proportional to their actual brightness.
+
+   - Benefit: Correctly captures complex lighting and soft shadows from the entire environment, not just a single sun disc. Essential for scenes without one dominant light source.
+   - Benefit: Correctly captures complex lighting and soft shadows from the entire environment, not just a single sun disc. Essential for scenes without one dominant light source.
+
+
+3. Bidirectional Path Tracing (BDPT)
+3. Bidirectional Path Tracing (BDPT)
+
+   - What it is: A very powerful algorithm that traces paths from *both* the camera (like a standard path tracer) and from the light sources simultaneously.
+   - What it is: A very powerful algorithm that traces paths from *both* the camera (like a standard path tracer) and from the light sources simultaneously.
+
+   - How it works: It generates "camera paths" and "light paths" and then tries to connect their vertices in the middle of the scene.
+   - How it works: It generates "camera paths" and "light paths" and then tries to connect their vertices in the middle of the scene.
+
+   - Benefit: Exceptionally good at rendering difficult lighting scenarios that are nearly impossible for a standard path tracer. This includes caustics (light focusing through glass or water) and indirect lighting in enclosed spaces (e.g., light shining through a small crack into a dark room).
+   - Benefit: Exceptionally good at rendering difficult lighting scenarios that are nearly impossible for a standard path tracer. This includes caustics (light focusing through glass or water) and indirect lighting in enclosed spaces (e.g., light shining through a small crack into a dark room).
+
+
+4. Metropolis Light Transport (MLT)
+4. Metropolis Light Transport (MLT)
+
+   - What it is: An even more advanced (and complex) algorithm, often built on top of BDPT. It is particularly good at finding and exploring very difficult, complex light paths.
+   - What it is: An even more advanced (and complex) algorithm, often built on top of BDPT. It is particularly good at finding and exploring very difficult, complex light paths.
+
+   - How it works: It works by making small, random "mutations" to paths that have already been found to successfully carry light to the camera. If a mutation finds a better path, it's more likely to be kept.
+   - How it works: It works by making small, random "mutations" to paths that have already been found to successfully carry light to the camera. If a mutation finds a better path, it's more likely to be kept.
+
+   - Benefit: One of the most robust algorithms for rendering scenes with extremely complex global illumination where other methods fail.
+   - Benefit: One of the most robust algorithms for rendering scenes with extremely complex global illumination where other methods fail.
+

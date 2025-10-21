@@ -429,7 +429,7 @@
 
         let exposedColor: vec3<f32> = exposure * value;
 //      let exposedColor: vec3<f32> = exposure * value;
-    
+
         let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
 //      let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
         let VB : vec3<f32> = vec3<f32>(    B,     B,     B);
@@ -443,7 +443,7 @@
 
         let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
 //      let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
-    
+
         let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
 //      let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
         let whitePoint: vec3<f32> = ((whitePointVec * (A * whitePointVec + VCB) + VDE) / (whitePointVec * (A * whitePointVec + VB) + VDF)) - VEF;
