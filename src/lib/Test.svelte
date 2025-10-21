@@ -754,8 +754,8 @@
 //          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
         });
 //      });
-        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/table_mountain_1_puresky_4k.exr")).arrayBuffer();
-//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/table_mountain_1_puresky_4k.exr")).arrayBuffer();
+        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/studio_garden_4k.exr")).arrayBuffer();
+//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/studio_garden_4k.exr")).arrayBuffer();
         const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
 //      const { data, width, height } = await parseEXRWithWorker(skyboxImage, 1015);
         _hdriTexture = _device.createTexture({
@@ -1477,7 +1477,7 @@
         _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
 //      _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
 
-        
+
         _computePass = _commandEncoder.beginComputePass(_computePassDescriptor);
 //      _computePass = _commandEncoder.beginComputePass(_computePassDescriptor);
         _computePass.setPipeline(_computePipeline);

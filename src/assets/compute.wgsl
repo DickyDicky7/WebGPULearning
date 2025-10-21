@@ -218,7 +218,7 @@
 //      let phi  : f32 = atan2(-outwardNormal.z, outwardNormal.x) + PI; // longitude
 
         rayHitResult.uvSurfaceCoordinate = vec2<f32>(phi / (2.0 * PI), theta / PI);
-//      rayHitResult.uvSurfaceCoordinate = vec2<f32>(phi / (2.0 * PI), theta / PI);    
+//      rayHitResult.uvSurfaceCoordinate = vec2<f32>(phi / (2.0 * PI), theta / PI);
     }
 
     return rayHitResult;
@@ -307,7 +307,7 @@
                 ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
 //              ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
             }
-        
+
             let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
 //          let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
 
@@ -526,8 +526,32 @@
 //                      v = clamp(v, 0.0, 1.0);
 
 
+                        // Tonemapping Solution
+                        // Tonemapping Solution
+
                         backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
-//                      backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);          
+//                      backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
+
+
+
+                        // Radiance Clamping Solution
+                        // Radiance Clamping Solution
+                        /*
+                        let rawBackgroundColor: vec3<f32> = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
+//                      let rawBackgroundColor: vec3<f32> = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
+                        let radianceClampValue: f32 = 10.0; // Tune this value to control fireflies
+//                      let radianceClampValue: f32 = 10.0; // Tune this value to control fireflies
+                        backgroundColor = min(rawBackgroundColor, vec3<f32>(radianceClampValue));
+//                      backgroundColor = min(rawBackgroundColor, vec3<f32>(radianceClampValue));
+                        */
+
+
+                        // No Solution
+                        // No Solution
+                        /*
+                        backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
+//                      backgroundColor = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
+                        */
                     }
 
 
@@ -545,11 +569,108 @@
 //              break;
             }
 
+
+            // --- 1/2 of MIS: Next Event Estimation ---
+            // --- 1/2 of MIS: Next Event Estimation ---
+            /*
+            let material: Material = materials[rayHitResult.materialIndex];
+//          let material: Material = materials[rayHitResult.materialIndex];
+            */
+
+
             let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
 //          let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
 
             accumulatedColor += attenuation * materialLightScatteringResult.emission;
 //          accumulatedColor += attenuation * materialLightScatteringResult.emission;
+
+
+            // --- 2/2 of MIS: Next Event Estimation ---
+            // --- 2/2 of MIS: Next Event Estimation ---
+            // Explicitly sample the sun for diffuse-like surfaces to add its direct light contribution.
+            // Explicitly sample the sun for diffuse-like surfaces to add its direct light contribution.
+            /*
+            if (material.materialType == MATERIAL_TYPE_DIFFUSE || material.materialType == MATERIAL_TYPE_GLOSS)
+//          if (material.materialType == MATERIAL_TYPE_DIFFUSE || material.materialType == MATERIAL_TYPE_GLOSS)
+            {
+                // Hard Shadow (Point Light) Solution
+                // Hard Shadow (Point Light) Solution
+                /*
+                let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+//              let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+                let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+//              let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+
+                let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
+//              let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
+                let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+//              let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+
+                if (!shadowHit.isHitted)
+//              if (!shadowHit.isHitted)
+                {
+                    // The path to the sun is clear. Add direct light.
+                    // The path to the sun is clear. Add direct light.
+                    let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
+//                  let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
+
+                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
+                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
+                    let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+//                  let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+
+                    let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
+//                  let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
+
+                    accumulatedColor += attenuation * directLight;
+//                  accumulatedColor += attenuation * directLight;
+                }
+                */
+
+
+                // Soft Shadow (Area Light) Solution
+                // Soft Shadow (Area Light) Solution
+
+                let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+//              let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+                let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+//              let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+                let sunRadius: f32 = 0.025; // Increase for softer shadows, decrease for harder shadows
+//              let sunRadius: f32 = 0.025; // Increase for softer shadows, decrease for harder shadows
+
+                // Jitter the sun direction to simulate an area light and get soft shadows
+                // Jitter the sun direction to simulate an area light and get soft shadows
+                let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+//              let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+
+                let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+//              let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+                let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+//              let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+
+                if (!shadowHit.isHitted)
+//              if (!shadowHit.isHitted)
+                {
+                    // The path to the sun is clear. Add direct light.
+                    // The path to the sun is clear. Add direct light.
+                    let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+//                  let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+
+                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
+                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
+                    let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+//                  let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+
+                    let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
+//                  let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
+
+                    accumulatedColor += attenuation * directLight;
+//                  accumulatedColor += attenuation * directLight;
+                }
+
+            }
+            */
+
 
             if (!materialLightScatteringResult.isScattered)
 //          if (!materialLightScatteringResult.isScattered)
@@ -558,8 +679,32 @@
 //              break;
             }
 
-            attenuation *= materialLightScatteringResult.attenuation ;
-//          attenuation *= materialLightScatteringResult.attenuation ;
+            attenuation *= materialLightScatteringResult.attenuation;
+//          attenuation *= materialLightScatteringResult.attenuation;
+
+
+            // Russian Roulette Solution
+            // Russian Roulette Solution
+            /*
+            let minBouncesForRR: u32 = 4u;
+//          let minBouncesForRR: u32 = 4u;
+            if (depth >= minBouncesForRR)
+//          if (depth >= minBouncesForRR)
+            {
+                let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
+//              let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
+                if (_pcg32Next(rng) > p)
+//              if (_pcg32Next(rng) > p)
+                {
+                    break; // Terminate the ray
+//                  break; // Terminate the ray
+                }
+                attenuation *= 1.0 / p; // Boost the survivor
+//              attenuation *= 1.0 / p; // Boost the survivor
+            }
+            */
+
+
             currentRay   = materialLightScatteringResult.scatteredRay;
 //          currentRay   = materialLightScatteringResult.scatteredRay;
         }
@@ -1200,7 +1345,7 @@
 
         let exposedColor: vec3<f32> = exposure * value;
 //      let exposedColor: vec3<f32> = exposure * value;
-    
+
         let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
 //      let VCB: vec3<f32> = vec3<f32>(C * B, C * B, C * B);
         let VB : vec3<f32> = vec3<f32>(    B,     B,     B);
@@ -1214,7 +1359,7 @@
 
         let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
 //      let curr: vec3<f32> = ((exposedColor * (A * exposedColor + VCB) + VDE) / (exposedColor * (A * exposedColor + VB) + VDF)) - VEF;
-    
+
         let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
 //      let whitePointVec: vec3<f32> = vec3<f32>(W, W, W);
         let whitePoint: vec3<f32> = ((whitePointVec * (A * whitePointVec + VCB) + VDE) / (whitePointVec * (A * whitePointVec + VB) + VDF)) - VEF;
