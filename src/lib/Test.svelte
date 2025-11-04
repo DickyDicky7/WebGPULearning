@@ -23,6 +23,8 @@
 //  import type { EasingFunction } from "svelte/transition";
     import { compareArrays, isEqual } from "./Helper.svelte";
 //  import { compareArrays, isEqual } from "./Helper.svelte";
+    import { encodeOctahedralNormal, decodeOctahedralNormal, encodeQuantizedUV, decodeQuantizedUV } from "./Helper.svelte";
+//  import { encodeOctahedralNormal, decodeOctahedralNormal, encodeQuantizedUV, decodeQuantizedUV } from "./Helper.svelte";
 
 
 
@@ -139,6 +141,32 @@
 //      eTileTextureIndex: number,
     };
 //  };
+    type Triangle = {
+//  type Triangle = {
+        vertex0: Vec3,
+//      vertex0: Vec3,
+        vertex1: Vec3,
+//      vertex1: Vec3,
+        vertex2: Vec3,
+//      vertex2: Vec3,
+        vertex0FrontFaceNormal: Vec3,
+//      vertex0FrontFaceNormal: Vec3,
+        vertex1FrontFaceNormal: Vec3,
+//      vertex1FrontFaceNormal: Vec3,
+        vertex2FrontFaceNormal: Vec3,
+//      vertex2FrontFaceNormal: Vec3,
+        vertex0UV: Vec2,
+//      vertex0UV: Vec2,
+        vertex1UV: Vec2,
+//      vertex1UV: Vec2,
+        vertex2UV: Vec2,
+//      vertex2UV: Vec2,
+        materialIndex: number,
+//      materialIndex: number,
+        perVertexFrontFaceNormalAvailable: boolean,
+//      perVertexFrontFaceNormalAvailable: boolean,
+    };
+//  };
 
 
 
@@ -232,6 +260,14 @@
 //  let _hdriSampler: GPUSampler;
     let _hdriTexture: GPUTexture;
 //  let _hdriTexture: GPUTexture;
+    let _trianglesStorageValuesDataView: DataView;
+//  let _trianglesStorageValuesDataView: DataView;
+    let _trianglesStorageValues: ArrayBuffer;
+//  let _trianglesStorageValues: ArrayBuffer;
+    let _trianglesStorageBuffer: GPUBuffer;
+//  let _trianglesStorageBuffer: GPUBuffer;
+    let _triangles: Triangle[] = $state([]);
+//  let _triangles: Triangle[] = $state([]);
     let _computeBindGroup0: GPUBindGroup;
 //  let _computeBindGroup0: GPUBindGroup;
     let _gatherBindGroup0: GPUBindGroup;
@@ -519,6 +555,96 @@
 //      _device.queue.writeBuffer(_texturesStorageBuffer, 0, _texturesStorageValues as GPUAllowSharedBufferSource);
     };
 //  };
+    const prepareTriangles = (): void => {
+//  const prepareTriangles = (): void => {
+        if (!_trianglesStorageValues || _triangles.length !== _trianglesStorageValues.byteLength / 64) {
+//      if (!_trianglesStorageValues || _triangles.length !== _trianglesStorageValues.byteLength / 64) {
+            _trianglesStorageValues = new ArrayBuffer(_triangles.length * 64);
+//          _trianglesStorageValues = new ArrayBuffer(_triangles.length * 64);
+            _trianglesStorageValuesDataView = new DataView(_trianglesStorageValues);
+//          _trianglesStorageValuesDataView = new DataView(_trianglesStorageValues);
+            if (_trianglesStorageBuffer) {
+//          if (_trianglesStorageBuffer) {
+                _trianglesStorageBuffer.destroy();
+//              _trianglesStorageBuffer.destroy();
+            }
+//          }
+            _trianglesStorageBuffer = _device.createBuffer({
+//          _trianglesStorageBuffer = _device.createBuffer({
+                label: "GPU_STORAGE_BUFFER_TRIANGLES",
+//              label: "GPU_STORAGE_BUFFER_TRIANGLES",
+                size: _trianglesStorageValues.byteLength,
+//              size: _trianglesStorageValues.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+//              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+//          });
+        }
+//      }
+        _triangles.forEach((
+//      _triangles.forEach((
+            triangle: Triangle, triangleIndex: number): void => {
+//          triangle: Triangle, triangleIndex: number): void => {
+                if (!triangle.perVertexFrontFaceNormalAvailable) {
+//              if (!triangle.perVertexFrontFaceNormalAvailable) {
+                    const vertex1SubtractVertex0: Vec3 = m.subtract(triangle.vertex1, triangle.vertex0);
+//                  const vertex1SubtractVertex0: Vec3 = m.subtract(triangle.vertex1, triangle.vertex0);
+                    const vertex2SubtractVertex0: Vec3 = m.subtract(triangle.vertex2, triangle.vertex0);
+//                  const vertex2SubtractVertex0: Vec3 = m.subtract(triangle.vertex2, triangle.vertex0);
+                    const crossVector: Vec3 = m.cross(vertex1SubtractVertex0, vertex2SubtractVertex0) as Vec3;
+//                  const crossVector: Vec3 = m.cross(vertex1SubtractVertex0, vertex2SubtractVertex0) as Vec3;
+                    const normal: Vec3 = m.divide(crossVector, m.norm(crossVector)) as Vec3;
+//                  const normal: Vec3 = m.divide(crossVector, m.norm(crossVector)) as Vec3;
+                    triangle.vertex0FrontFaceNormal = normal;
+//                  triangle.vertex0FrontFaceNormal = normal;
+                    triangle.vertex1FrontFaceNormal = normal;
+//                  triangle.vertex1FrontFaceNormal = normal;
+                    triangle.vertex2FrontFaceNormal = normal;
+//                  triangle.vertex2FrontFaceNormal = normal;
+                    triangle.perVertexFrontFaceNormalAvailable = true;
+//                  triangle.perVertexFrontFaceNormalAvailable = true;
+                }
+//              }
+                const base: number = triangleIndex * 64;
+//              const base: number = triangleIndex * 64;
+                _trianglesStorageValuesDataView.setFloat32(base + 0, triangle.vertex0[0], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 0, triangle.vertex0[0], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 4, triangle.vertex0[1], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 4, triangle.vertex0[1], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 8, triangle.vertex0[2], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 8, triangle.vertex0[2], true);
+                _trianglesStorageValuesDataView.setUint32(base + 12, encodeOctahedralNormal(triangle.vertex0FrontFaceNormal), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 12, encodeOctahedralNormal(triangle.vertex0FrontFaceNormal), true);
+                _trianglesStorageValuesDataView.setFloat32(base + 16, triangle.vertex1[0], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 16, triangle.vertex1[0], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 20, triangle.vertex1[1], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 20, triangle.vertex1[1], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 24, triangle.vertex1[2], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 24, triangle.vertex1[2], true);
+                _trianglesStorageValuesDataView.setUint32(base + 28, encodeOctahedralNormal(triangle.vertex1FrontFaceNormal), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 28, encodeOctahedralNormal(triangle.vertex1FrontFaceNormal), true);
+                _trianglesStorageValuesDataView.setFloat32(base + 32, triangle.vertex2[0], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 32, triangle.vertex2[0], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 36, triangle.vertex2[1], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 36, triangle.vertex2[1], true);
+                _trianglesStorageValuesDataView.setFloat32(base + 40, triangle.vertex2[2], true);
+//              _trianglesStorageValuesDataView.setFloat32(base + 40, triangle.vertex2[2], true);
+                _trianglesStorageValuesDataView.setUint32(base + 44, encodeOctahedralNormal(triangle.vertex2FrontFaceNormal), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 44, encodeOctahedralNormal(triangle.vertex2FrontFaceNormal), true);
+                _trianglesStorageValuesDataView.setUint32(base + 48, encodeQuantizedUV(triangle.vertex0UV), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 48, encodeQuantizedUV(triangle.vertex0UV), true);
+                _trianglesStorageValuesDataView.setUint32(base + 52, encodeQuantizedUV(triangle.vertex1UV), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 52, encodeQuantizedUV(triangle.vertex1UV), true);
+                _trianglesStorageValuesDataView.setUint32(base + 56, encodeQuantizedUV(triangle.vertex2UV), true);
+//              _trianglesStorageValuesDataView.setUint32(base + 56, encodeQuantizedUV(triangle.vertex2UV), true);
+                _trianglesStorageValuesDataView.setUint32(base + 60, triangle.materialIndex, true);
+//              _trianglesStorageValuesDataView.setUint32(base + 60, triangle.materialIndex, true);
+        });
+//      });
+        _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
+//      _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
+    };
+//  };
 
 
 
@@ -538,6 +664,8 @@
 //          ] as Iterable<GPUFeatureName>,
             requiredLimits: {
 //          requiredLimits: {
+                maxStorageBuffersPerShaderStage: 10,
+//              maxStorageBuffersPerShaderStage: 10,
                 maxComputeInvocationsPerWorkgroup: 1024,
 //              maxComputeInvocationsPerWorkgroup: 1024,
             },
@@ -598,6 +726,8 @@
 //              { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
                 { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
 //              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+                { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
             ],
 //          ],
         });
@@ -825,6 +955,7 @@
 //      );
         _spheres.push(
 //      _spheres.push(
+/*
             {
 //          {
                 center: [ +0.0, -1020.0, +0.0 ],
@@ -835,6 +966,7 @@
 //              materialIndex: 0,
             },
 //          },
+*/
             {
 //          {
                 center: [ +10.0, -12.0, -10.0 ],
@@ -936,10 +1068,10 @@
 //              albedo: [ 1.0, 1.0, 1.0 ],
                 imageIndex: 0,
 //              imageIndex: 0,
-                textureType: TextureType.CHECKER_STYLE_A,
-//              textureType: TextureType.CHECKER_STYLE_A,
-                scale: 0.1,
-//              scale: 0.1,
+                textureType: TextureType.CHECKER_STYLE_B, // TextureType.CHECKER_STYLE_A,
+//              textureType: TextureType.CHECKER_STYLE_B, // TextureType.CHECKER_STYLE_A,
+                scale: 30.0, // 0.1,
+//              scale: 30.0, // 0.1,
                 oTileTextureIndex: 4,
 //              oTileTextureIndex: 4,
                 eTileTextureIndex: 5,
@@ -1024,6 +1156,62 @@
 //              oTileTextureIndex: 0,
                 eTileTextureIndex: 0,
 //              eTileTextureIndex: 0,
+            },
+//          },
+        );
+//      );
+        _triangles.push(
+//      _triangles.push(
+            {
+//          {
+                vertex0: [ -200.00, -20.00, -200.00 ],
+//              vertex0: [ -200.00, -20.00, -200.00 ],
+                vertex1: [ -200.00, -20.00, +200.00 ],
+//              vertex1: [ -200.00, -20.00, +200.00 ],
+                vertex2: [ +200.00, -20.00, +200.00 ],
+//              vertex2: [ +200.00, -20.00, +200.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 0,
+//              materialIndex: 0,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                vertex0: [ +200.00, -20.00, +200.00 ],
+//              vertex0: [ +200.00, -20.00, +200.00 ],
+                vertex1: [ +200.00, -20.00, -200.00 ],
+//              vertex1: [ +200.00, -20.00, -200.00 ],
+                vertex2: [ -200.00, -20.00, -200.00 ],
+//              vertex2: [ -200.00, -20.00, -200.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 0,
+//              materialIndex: 0,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
             },
 //          },
         );
@@ -1138,6 +1326,8 @@
 //      prepareMaterials();
         prepareTextures();
 //      prepareTextures();
+        prepareTriangles();
+//      prepareTriangles();
 
 
         _resizeObserver = new ResizeObserver(
@@ -1308,6 +1498,14 @@
 //                              resource: _hdriTexture,
 //                              resource:  hdriTextureView,
 //                              resource:  hdriTextureView,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 9,
+//                              binding: 9,
+                                resource: _trianglesStorageBuffer,
+//                              resource: _trianglesStorageBuffer,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -1626,29 +1824,29 @@
 
     function generalLoop(time: number): void {
 //  function generalLoop(time: number): void {
-		if (_tweenCameraLookFrom) {
+        if (_tweenCameraLookFrom) {
 //      if (_tweenCameraLookFrom) {
             _tweenCameraLookFrom.update(time);
 //          _tweenCameraLookFrom.update(time);
         }
 //      }
-		if (_tweenCameraLookAt) {
+        if (_tweenCameraLookAt) {
 //      if (_tweenCameraLookAt) {
             _tweenCameraLookAt.update(time);
 //          _tweenCameraLookAt.update(time);
         }
 //      }
-		if (_tweenCameraViewUp) {
+        if (_tweenCameraViewUp) {
 //      if (_tweenCameraViewUp) {
             _tweenCameraViewUp.update(time);
 //          _tweenCameraViewUp.update(time);
         }
 //      }
-		requestAnimationFrame(generalLoop);
+        requestAnimationFrame(generalLoop);
 //      requestAnimationFrame(generalLoop);
-	}
+    }
 //  }
-	requestAnimationFrame(generalLoop);
+    requestAnimationFrame(generalLoop);
 //  requestAnimationFrame(generalLoop);
 
 

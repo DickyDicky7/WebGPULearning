@@ -123,6 +123,31 @@
 //  eTileTextureIndex: u32,
 }
 
+    struct Triangle
+//  struct Triangle
+{
+    vertex0: vec3<f32>,
+//  vertex0: vec3<f32>,
+    vertex0FrontFaceNormalEncoded: u32,
+//  vertex0FrontFaceNormalEncoded: u32,
+    vertex1: vec3<f32>,
+//  vertex1: vec3<f32>,
+    vertex1FrontFaceNormalEncoded: u32,
+//  vertex1FrontFaceNormalEncoded: u32,
+    vertex2: vec3<f32>,
+//  vertex2: vec3<f32>,
+    vertex2FrontFaceNormalEncoded: u32,
+//  vertex2FrontFaceNormalEncoded: u32,
+    vertex0UVEncoded: u32,
+//  vertex0UVEncoded: u32,
+    vertex1UVEncoded: u32,
+//  vertex1UVEncoded: u32,
+    vertex2UVEncoded: u32,
+//  vertex2UVEncoded: u32,
+    materialIndex: u32,
+//  materialIndex: u32,
+}
+
     const      PI: f32 = 3.1415926535897930; // 1*π
 //  const      PI: f32 = 3.1415926535897930; // 1*π
     const TAU    : f32 = 6.2831853071795860; // 2*π
@@ -137,9 +162,224 @@
 //  return dot(value, value);
 }
 
-    fn _rayHitSphere(ray: Ray, sphere: Sphere, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitSphere(ray: Ray, sphere: Sphere, rayDistanceLimit: Interval) -> RayHitResult
+    fn decodeOctahedralNormal(packedNormal: u32) -> vec3<f32>
+//  fn decodeOctahedralNormal(packedNormal: u32) -> vec3<f32>
 {
+    // Unpack the two 16-bit components into the [-1, 1] range
+    // Unpack the two 16-bit components into the [-1, 1] range
+    var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
+//  var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
+    // Reconstruct the approximate normal
+    // Reconstruct the approximate normal
+    var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
+//  var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
+    // Reflect if below the plane
+    // Reflect if below the plane
+    if (normal.z < 0.0)
+//  if (normal.z < 0.0)
+    {
+        normal.x = (1.0 - abs(normal.y)) * sign(normal.x);
+//      normal.x = (1.0 - abs(normal.y)) * sign(normal.x);
+        normal.y = (1.0 - abs(normal.x)) * sign(normal.y);
+//      normal.y = (1.0 - abs(normal.x)) * sign(normal.y);
+    }
+    return normalize(normal);
+//  return normalize(normal);
+}
+
+    fn encodeOctahedralNormal(normal: vec3<f32>) -> u32
+//  fn encodeOctahedralNormal(normal: vec3<f32>) -> u32
+{
+    // Normalize and project to octahedral space
+    // Normalize and project to octahedral space
+    var n: vec3<f32> = normalize(normal);
+//  var n: vec3<f32> = normalize(normal);
+    n = n / (abs(n.x) + abs(n.y) + abs(n.z));
+//  n = n / (abs(n.x) + abs(n.y) + abs(n.z));
+    // Reflect if below the plane
+    // Reflect if below the plane
+    if (n.z < 0.0)
+//  if (n.z < 0.0)
+    {
+        let prevX: f32 = n.x;
+//      let prevX: f32 = n.x;
+        n.x = (1.0 - abs(n.y)) * sign(prevX);
+//      n.x = (1.0 - abs(n.y)) * sign(prevX);
+        n.y = (1.0 - abs(prevX)) * sign(n.y);
+//      n.y = (1.0 - abs(prevX)) * sign(n.y);
+    }
+    // Quantize to 16-bit unsigned ints
+    // Quantize to 16-bit unsigned ints
+    let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+//  let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+    let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+//  let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+    // Pack into a single u32
+    // Pack into a single u32
+    return (quantizedX << 16u) | quantizedY;
+//  return (quantizedX << 16u) | quantizedY;
+}
+
+    fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
+//  fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
+{
+    let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
+//  let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
+    let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
+//  let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
+    return vec2<f32>(u, v);
+//  return vec2<f32>(u, v);
+}
+
+    fn encodeQuantizedUV(uv: vec2<f32>) -> u32
+//  fn encodeQuantizedUV(uv: vec2<f32>) -> u32
+{
+    let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
+//  let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
+    let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
+//  let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
+    return (quantizedU << 16u) | quantizedV;
+//  return (quantizedU << 16u) | quantizedV;
+}
+
+    fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+{
+    let triangle: Triangle = triangles[triangleIndex];
+//  let triangle: Triangle = triangles[triangleIndex];
+
+    var rayHitResult: RayHitResult;
+//  var rayHitResult: RayHitResult;
+
+    rayHitResult.materialIndex = triangle.materialIndex;
+//  rayHitResult.materialIndex = triangle.materialIndex;
+
+    const EPSILON: f32 = 1.0e-4;
+//  const EPSILON: f32 = 1.0e-4;
+
+    let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+//  let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+    let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+//  let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+
+    let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+//  let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+    let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+//  let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+
+    if (abs(determinant) < EPSILON)
+//  if (abs(determinant) < EPSILON)
+    {
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        return rayHitResult;
+//      return rayHitResult;
+    }
+
+    let inverseDeterminant: f32 = 1.0 / determinant;
+//  let inverseDeterminant: f32 = 1.0 / determinant;
+    let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+//  let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+
+    let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+//  let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+    if (w1Barycentric < 0.0 || w1Barycentric > 1.0)
+//  if (w1Barycentric < 0.0 || w1Barycentric > 1.0)
+    {
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        return rayHitResult;
+//      return rayHitResult;
+    }
+
+    let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+//  let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+    let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+//  let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+    if (w2Barycentric < 0.0 || w1Barycentric + w2Barycentric > 1.0)
+//  if (w2Barycentric < 0.0 || w1Barycentric + w2Barycentric > 1.0)
+    {
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        return rayHitResult;
+//      return rayHitResult;
+    }
+
+    let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
+//  let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
+
+    if (!_intervalSurround(rayDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+//  if (!_intervalSurround(rayDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+    {
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        return rayHitResult;
+//      return rayHitResult;
+    }
+
+    if (distanceFromRayOriginToIntersectionPoint > EPSILON)
+//  if (distanceFromRayOriginToIntersectionPoint > EPSILON)
+    {
+        let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+//      let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+        let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+//      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+        let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+//      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded);
+//      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded);
+        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded);
+//      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded);
+        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded);
+//      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded);
+
+        rayHitResult.isHitted = true;
+//      rayHitResult.isHitted = true;
+
+        rayHitResult.minDistance = distanceFromRayOriginToIntersectionPoint;
+//      rayHitResult.minDistance = distanceFromRayOriginToIntersectionPoint;
+
+        rayHitResult.at = _rayMarch(ray, rayHitResult.minDistance);
+//      rayHitResult.at = _rayMarch(ray, rayHitResult.minDistance);
+
+        let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+//      let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+        let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+//      let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+        rayHitResult.isFrontFaceHitted = dot(ray.direction, interpolatedFrontFaceNormal) < 0.0;
+//      rayHitResult.isFrontFaceHitted = dot(ray.direction, interpolatedFrontFaceNormal) < 0.0;
+        if (rayHitResult.isFrontFaceHitted)
+//      if (rayHitResult.isFrontFaceHitted)
+        {
+            rayHitResult.hittedSideNormal =  interpolatedFrontFaceNormal;
+//          rayHitResult.hittedSideNormal =  interpolatedFrontFaceNormal;
+        }
+        else
+//      else
+        {
+            rayHitResult.hittedSideNormal = -interpolatedFrontFaceNormal;
+//          rayHitResult.hittedSideNormal = -interpolatedFrontFaceNormal;
+        }
+        rayHitResult.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+//      rayHitResult.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+
+        return rayHitResult;
+//      return rayHitResult;
+    }
+    else
+    {
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        return rayHitResult;
+//      return rayHitResult;
+    }
+}
+
+    fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+{
+    let sphere: Sphere = spheres[sphereIndex];
+//  let sphere: Sphere = spheres[sphereIndex];
     let fromSphereCenterToRayOrigin: vec3<f32> = sphere.center - ray.origin;
 //  let fromSphereCenterToRayOrigin: vec3<f32> = sphere.center - ray.origin;
     let a: f32 = _lengthSquared(ray.direction);
@@ -225,11 +465,13 @@
 //  return rayHitResult;
 }
 
-    fn _rayHitSpheres(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitSpheres(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitSpheresThenTriangles(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSpheresThenTriangles(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
 {
     let numberOfSpheres: u32 = arrayLength(&spheres);
 //  let numberOfSpheres: u32 = arrayLength(&spheres);
+    let numberOfTriangles: u32 = arrayLength(&triangles);
+//  let numberOfTriangles: u32 = arrayLength(&triangles);
     var finalRayHitResult: RayHitResult;
 //  var finalRayHitResult: RayHitResult;
     var closestRayDistanceSoFar: f32 = rayDistanceLimit.max;
@@ -237,10 +479,8 @@
     for (var sphereIndex: u32 = 0u; sphereIndex < numberOfSpheres; sphereIndex++)
 //  for (var sphereIndex: u32 = 0u; sphereIndex < numberOfSpheres; sphereIndex++)
     {
-        let sphere: Sphere = spheres[sphereIndex];
-//      let sphere: Sphere = spheres[sphereIndex];
-        let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphere, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
-//      let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphere, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+        let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+//      let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
         if (temporaryRayHitResult.isHitted)
 //      if (temporaryRayHitResult.isHitted)
         {
@@ -250,6 +490,21 @@
 //          closestRayDistanceSoFar = temporaryRayHitResult.minDistance;
         }
     }
+    for (var triangleIndex: u32 = 0u; triangleIndex < numberOfTriangles; triangleIndex++)
+//  for (var triangleIndex: u32 = 0u; triangleIndex < numberOfTriangles; triangleIndex++)
+    {
+        let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+//      let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+        if (temporaryRayHitResult.isHitted)
+//      if (temporaryRayHitResult.isHitted)
+        {
+            finalRayHitResult = temporaryRayHitResult;
+//          finalRayHitResult = temporaryRayHitResult;
+            closestRayDistanceSoFar = temporaryRayHitResult.minDistance;
+//          closestRayDistanceSoFar = temporaryRayHitResult.minDistance;
+        }
+    }
+
     return finalRayHitResult;
 //  return finalRayHitResult;
 }
@@ -475,8 +730,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitSpheres(currentRay, Interval(1.0e-2, 1.0e+4));
+            let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles(currentRay, Interval(1.0e-2, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles(currentRay, Interval(1.0e-2, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -742,6 +997,8 @@
 //  @group(0) @binding(7) var hdriSampler: sampler;
     @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
+    @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+//  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
