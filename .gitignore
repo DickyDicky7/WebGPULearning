@@ -58,3 +58,6 @@ public/**/*.exr
 
 # train_data/*
 # train_data/*
+
+src/lib/wasm/*
+src/lib/wasm/*

@@ -25,6 +25,8 @@
 //  import { compareArrays, isEqual } from "./Helper.svelte";
     import { encodeOctahedralNormal, decodeOctahedralNormal, encodeQuantizedUV, decodeQuantizedUV } from "./Helper.svelte";
 //  import { encodeOctahedralNormal, decodeOctahedralNormal, encodeQuantizedUV, decodeQuantizedUV } from "./Helper.svelte";
+    import * as assimp from "./assimp-worker-wrapper";
+//  import * as assimp from "./assimp-worker-wrapper";
 
 
 
@@ -143,6 +145,8 @@
 //  };
     type Triangle = {
 //  type Triangle = {
+        aabb3d: AABB3D,
+//      aabb3d: AABB3D,
         vertex0: Vec3,
 //      vertex0: Vec3,
         vertex1: Vec3,
@@ -165,6 +169,26 @@
 //      materialIndex: number,
         perVertexFrontFaceNormalAvailable: boolean,
 //      perVertexFrontFaceNormalAvailable: boolean,
+    };
+//  };
+    type AABB3D = {
+//  type AABB3D = {
+        minCornersLimit: Vec3,
+//      minCornersLimit: Vec3,
+        maxCornersLimit: Vec3,
+//      maxCornersLimit: Vec3,
+    };
+//  };
+    type BVHNode = {
+//  type BVHNode = {
+        aabb3d: AABB3D,
+//      aabb3d: AABB3D,
+        triangleIndex: number,
+//      triangleIndex: number,
+        childIndexL: number,
+//      childIndexL: number,
+        childIndexR: number,
+//      childIndexR: number,
     };
 //  };
 
@@ -224,34 +248,34 @@
 //  let _commandBuffer: GPUCommandBuffer;
     let _resizeObserver: ResizeObserver;
 //  let _resizeObserver: ResizeObserver;
-    let _dataStorageValues: Float32Array;
-//  let _dataStorageValues: Float32Array;
-    let _dataStorageBuffer: GPUBuffer;
-//  let _dataStorageBuffer: GPUBuffer;
+    let _dataUniformValues: Float32Array;
+//  let _dataUniformValues: Float32Array;
+    let _dataUniformBuffer: GPUBuffer;
+//  let _dataUniformBuffer: GPUBuffer;
     let _spheresStorageValuesDataView: DataView;
 //  let _spheresStorageValuesDataView: DataView;
     let _spheresStorageValues: ArrayBuffer;
 //  let _spheresStorageValues: ArrayBuffer;
     let _spheresStorageBuffer: GPUBuffer;
 //  let _spheresStorageBuffer: GPUBuffer;
-    let _spheres: Sphere[] = $state([]);
-//  let _spheres: Sphere[] = $state([]);
+    let _spheres: Sphere[] = [];
+//  let _spheres: Sphere[] = [];
     let _materialsStorageValuesDataView: DataView;
 //  let _materialsStorageValuesDataView: DataView;
     let _materialsStorageValues: ArrayBuffer;
 //  let _materialsStorageValues: ArrayBuffer;
     let _materialsStorageBuffer: GPUBuffer;
 //  let _materialsStorageBuffer: GPUBuffer;
-    let _materials: Material[] = $state([]);
-//  let _materials: Material[] = $state([]);
+    let _materials: Material[] = [];
+//  let _materials: Material[] = [];
     let _texturesStorageValuesDataView: DataView;
 //  let _texturesStorageValuesDataView: DataView;
     let _texturesStorageValues: ArrayBuffer;
 //  let _texturesStorageValues: ArrayBuffer;
     let _texturesStorageBuffer: GPUBuffer;
 //  let _texturesStorageBuffer: GPUBuffer;
-    let _textures: Texture[] = $state([]);
-//  let _textures: Texture[] = $state([]);
+    let _textures: Texture[] = [];
+//  let _textures: Texture[] = [];
     let _atlasSampler: GPUSampler;
 //  let _atlasSampler: GPUSampler;
     let _atlasTexture: GPUTexture;
@@ -266,8 +290,16 @@
 //  let _trianglesStorageValues: ArrayBuffer;
     let _trianglesStorageBuffer: GPUBuffer;
 //  let _trianglesStorageBuffer: GPUBuffer;
-    let _triangles: Triangle[] = $state([]);
-//  let _triangles: Triangle[] = $state([]);
+    let _triangles: Triangle[] = [];
+//  let _triangles: Triangle[] = [];
+    let _bvhNodesStorageValuesDataView: DataView;
+//  let _bvhNodesStorageValuesDataView: DataView;
+    let _bvhNodesStorageValues: ArrayBuffer;
+//  let _bvhNodesStorageValues: ArrayBuffer;
+    let _bvhNodesStorageBuffer: GPUBuffer;
+//  let _bvhNodesStorageBuffer: GPUBuffer;
+    let _bvhNodes: BVHNode[] = [];
+//  let _bvhNodes: BVHNode[] = [];
     let _computeBindGroup0: GPUBindGroup;
 //  let _computeBindGroup0: GPUBindGroup;
     let _gatherBindGroup0: GPUBindGroup;
@@ -366,8 +398,504 @@
 //  let _tweenCameraViewUpIsBusy: boolean = false;
 
 
+
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
+
+
+
+    function calculateAABB3D(triangle: Triangle): AABB3D {
+//  function calculateAABB3D(triangle: Triangle): AABB3D {
+        const padding: number = 1.0e-4;
+//      const padding: number = 1.0e-4;
+        const aabb3d: AABB3D = {
+//      const aabb3d: AABB3D = {
+            minCornersLimit: [ 0.0, 0.0, 0.0, ],
+//          minCornersLimit: [ 0.0, 0.0, 0.0, ],
+            maxCornersLimit: [ 0.0, 0.0, 0.0, ],
+//          maxCornersLimit: [ 0.0, 0.0, 0.0, ],
+        };
+//      };
+        aabb3d.minCornersLimit[0] = Math.min(triangle.vertex0[0], Math.min(triangle.vertex1[0], triangle.vertex2[0])) - padding;
+//      aabb3d.minCornersLimit[0] = Math.min(triangle.vertex0[0], Math.min(triangle.vertex1[0], triangle.vertex2[0])) - padding;
+        aabb3d.minCornersLimit[1] = Math.min(triangle.vertex0[1], Math.min(triangle.vertex1[1], triangle.vertex2[1])) - padding;
+//      aabb3d.minCornersLimit[1] = Math.min(triangle.vertex0[1], Math.min(triangle.vertex1[1], triangle.vertex2[1])) - padding;
+        aabb3d.minCornersLimit[2] = Math.min(triangle.vertex0[2], Math.min(triangle.vertex1[2], triangle.vertex2[2])) - padding;
+//      aabb3d.minCornersLimit[2] = Math.min(triangle.vertex0[2], Math.min(triangle.vertex1[2], triangle.vertex2[2])) - padding;
+        aabb3d.maxCornersLimit[0] = Math.max(triangle.vertex0[0], Math.max(triangle.vertex1[0], triangle.vertex2[0])) + padding;
+//      aabb3d.maxCornersLimit[0] = Math.max(triangle.vertex0[0], Math.max(triangle.vertex1[0], triangle.vertex2[0])) + padding;
+        aabb3d.maxCornersLimit[1] = Math.max(triangle.vertex0[1], Math.max(triangle.vertex1[1], triangle.vertex2[1])) + padding;
+//      aabb3d.maxCornersLimit[1] = Math.max(triangle.vertex0[1], Math.max(triangle.vertex1[1], triangle.vertex2[1])) + padding;
+        aabb3d.maxCornersLimit[2] = Math.max(triangle.vertex0[2], Math.max(triangle.vertex1[2], triangle.vertex2[2])) + padding;
+//      aabb3d.maxCornersLimit[2] = Math.max(triangle.vertex0[2], Math.max(triangle.vertex1[2], triangle.vertex2[2])) + padding;
+        return aabb3d;
+//      return aabb3d;
+    };
+//  };
+    type Axis = 0 | 1 | 2; // "x" | "y" | "z"
+//  type Axis = 0 | 1 | 2; // "x" | "y" | "z"
+    function getCentroid(aabb3d: AABB3D, axis: Axis): number {
+//  function getCentroid(aabb3d: AABB3D, axis: Axis): number {
+        return (aabb3d.minCornersLimit[axis] + aabb3d.maxCornersLimit[axis]) / 2.0;
+//      return (aabb3d.minCornersLimit[axis] + aabb3d.maxCornersLimit[axis]) / 2.0;
+    };
+//  };
+    function surfaceArea(aabb3d: AABB3D): number {
+//  function surfaceArea(aabb3d: AABB3D): number {
+        const     w: number = aabb3d.maxCornersLimit[0] - aabb3d.minCornersLimit[0];
+//      const     w: number = aabb3d.maxCornersLimit[0] - aabb3d.minCornersLimit[0];
+        const     h: number = aabb3d.maxCornersLimit[1] - aabb3d.minCornersLimit[1];
+//      const     h: number = aabb3d.maxCornersLimit[1] - aabb3d.minCornersLimit[1];
+        const depth: number = aabb3d.maxCornersLimit[2] - aabb3d.minCornersLimit[2];
+//      const depth: number = aabb3d.maxCornersLimit[2] - aabb3d.minCornersLimit[2];
+        return 2.0 * (w * h + w * depth + h * depth);
+//      return 2.0 * (w * h + w * depth + h * depth);
+    };
+//  };
+    function union(aabb3d1: AABB3D, aabb3d2: AABB3D): AABB3D {
+//  function union(aabb3d1: AABB3D, aabb3d2: AABB3D): AABB3D {
+        const aabb3d: AABB3D = {
+//      const aabb3d: AABB3D = {
+            minCornersLimit: [ 0.0, 0.0, 0.0, ],
+//          minCornersLimit: [ 0.0, 0.0, 0.0, ],
+            maxCornersLimit: [ 0.0, 0.0, 0.0, ],
+//          maxCornersLimit: [ 0.0, 0.0, 0.0, ],
+        };
+//      };
+        aabb3d.minCornersLimit[0] = Math.min(aabb3d1.minCornersLimit[0], aabb3d2.minCornersLimit[0]);
+//      aabb3d.minCornersLimit[0] = Math.min(aabb3d1.minCornersLimit[0], aabb3d2.minCornersLimit[0]);
+        aabb3d.minCornersLimit[1] = Math.min(aabb3d1.minCornersLimit[1], aabb3d2.minCornersLimit[1]);
+//      aabb3d.minCornersLimit[1] = Math.min(aabb3d1.minCornersLimit[1], aabb3d2.minCornersLimit[1]);
+        aabb3d.minCornersLimit[2] = Math.min(aabb3d1.minCornersLimit[2], aabb3d2.minCornersLimit[2]);
+//      aabb3d.minCornersLimit[2] = Math.min(aabb3d1.minCornersLimit[2], aabb3d2.minCornersLimit[2]);
+        aabb3d.maxCornersLimit[0] = Math.max(aabb3d1.maxCornersLimit[0], aabb3d2.maxCornersLimit[0]);
+//      aabb3d.maxCornersLimit[0] = Math.max(aabb3d1.maxCornersLimit[0], aabb3d2.maxCornersLimit[0]);
+        aabb3d.maxCornersLimit[1] = Math.max(aabb3d1.maxCornersLimit[1], aabb3d2.maxCornersLimit[1]);
+//      aabb3d.maxCornersLimit[1] = Math.max(aabb3d1.maxCornersLimit[1], aabb3d2.maxCornersLimit[1]);
+        aabb3d.maxCornersLimit[2] = Math.max(aabb3d1.maxCornersLimit[2], aabb3d2.maxCornersLimit[2]);
+//      aabb3d.maxCornersLimit[2] = Math.max(aabb3d1.maxCornersLimit[2], aabb3d2.maxCornersLimit[2]);
+        return aabb3d;
+//      return aabb3d;
+    };
+//  };
+    // SAH BVH
+//  // SAH BVH
+    function buildBVHTreeIterativeStrict(): number {
+//  function buildBVHTreeIterativeStrict(): number {
+        if (_triangles.length === 0) {
+//      if (_triangles.length === 0) {
+            return -1; // No root node
+//          return -1; // No root node
+        }
+//      }
+
+        // Stack stores tasks for nodes that need to be processed.
+//      // Stack stores tasks for nodes that need to be processed.
+        const stack: { start: number; cease: number; nodeIndex: number }[] = [];
+//      const stack: { start: number; cease: number; nodeIndex: number }[] = [];
+
+        // Pre-allocate the root node and push it as the first task.
+//      // Pre-allocate the root node and push it as the first task.
+        _bvhNodes.push({} as BVHNode); // Root node at index 0
+//      _bvhNodes.push({} as BVHNode); // Root node at index 0
+        stack.push({ start: 0, cease: _triangles.length, nodeIndex: 0 });
+//      stack.push({ start: 0, cease: _triangles.length, nodeIndex: 0 });
+
+        while (stack.length > 0) {
+//      while (stack.length > 0) {
+            const { start, cease, nodeIndex } = stack.pop()!;
+//          const { start, cease, nodeIndex } = stack.pop()!;
+            const objectSpan: number = cease - start;
+//          const objectSpan: number = cease - start;
+
+            // --- Base Case: If only one triangle remains, create a leaf node ---
+//          // --- Base Case: If only one triangle remains, create a leaf node ---
+            if (objectSpan === 1) {
+//          if (objectSpan === 1) {
+                _bvhNodes[nodeIndex] = {
+//              _bvhNodes[nodeIndex] = {
+                    aabb3d: _triangles[start].aabb3d,
+//                  aabb3d: _triangles[start].aabb3d,
+                    triangleIndex: start,
+//                  triangleIndex: start,
+                    childIndexL: -1,
+//                  childIndexL: -1,
+                    childIndexR: -1,
+//                  childIndexR: -1,
+                };
+//              };
+                continue; // This task is done.
+//              continue; // This task is done.
+            }
+//          }
+
+            // --- Find the best possible split for the current node ---
+//          // --- Find the best possible split for the current node ---
+            let bestCost: number = Infinity;
+//          let bestCost: number = Infinity;
+            let bestAxis: Axis | undefined = undefined;
+//          let bestAxis: Axis | undefined = undefined;
+            let bestIndexToSplit: number = -1;
+//          let bestIndexToSplit: number = -1;
+
+            for (let axis: number = 0; axis < 3; ++axis) {
+//          for (let axis: number = 0; axis < 3; ++axis) {
+                // Sort primitives along the current axis.
+//              // Sort primitives along the current axis.
+                // NOTE: This splice/sort is very slow but matches your original algorithm.
+//              // NOTE: This splice/sort is very slow but matches your original algorithm.
+                const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+//              const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+                    (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis)
+//                  (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis)
+                );
+//              );
+                for (let i: number = 0; i < sortedSlice.length; i++) {
+//              for (let i: number = 0; i < sortedSlice.length; i++) {
+                    _triangles[start + i] = sortedSlice[i];
+//                  _triangles[start + i] = sortedSlice[i];
+                }
+//              }
+
+                // Compute cumulative AABBs from the left
+//              // Compute cumulative AABBs from the left
+                const lAABB3Ds: AABB3D[] = new Array(objectSpan);
+//              const lAABB3Ds: AABB3D[] = new Array(objectSpan);
+                lAABB3Ds[0] = _triangles[start].aabb3d;
+//              lAABB3Ds[0] = _triangles[start].aabb3d;
+                for (let i: number = 1; i < objectSpan; ++i) {
+//              for (let i: number = 1; i < objectSpan; ++i) {
+                    lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
+//                  lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
+                }
+//              }
+
+                // Compute cumulative AABBs from the right
+//              // Compute cumulative AABBs from the right
+                const rAABB3Ds: AABB3D[] = new Array(objectSpan);
+//              const rAABB3Ds: AABB3D[] = new Array(objectSpan);
+                rAABB3Ds[objectSpan - 1] = _triangles[cease - 1].aabb3d;
+//              rAABB3Ds[objectSpan - 1] = _triangles[cease - 1].aabb3d;
+                for (let i: number = objectSpan - 2; i >= 0; --i) {
+//              for (let i: number = objectSpan - 2; i >= 0; --i) {
+                    rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
+//                  rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
+                }
+//              }
+
+                // Evaluate all possible splits
+//              // Evaluate all possible splits
+                for (let i: number = 0; i < objectSpan - 1; ++i) {
+//              for (let i: number = 0; i < objectSpan - 1; ++i) {
+                    const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
+//                  const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
+                    if (cost < bestCost) {
+//                  if (cost < bestCost) {
+                        bestCost = cost;
+//                      bestCost = cost;
+                        bestAxis = axis as Axis;
+//                      bestAxis = axis as Axis;
+                        bestIndexToSplit = i;
+//                      bestIndexToSplit = i;
+                    }
+//                  }
+                }
+//              }
+            }
+//          }
+
+            let mid: number;
+//          let mid: number;
+
+            // --- Partition the triangles based on the best split ---
+//          // --- Partition the triangles based on the best split ---
+            // If a good split was found, use it.
+//          // If a good split was found, use it.
+            if (bestAxis !== undefined) {
+//          if (bestAxis !== undefined) {
+                // Re-sort along the best axis to ensure the correct order for splitting.
+//              // Re-sort along the best axis to ensure the correct order for splitting.
+                const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+//              const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+                    (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, bestAxis as Axis) - getCentroid(triangle2.aabb3d, bestAxis as Axis)
+//                  (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, bestAxis as Axis) - getCentroid(triangle2.aabb3d, bestAxis as Axis)
+                );
+//              );
+                for (let i: number = 0; i < sortedSlice.length; i++) {
+//              for (let i: number = 0; i < sortedSlice.length; i++) {
+                    _triangles[start + i] = sortedSlice[i];
+//                  _triangles[start + i] = sortedSlice[i];
+                }
+//              }
+
+                mid = start + bestIndexToSplit + 1;
+//              mid = start + bestIndexToSplit + 1;
+            } else {
+//          } else {
+                // Fallback: If no split was found (e.g., all centroids are identical),
+//              // Fallback: If no split was found (e.g., all centroids are identical),
+                // we MUST still split to satisfy the 1-primitive-per-leaf rule.
+//              // we MUST still split to satisfy the 1-primitive-per-leaf rule.
+                // So, we simply split the group in the middle.
+//              // So, we simply split the group in the middle.
+                mid = start + Math.floor(objectSpan / 2);
+//              mid = start + Math.floor(objectSpan / 2);
+            }
+//          }
+
+            // Pre-allocate children nodes and get their indices.
+//          // Pre-allocate children nodes and get their indices.
+            const childIndexL: number = _bvhNodes.length;
+//          const childIndexL: number = _bvhNodes.length;
+            _bvhNodes.push({} as BVHNode);
+//          _bvhNodes.push({} as BVHNode);
+            const childIndexR: number = _bvhNodes.length;
+//          const childIndexR: number = _bvhNodes.length;
+            _bvhNodes.push({} as BVHNode);
+//          _bvhNodes.push({} as BVHNode);
+
+            // Update the current node to be an internal node.
+//          // Update the current node to be an internal node.
+            // Its AABB will be calculated in the bottom-up pass.
+//          // Its AABB will be calculated in the bottom-up pass.
+            _bvhNodes[nodeIndex] = {
+//          _bvhNodes[nodeIndex] = {
+                aabb3d: {} as AABB3D, // To be computed later
+//              aabb3d: {} as AABB3D, // To be computed later
+                triangleIndex: -1,
+//              triangleIndex: -1,
+                childIndexL: childIndexL,
+//              childIndexL: childIndexL,
+                childIndexR: childIndexR,
+//              childIndexR: childIndexR,
+            };
+//          };
+
+            // Push the new children tasks onto the stack.
+//          // Push the new children tasks onto the stack.
+            stack.push({ start: start, cease: mid, nodeIndex: childIndexL });
+//          stack.push({ start: start, cease: mid, nodeIndex: childIndexL });
+            stack.push({ start: mid, cease: cease, nodeIndex: childIndexR });
+//          stack.push({ start: mid, cease: cease, nodeIndex: childIndexR });
+        }
+//      }
+
+        // --- Pass 2: Bottom-Up calculation of internal node AABBs ---
+//      // --- Pass 2: Bottom-Up calculation of internal node AABBs ---
+        // This part remains the same.
+//      // This part remains the same.
+        for (let i: number = _bvhNodes.length - 1; i >= 0; --i) {
+//      for (let i: number = _bvhNodes.length - 1; i >= 0; --i) {
+            const node: BVHNode = _bvhNodes[i];
+//          const node: BVHNode = _bvhNodes[i];
+            if (node.childIndexL !== -1) { // If it's an internal node
+//          if (node.childIndexL !== -1) { // If it's an internal node
+                const childL: BVHNode = _bvhNodes[node.childIndexL];
+//              const childL: BVHNode = _bvhNodes[node.childIndexL];
+                const childR: BVHNode = _bvhNodes[node.childIndexR];
+//              const childR: BVHNode = _bvhNodes[node.childIndexR];
+                node.aabb3d = union(childL.aabb3d, childR.aabb3d);
+//              node.aabb3d = union(childL.aabb3d, childR.aabb3d);
+            }
+//          }
+        }
+//      }
+
+        return 0; // The root node is at index 0
+//      return 0; // The root node is at index 0
+    }
+//  }
+    function buildBVHTree(start: number, cease: number): number {
+//  function buildBVHTree(start: number, cease: number): number {
+        const objectSpan: number = cease - start;
+//      const objectSpan: number = cease - start;
+        // Base case: create a leaf node with a single geometry
+//      // Base case: create a leaf node with a single geometry
+        if (objectSpan === 1) {
+//      if (objectSpan === 1) {
+            const current: number = _bvhNodes.length;
+//          const current: number = _bvhNodes.length;
+            _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
+//          _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
+            return current;
+//          return current;
+        }
+//      }
+        // Variables to track the best split
+//      // Variables to track the best split
+        let bestCost: number = +Infinity;
+//      let bestCost: number = +Infinity;
+        let bestAxis: Axis | undefined = undefined;
+//      let bestAxis: Axis | undefined = undefined;
+        let bestIndexToSplit: number = -1;
+//      let bestIndexToSplit: number = -1;
+        // Evaluate splits along each axis ( x = 0 | y = 1 | z = 2 )
+//      // Evaluate splits along each axis ( x = 0 | y = 1 | z = 2 )
+        for (let axis: number = 0; axis < 3; ++axis) {
+//      for (let axis: number = 0; axis < 3; ++axis) {
+            // Sort geometries based on centroid along the current axis
+            // Sort geometries based on centroid along the current axis
+            _triangles.splice(
+//          _triangles.splice(
+                start,
+//              start,
+                cease - start,
+//              cease - start,
+                ..._triangles
+//              ..._triangles
+                            .slice(start, cease)
+//                          .slice(start, cease)
+                            .sort((triangle1: Triangle, triangle2: Triangle): number => {
+//                          .sort((triangle1: Triangle, triangle2: Triangle): number => {
+                                return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
+//                              return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
+                            })
+//                          })
+            );
+//          );
+            /*
+            const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+//          const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+                (triangle1: Triangle, triangle2: Triangle): number => {
+//              (triangle1: Triangle, triangle2: Triangle): number => {
+                    return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
+//                  return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
+                }
+//              }
+            );
+//          );
+            for (let i: number = 0; i < sortedSlice.length; i++) {
+//          for (let i: number = 0; i < sortedSlice.length; i++) {
+                _triangles[start + i] = sortedSlice[i];
+//              _triangles[start + i] = sortedSlice[i];
+            }
+//          }
+            */
+            // Compute cumulative AABB3Ds from the left!
+//          // Compute cumulative AABB3Ds from the left!
+            const lAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
+//          const lAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
+            lAABB3Ds[0] = _triangles[start].aabb3d;
+//          lAABB3Ds[0] = _triangles[start].aabb3d;
+            for (let i: number = 1; i < objectSpan; ++i) {
+//          for (let i: number = 1; i < objectSpan; ++i) {
+                lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
+//              lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
+            }
+//          }
+            // Compute cumulative AABB3Ds from the right
+            // Compute cumulative AABB3Ds from the right
+            const rAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
+//          const rAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
+            const r1: number = objectSpan - 1;
+//          const r1: number = objectSpan - 1;
+            const r2: number = cease - 1;
+//          const r2: number = cease - 1;
+            rAABB3Ds[r1] = _triangles[r2].aabb3d;
+//          rAABB3Ds[r1] = _triangles[r2].aabb3d;
+            for (let i: number = objectSpan - 2; i >= 0; --i) {
+//          for (let i: number = objectSpan - 2; i >= 0; --i) {
+                rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
+//              rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
+            }
+//          }
+            // Evaluate all possible splits
+//          // Evaluate all possible splits
+            for (let i: number = 0; i < objectSpan - 1; ++i) {
+//          for (let i: number = 0; i < objectSpan - 1; ++i) {
+                const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
+//              const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
+                if (cost < bestCost) {
+//              if (cost < bestCost) {
+                    bestCost = cost;
+//                  bestCost = cost;
+                    bestAxis = axis as Axis;
+//                  bestAxis = axis as Axis;
+                    bestIndexToSplit = i;
+//                  bestIndexToSplit = i;
+                }
+//              }
+            }
+//          }
+        }
+//      }
+        // If no valid split is found (shouldn't happen), create a leaf node as fallback
+//      // If no valid split is found (shouldn't happen), create a leaf node as fallback
+        if (bestAxis === undefined) {
+//      if (bestAxis === undefined) {
+            const current: number = _bvhNodes.length;
+//          const current: number = _bvhNodes.length;
+            _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
+//          _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
+            return current;
+//          return current;
+        }
+//      }
+        // Apply the best split
+//      // Apply the best split
+        _triangles.splice(
+//      _triangles.splice(
+            start,
+//          start,
+            cease - start,
+//          cease - start,
+            ..._triangles
+//          ..._triangles
+                        .slice(start, cease)
+//                      .slice(start, cease)
+                        .sort((triangle1: Triangle, triangle2: Triangle): number => {
+//                      .sort((triangle1: Triangle, triangle2: Triangle): number => {
+                            return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
+//                          return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
+                        })
+//                      })
+        );
+//      );
+        /*
+        const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+//      const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
+            (triangle1: Triangle, triangle2: Triangle): number => {
+//          (triangle1: Triangle, triangle2: Triangle): number => {
+                return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
+//              return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
+            }
+//          }
+        );
+//      );
+        for (let i: number = 0; i < sortedSlice.length; i++) {
+//      for (let i: number = 0; i < sortedSlice.length; i++) {
+            _triangles[start + i] = sortedSlice[i];
+//          _triangles[start + i] = sortedSlice[i];
+        }
+//      }
+        */
+        const mid: number = start + bestIndexToSplit + 1;
+//      const mid: number = start + bestIndexToSplit + 1;
+        // Create an internal node
+//      // Create an internal node
+        const current: number = _bvhNodes.length;
+//      const current: number = _bvhNodes.length;
+        _bvhNodes.push({ aabb3d: { minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], }, triangleIndex: -1, childIndexL: -1, childIndexR: -1, });
+//      _bvhNodes.push({ aabb3d: { minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], }, triangleIndex: -1, childIndexL: -1, childIndexR: -1, });
+        // Recursively build left! and right subtrees
+//      // Recursively build left! and right subtrees
+        const childIndexL: number = buildBVHTree(start, mid       );
+//      const childIndexL: number = buildBVHTree(start, mid       );
+        const childIndexR: number = buildBVHTree(       mid, cease);
+//      const childIndexR: number = buildBVHTree(       mid, cease);
+        // Set up the internal node
+//      // Set up the internal node
+        _bvhNodes[current].aabb3d = union(_bvhNodes[childIndexL].aabb3d, _bvhNodes[childIndexR].aabb3d);
+//      _bvhNodes[current].aabb3d = union(_bvhNodes[childIndexL].aabb3d, _bvhNodes[childIndexR].aabb3d);
+        _bvhNodes[current].triangleIndex = -1;
+//      _bvhNodes[current].triangleIndex = -1;
+        _bvhNodes[current].childIndexL = childIndexL;
+//      _bvhNodes[current].childIndexL = childIndexL;
+        _bvhNodes[current].childIndexR = childIndexR;
+//      _bvhNodes[current].childIndexR = childIndexR;
+        return current;
+//      return current;
+}
 
 
 
@@ -557,6 +1085,8 @@
 //  };
     const prepareTriangles = (): void => {
 //  const prepareTriangles = (): void => {
+        console.log("triangles count:", _triangles.length);
+//      console.log("triangles count:", _triangles.length);
         if (!_trianglesStorageValues || _triangles.length !== _trianglesStorageValues.byteLength / 64) {
 //      if (!_trianglesStorageValues || _triangles.length !== _trianglesStorageValues.byteLength / 64) {
             _trianglesStorageValues = new ArrayBuffer(_triangles.length * 64);
@@ -585,6 +1115,8 @@
 //      _triangles.forEach((
             triangle: Triangle, triangleIndex: number): void => {
 //          triangle: Triangle, triangleIndex: number): void => {
+                triangle.aabb3d = calculateAABB3D(triangle);
+//              triangle.aabb3d = calculateAABB3D(triangle);
                 if (!triangle.perVertexFrontFaceNormalAvailable) {
 //              if (!triangle.perVertexFrontFaceNormalAvailable) {
                     const vertex1SubtractVertex0: Vec3 = m.subtract(triangle.vertex1, triangle.vertex0);
@@ -595,12 +1127,12 @@
 //                  const crossVector: Vec3 = m.cross(vertex1SubtractVertex0, vertex2SubtractVertex0) as Vec3;
                     const normal: Vec3 = m.divide(crossVector, m.norm(crossVector)) as Vec3;
 //                  const normal: Vec3 = m.divide(crossVector, m.norm(crossVector)) as Vec3;
-                    triangle.vertex0FrontFaceNormal = normal;
-//                  triangle.vertex0FrontFaceNormal = normal;
-                    triangle.vertex1FrontFaceNormal = normal;
-//                  triangle.vertex1FrontFaceNormal = normal;
-                    triangle.vertex2FrontFaceNormal = normal;
-//                  triangle.vertex2FrontFaceNormal = normal;
+                    triangle.vertex0FrontFaceNormal = [...normal];
+//                  triangle.vertex0FrontFaceNormal = [...normal];
+                    triangle.vertex1FrontFaceNormal = [...normal];
+//                  triangle.vertex1FrontFaceNormal = [...normal];
+                    triangle.vertex2FrontFaceNormal = [...normal];
+//                  triangle.vertex2FrontFaceNormal = [...normal];
                     triangle.perVertexFrontFaceNormalAvailable = true;
 //                  triangle.perVertexFrontFaceNormalAvailable = true;
                 }
@@ -643,6 +1175,62 @@
 //      });
         _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
+        const _ = buildBVHTree(0, _triangles.length);
+//      const _ = buildBVHTree(0, _triangles.length);
+        if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
+//      if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
+            _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 36);
+//          _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 36);
+            _bvhNodesStorageValuesDataView = new DataView(_bvhNodesStorageValues);
+//          _bvhNodesStorageValuesDataView = new DataView(_bvhNodesStorageValues);
+            if (_bvhNodesStorageBuffer) {
+//          if (_bvhNodesStorageBuffer) {
+                _bvhNodesStorageBuffer.destroy();
+//              _bvhNodesStorageBuffer.destroy();
+            }
+//          }
+            _bvhNodesStorageBuffer = _device.createBuffer({
+//          _bvhNodesStorageBuffer = _device.createBuffer({
+                label: "GPU_STORAGE_BUFFER_BVH_NODES",
+//              label: "GPU_STORAGE_BUFFER_BVH_NODES",
+                size: _bvhNodesStorageValues.byteLength,
+//              size: _bvhNodesStorageValues.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+//              usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+//          });
+        }
+//      }
+        _bvhNodes.forEach(
+//      _bvhNodes.forEach(
+            (bvhNode: BVHNode, bvhNodeIndex: number): void => {
+//          (bvhNode: BVHNode, bvhNodeIndex: number): void => {
+                const base: number = bvhNodeIndex * 36;
+//              const base: number = bvhNodeIndex * 36;
+                _bvhNodesStorageValuesDataView.setFloat32(base + 0 , bvhNode.aabb3d.minCornersLimit[0], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 0 , bvhNode.aabb3d.minCornersLimit[0], true);
+                _bvhNodesStorageValuesDataView.setFloat32(base + 4 , bvhNode.aabb3d.maxCornersLimit[0], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 4 , bvhNode.aabb3d.maxCornersLimit[0], true);
+                _bvhNodesStorageValuesDataView.setFloat32(base + 8 , bvhNode.aabb3d.minCornersLimit[1], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 8 , bvhNode.aabb3d.minCornersLimit[1], true);
+                _bvhNodesStorageValuesDataView.setFloat32(base + 12, bvhNode.aabb3d.maxCornersLimit[1], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 12, bvhNode.aabb3d.maxCornersLimit[1], true);
+                _bvhNodesStorageValuesDataView.setFloat32(base + 16, bvhNode.aabb3d.minCornersLimit[2], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 16, bvhNode.aabb3d.minCornersLimit[2], true);
+                _bvhNodesStorageValuesDataView.setFloat32(base + 20, bvhNode.aabb3d.maxCornersLimit[2], true);
+//              _bvhNodesStorageValuesDataView.setFloat32(base + 20, bvhNode.aabb3d.maxCornersLimit[2], true);
+                _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.triangleIndex, true);
+//              _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.triangleIndex, true);
+                _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexL, true);
+//              _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexL, true);
+                _bvhNodesStorageValuesDataView.setInt32(base + 32, bvhNode.childIndexR, true);
+//              _bvhNodesStorageValuesDataView.setInt32(base + 32, bvhNode.childIndexR, true);
+            }
+//          }
+        );
+//      );
+        _device.queue.writeBuffer(_bvhNodesStorageBuffer, 0, _bvhNodesStorageValues as GPUAllowSharedBufferSource);
+//      _device.queue.writeBuffer(_bvhNodesStorageBuffer, 0, _bvhNodesStorageValues as GPUAllowSharedBufferSource);
     };
 //  };
 
@@ -708,8 +1296,8 @@
 //          label: "GPU_BIND_GROUP_LAYOUT_0_COMPUTE",
             entries: [
 //          entries: [
-                { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-//              { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform", }, },
+//              { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform", }, },
                 { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
 //              { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
                 { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
@@ -728,6 +1316,8 @@
 //              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
                 { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
 //              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
             ],
 //          ],
         });
@@ -836,16 +1426,16 @@
 //          ] as GPURenderPassColorAttachment[],
         };
 //      };
-        _dataStorageValues = new Float32Array(5 * 4); // 5 * vec4<f32>
-//      _dataStorageValues = new Float32Array(5 * 4); // 5 * vec4<f32>
-        _dataStorageBuffer = _device.createBuffer({
-//      _dataStorageBuffer = _device.createBuffer({
-            label: "GPU_STORAGE_BUFFER_DATA",
-//          label: "GPU_STORAGE_BUFFER_DATA",
-            size: _dataStorageValues.byteLength,
-//          size: _dataStorageValues.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-//          usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        _dataUniformValues = new Float32Array(5 * 4); // 5 * vec4<f32>
+//      _dataUniformValues = new Float32Array(5 * 4); // 5 * vec4<f32>
+        _dataUniformBuffer = _device.createBuffer({
+//      _dataUniformBuffer = _device.createBuffer({
+            label: "GPU_UNIFORM_BUFFER_DATA",
+//          label: "GPU_UNIFORM_BUFFER_DATA",
+            size: _dataUniformValues.byteLength,
+//          size: _dataUniformValues.byteLength,
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+//          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 //      });
         _atlasSampler = _device.createSampler({
@@ -1058,6 +1648,20 @@
 //              textureIndex: 3,
             },
 //          },
+            {
+//          {
+                layer0IOR: RefractiveIndex.AIR,
+//              layer0IOR: RefractiveIndex.AIR,
+                layer1IOR: RefractiveIndex.MARBLE,
+//              layer1IOR: RefractiveIndex.MARBLE,
+                layer1Roughness: 0.01,
+//              layer1Roughness: 0.01,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
+                textureIndex: 6,
+//              textureIndex: 6,
+            },
+//          },
         );
 //      );
         _textures.push(
@@ -1158,12 +1762,30 @@
 //              eTileTextureIndex: 0,
             },
 //          },
+            {
+//          {
+                albedo: [ 1.0, 0.992, 0.816 ],
+//              albedo: [ 1.0, 0.992, 0.816 ],
+                imageIndex: 6,
+//              imageIndex: 6,
+                textureType: TextureType.COLOR,
+//              textureType: TextureType.COLOR,
+                scale: 1.0,
+//              scale: 1.0,
+                oTileTextureIndex: 0,
+//              oTileTextureIndex: 0,
+                eTileTextureIndex: 0,
+//              eTileTextureIndex: 0,
+            },
+//          },
         );
 //      );
         _triangles.push(
 //      _triangles.push(
             {
 //          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
                 vertex0: [ -200.00, -20.00, -200.00 ],
 //              vertex0: [ -200.00, -20.00, -200.00 ],
                 vertex1: [ -200.00, -20.00, +200.00 ],
@@ -1190,6 +1812,8 @@
 //          },
             {
 //          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
                 vertex0: [ +200.00, -20.00, +200.00 ],
 //              vertex0: [ +200.00, -20.00, +200.00 ],
                 vertex1: [ +200.00, -20.00, -200.00 ],
@@ -1308,12 +1932,199 @@
 
 
 
+    async function loadModels(): Promise<void> {
+//  async function loadModels(): Promise<void> {
+        const models = await assimp.customLoadFileObj(
+//      const models = await assimp.customLoadFileObj(
+            [
+//          [
+                {
+//              {
+                    name: "Antonius_C.obj",
+//                  name: "Antonius_C.obj",
+                    publicURL: "/Antonius_C.obj",
+//                  publicURL: "/Antonius_C.obj",
+                },
+//              },
+            ]
+//          ]
+        );
+//      );
+        const model = models[0];
+//      const model = models[0];
+        console.log(model);
+//      console.log(model);
+        if (model) {
+//      if (model) {
+            const floorY: number = -20.0;
+//          const floorY: number = -20.0;
+            let minModelY: number = Infinity;
+//          let minModelY: number = Infinity;
+            const scaleX: number = 1.0;
+//          const scaleX: number = 1.0;
+            const scaleY: number = 1.0;
+//          const scaleY: number = 1.0;
+            const scaleZ: number = 1.0;
+//          const scaleZ: number = 1.0;
+            for (let mesh of model["meshes"]) {
+//          for (let mesh of model["meshes"]) {
+                const l: number = (mesh["vertices"] as number[]).length;
+//              const l: number = (mesh["vertices"] as number[]).length;
+                for (let i: number = 0; i < l; i += 3) {
+//              for (let i: number = 0; i < l; i += 3) {
+                    mesh["vertices"][i + 0] *= scaleX;
+//                  mesh["vertices"][i + 0] *= scaleX;
+                    mesh["vertices"][i + 1] *= scaleY;
+//                  mesh["vertices"][i + 1] *= scaleY;
+                    mesh["vertices"][i + 2] *= scaleZ;
+//                  mesh["vertices"][i + 2] *= scaleZ;
+                }
+//              }
+            }
+//          }
+            for (let mesh of model["meshes"]) {
+//          for (let mesh of model["meshes"]) {
+                const l: number = (mesh["vertices"] as number[]).length;
+//              const l: number = (mesh["vertices"] as number[]).length;
+                for (let i: number = 0; i < l; i += 3) {
+//              for (let i: number = 0; i < l; i += 3) {
+                    let y: number = mesh["vertices"][i + 1];
+//                  let y: number = mesh["vertices"][i + 1];
+                    minModelY = Math.min(minModelY, y);
+//                  minModelY = Math.min(minModelY, y);
+                }
+//              }
+            }
+//          }
+            const offsetY: number = minModelY - floorY;
+//          const offsetY: number = minModelY - floorY;
+            for (let mesh of model["meshes"]) {
+//          for (let mesh of model["meshes"]) {
+                const meshVertices: number[] = mesh["vertices"];
+//              const meshVertices: number[] = mesh["vertices"];
+                const meshNormals: number[] = mesh["normals"];
+//              const meshNormals: number[] = mesh["normals"];
+                const meshTextureCoords: number[] = mesh["texturecoords"][0];
+//              const meshTextureCoords: number[] = mesh["texturecoords"][0];
+                for (let face of mesh["faces"]) {
+//              for (let face of mesh["faces"]) {
+
+                    const vertex0Index: number = face[0];
+//                  const vertex0Index: number = face[0];
+                    const vertex1Index: number = face[1];
+//                  const vertex1Index: number = face[1];
+                    const vertex2Index: number = face[2];
+//                  const vertex2Index: number = face[2];
+
+                    const vertex0IndexBase3: number = vertex0Index * 3; const vertex0ComponentX: number = vertex0IndexBase3 + 0; const vertex0ComponentY: number = vertex0IndexBase3 + 1; const vertex0ComponentZ: number = vertex0IndexBase3 + 2;
+//                  const vertex0IndexBase3: number = vertex0Index * 3; const vertex0ComponentX: number = vertex0IndexBase3 + 0; const vertex0ComponentY: number = vertex0IndexBase3 + 1; const vertex0ComponentZ: number = vertex0IndexBase3 + 2;
+                    const vertex1IndexBase3: number = vertex1Index * 3; const vertex1ComponentX: number = vertex1IndexBase3 + 0; const vertex1ComponentY: number = vertex1IndexBase3 + 1; const vertex1ComponentZ: number = vertex1IndexBase3 + 2;
+//                  const vertex1IndexBase3: number = vertex1Index * 3; const vertex1ComponentX: number = vertex1IndexBase3 + 0; const vertex1ComponentY: number = vertex1IndexBase3 + 1; const vertex1ComponentZ: number = vertex1IndexBase3 + 2;
+                    const vertex2IndexBase3: number = vertex2Index * 3; const vertex2ComponentX: number = vertex2IndexBase3 + 0; const vertex2ComponentY: number = vertex2IndexBase3 + 1; const vertex2ComponentZ: number = vertex2IndexBase3 + 2;
+//                  const vertex2IndexBase3: number = vertex2Index * 3; const vertex2ComponentX: number = vertex2IndexBase3 + 0; const vertex2ComponentY: number = vertex2IndexBase3 + 1; const vertex2ComponentZ: number = vertex2IndexBase3 + 2;
+
+                    const vertex0IndexBase2: number = vertex0Index * 2; const vertex0ComponentU: number = vertex0IndexBase2 + 0; const vertex0ComponentV: number = vertex0IndexBase2 + 1;
+//                  const vertex0IndexBase2: number = vertex0Index * 2; const vertex0ComponentU: number = vertex0IndexBase2 + 0; const vertex0ComponentV: number = vertex0IndexBase2 + 1;
+                    const vertex1IndexBase2: number = vertex1Index * 2; const vertex1ComponentU: number = vertex1IndexBase2 + 0; const vertex1ComponentV: number = vertex1IndexBase2 + 1;
+//                  const vertex1IndexBase2: number = vertex1Index * 2; const vertex1ComponentU: number = vertex1IndexBase2 + 0; const vertex1ComponentV: number = vertex1IndexBase2 + 1;
+                    const vertex2IndexBase2: number = vertex2Index * 2; const vertex2ComponentU: number = vertex2IndexBase2 + 0; const vertex2ComponentV: number = vertex2IndexBase2 + 1;
+//                  const vertex2IndexBase2: number = vertex2Index * 2; const vertex2ComponentU: number = vertex2IndexBase2 + 0; const vertex2ComponentV: number = vertex2IndexBase2 + 1;
+
+                    const vertex0Base3ComponentIndices: Vec3 = [ vertex0ComponentX, vertex0ComponentY, vertex0ComponentZ, ];
+//                  const vertex0Base3ComponentIndices: Vec3 = [ vertex0ComponentX, vertex0ComponentY, vertex0ComponentZ, ];
+                    const vertex1Base3ComponentIndices: Vec3 = [ vertex1ComponentX, vertex1ComponentY, vertex1ComponentZ, ];
+//                  const vertex1Base3ComponentIndices: Vec3 = [ vertex1ComponentX, vertex1ComponentY, vertex1ComponentZ, ];
+                    const vertex2Base3ComponentIndices: Vec3 = [ vertex2ComponentX, vertex2ComponentY, vertex2ComponentZ, ];
+//                  const vertex2Base3ComponentIndices: Vec3 = [ vertex2ComponentX, vertex2ComponentY, vertex2ComponentZ, ];
+
+                    const vertex0Base2ComponentIndices: Vec2 = [ vertex0ComponentU, vertex0ComponentV, ];
+//                  const vertex0Base2ComponentIndices: Vec2 = [ vertex0ComponentU, vertex0ComponentV, ];
+                    const vertex1Base2ComponentIndices: Vec2 = [ vertex1ComponentU, vertex1ComponentV, ];
+//                  const vertex1Base2ComponentIndices: Vec2 = [ vertex1ComponentU, vertex1ComponentV, ];
+                    const vertex2Base2ComponentIndices: Vec2 = [ vertex2ComponentU, vertex2ComponentV, ];
+//                  const vertex2Base2ComponentIndices: Vec2 = [ vertex2ComponentU, vertex2ComponentV, ];
+
+                    const vpo0: Vec3 = vertex0Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+//                  const vpo0: Vec3 = vertex0Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+                    const vpo1: Vec3 = vertex1Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+//                  const vpo1: Vec3 = vertex1Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+                    const vpo2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+//                  const vpo2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshVertices[componentIndex]) as Vec3;
+                    const vno0: Vec3 = vertex0Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+//                  const vno0: Vec3 = vertex0Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+                    const vno1: Vec3 = vertex1Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+//                  const vno1: Vec3 = vertex1Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+                    const vno2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+//                  const vno2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
+                    const vuv0: Vec2 = vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv0: Vec2 = vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+                    const vuv1: Vec2 = vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv1: Vec2 = vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+                    const vuv2: Vec2 = vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv2: Vec2 = vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+
+                    vpo0[1] = vpo0[1] - offsetY;
+//                  vpo0[1] = vpo0[1] - offsetY;
+                    vpo1[1] = vpo1[1] - offsetY;
+//                  vpo1[1] = vpo1[1] - offsetY;
+                    vpo2[1] = vpo2[1] - offsetY;
+//                  vpo2[1] = vpo2[1] - offsetY;
+
+                    _triangles.push(
+//                  _triangles.push(
+                        {
+//                      {
+                            aabb3d: undefined!,
+//                          aabb3d: undefined!,
+                            vertex0: vpo0,
+//                          vertex0: vpo0,
+                            vertex1: vpo1,
+//                          vertex1: vpo1,
+                            vertex2: vpo2,
+//                          vertex2: vpo2,
+                            vertex0FrontFaceNormal: vno0,
+//                          vertex0FrontFaceNormal: vno0,
+                            vertex1FrontFaceNormal: vno1,
+//                          vertex1FrontFaceNormal: vno1,
+                            vertex2FrontFaceNormal: vno2,
+//                          vertex2FrontFaceNormal: vno2,
+                            vertex0UV: vuv0,
+//                          vertex0UV: vuv0,
+                            vertex1UV: vuv1,
+//                          vertex1UV: vuv1,
+                            vertex2UV: vuv2,
+//                          vertex2UV: vuv2,
+                            materialIndex: 4,
+//                          materialIndex: 4,
+                            perVertexFrontFaceNormalAvailable: true,
+//                          perVertexFrontFaceNormalAvailable: true,
+                        },
+//                      },
+                    );
+//                  );
+                }
+//              }
+            }
+//          }
+        }
+//      }
+    };
+//  };
+
+
+
     onMount(async (): Promise<void> => {
 //  onMount(async (): Promise<void> => {
         // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
         // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
         // return;
         // return;
+
+
+        /*
+        await loadModels();
+//      await loadModels();
+        */
 
 
         await initOnce();
@@ -1428,8 +2239,8 @@
 //                          {
                                 binding: 0,
 //                              binding: 0,
-                                resource: _dataStorageBuffer,
-//                              resource: _dataStorageBuffer,
+                                resource: _dataUniformBuffer,
+//                              resource: _dataUniformBuffer,
                             },
 //                          },
                             {
@@ -1508,6 +2319,14 @@
 //                              resource: _trianglesStorageBuffer,
                             },
 //                          },
+                            {
+//                          {
+                                binding: 10,
+//                              binding: 10,
+                                resource: _bvhNodesStorageBuffer,
+//                              resource: _bvhNodesStorageBuffer,
+                            },
+//                          },
                         ] as Iterable<GPUBindGroupEntry>,
 //                      ] as Iterable<GPUBindGroupEntry>,
                     });
@@ -1524,8 +2343,8 @@
 //                          {
                                 binding: 0,
 //                              binding: 0,
-                                resource: _dataStorageBuffer,
-//                              resource: _dataStorageBuffer,
+                                resource: _dataUniformBuffer,
+//                              resource: _dataUniformBuffer,
                             },
 //                          },
                             {
@@ -1645,10 +2464,10 @@
 //          _spheresStorageBuffer.destroy();
         }
 //      }
-        if (_dataStorageBuffer) {
-//      if (_dataStorageBuffer) {
-            _dataStorageBuffer.destroy();
-//          _dataStorageBuffer.destroy();
+        if (_dataUniformBuffer) {
+//      if (_dataUniformBuffer) {
+            _dataUniformBuffer.destroy();
+//          _dataUniformBuffer.destroy();
         }
 //      }
         if (_device) {
@@ -1725,8 +2544,8 @@
 //  const prepare = (): void => {
 //      console.log("_stratifiedSampleX:", _stratifiedSampleX, "_stratifiedSampleY:", _stratifiedSampleY);
 //      console.log("_stratifiedSampleX:", _stratifiedSampleX, "_stratifiedSampleY:", _stratifiedSampleY);
-        _dataStorageValues.set(
-//      _dataStorageValues.set(
+        _dataUniformValues.set(
+//      _dataUniformValues.set(
             [
 //          [
                 _canvas.width, _canvas.height, _stratifiedSamplesPerPixel, _inverseStratifiedSamplesPerPixel,
@@ -1745,8 +2564,8 @@
 //          0,
         );
 //      );
-        _device.queue.writeBuffer(_dataStorageBuffer, 0, _dataStorageValues as GPUAllowSharedBufferSource,);
-//      _device.queue.writeBuffer(_dataStorageBuffer, 0, _dataStorageValues as GPUAllowSharedBufferSource,);
+        _device.queue.writeBuffer(_dataUniformBuffer, 0, _dataUniformValues as GPUAllowSharedBufferSource,);
+//      _device.queue.writeBuffer(_dataUniformBuffer, 0, _dataUniformValues as GPUAllowSharedBufferSource,);
     };
 //  };
 

@@ -189,6 +189,7 @@
         return [nx / length, ny / length, nz / length];
 //      return [nx / length, ny / length, nz / length];
     }
+//  }
 
     // Encodes a 2D UV coordinate (in [0, 1] range) into a 32-bit integer.
     // Encodes a 2D UV coordinate (in [0, 1] range) into a 32-bit integer.

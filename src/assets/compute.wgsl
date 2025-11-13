@@ -1,3 +1,6 @@
+    enable f16;
+//  enable f16;
+
     const BACKGROUND_TYPE_SKY_BOX_BLUE: u32 = 0u;
 //  const BACKGROUND_TYPE_SKY_BOX_BLUE: u32 = 0u;
     const BACKGROUND_TYPE_SKY_BOX_DARK: u32 = 1u;
@@ -148,6 +151,30 @@
 //  materialIndex: u32,
 }
 
+    struct AABB3D
+//  struct AABB3D
+{
+    cornerLimitAxisX: Interval,
+//  cornerLimitAxisX: Interval,
+    cornerLimitAxisY: Interval,
+//  cornerLimitAxisY: Interval,
+    cornerLimitAxisZ: Interval,
+//  cornerLimitAxisZ: Interval,
+}
+
+    struct BVHNode
+//  struct BVHNode
+{
+    aabb3d: AABB3D,
+//  aabb3d: AABB3D,
+    triangleIndex: i32,
+//  triangleIndex: i32,
+    childIndexL: i32,
+//  childIndexL: i32,
+    childIndexR: i32,
+//  childIndexR: i32,
+}
+
     const      PI: f32 = 3.1415926535897930; // 1*π
 //  const      PI: f32 = 3.1415926535897930; // 1*π
     const TAU    : f32 = 6.2831853071795860; // 2*π
@@ -160,6 +187,63 @@
 {
     return dot(value, value);
 //  return dot(value, value);
+}
+
+    // Helper functions to get min/max component of a vec3
+//  // Helper functions to get min/max component of a vec3
+    fn _maxVec3F32(v: vec3<f32>) -> f32 { return max(v.x, max(v.y, v.z)); }
+//  fn _maxVec3F32(v: vec3<f32>) -> f32 { return max(v.x, max(v.y, v.z)); }
+    fn _minVec3F32(v: vec3<f32>) -> f32 { return min(v.x, min(v.y, v.z)); }
+//  fn _minVec3F32(v: vec3<f32>) -> f32 { return min(v.x, min(v.y, v.z)); }
+
+    fn _rayHitAABB3D(ray: Ray, rayDistanceLimit: Interval, aabb3d: AABB3D) -> bool
+//  fn _rayHitAABB3D(ray: Ray, rayDistanceLimit: Interval, aabb3d: AABB3D) -> bool
+{
+    // Represent the AABB as two vectors for min and max corners.
+//  // Represent the AABB as two vectors for min and max corners.
+    let aabb3dMin: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.min, aabb3d.cornerLimitAxisY.min, aabb3d.cornerLimitAxisZ.min);
+//  let aabb3dMin: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.min, aabb3d.cornerLimitAxisY.min, aabb3d.cornerLimitAxisZ.min);
+    let aabb3dMax: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
+//  let aabb3dMax: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
+
+    // Perform all calculations in parallel on a vector.
+//  // Perform all calculations in parallel on a vector.
+    let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
+//  let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
+    let distance0: vec3<f32> = (aabb3dMin - ray.origin) * rayDirectionInverse;
+//  let distance0: vec3<f32> = (aabb3dMin - ray.origin) * rayDirectionInverse;
+    let distance1: vec3<f32> = (aabb3dMax - ray.origin) * rayDirectionInverse;
+//  let distance1: vec3<f32> = (aabb3dMax - ray.origin) * rayDirectionInverse;
+
+    // Find the min and max distances for each axis slab.
+//  // Find the min and max distances for each axis slab.
+    let distanceMinSlabs: vec3<f32> = min(distance0, distance1);
+//  let distanceMinSlabs: vec3<f32> = min(distance0, distance1);
+    let distanceMaxSlabs: vec3<f32> = max(distance0, distance1);
+//  let distanceMaxSlabs: vec3<f32> = max(distance0, distance1);
+
+    // Find the overall nearest and farthest intersection points.
+//  // Find the overall nearest and farthest intersection points.
+    // The intersection starts at the FARTHEST of the near planes...
+//  // The intersection starts at the FARTHEST of the near planes...
+    let overallDistanceMin: f32 = _maxVec3F32(distanceMinSlabs);
+//  let overallDistanceMin: f32 = _maxVec3F32(distanceMinSlabs);
+    // ...and ends at the NEAREST of the far planes.
+//  // ...and ends at the NEAREST of the far planes.
+    let overallDistanceMax: f32 = _minVec3F32(distanceMaxSlabs);
+//  let overallDistanceMax: f32 = _minVec3F32(distanceMaxSlabs);
+
+    // Combine with the user's initial ray distance limits.
+//  // Combine with the user's initial ray distance limits.
+    let finalDistanceMin: f32 = max(rayDistanceLimit.min, overallDistanceMin);
+//  let finalDistanceMin: f32 = max(rayDistanceLimit.min, overallDistanceMin);
+    let finalDistanceMax: f32 = min(rayDistanceLimit.max, overallDistanceMax);
+//  let finalDistanceMax: f32 = min(rayDistanceLimit.max, overallDistanceMax);
+
+    // The final check is the same: the interval must be valid.
+//  // The final check is the same: the interval must be valid.
+    return finalDistanceMax > finalDistanceMin;
+//  return finalDistanceMax > finalDistanceMin;
 }
 
     fn decodeOctahedralNormal(packedNormal: u32) -> vec3<f32>
@@ -220,6 +304,7 @@
 //  return (quantizedX << 16u) | quantizedY;
 }
 
+/*
     fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
 //  fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
 {
@@ -241,6 +326,7 @@
     return (quantizedU << 16u) | quantizedV;
 //  return (quantizedU << 16u) | quantizedV;
 }
+*/
 
     fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
@@ -326,12 +412,12 @@
 //      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
         let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
 //      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
-        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded);
-//      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded);
-        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded);
-//      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded);
-        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded);
-//      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded);
+        let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
+//      let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
+        let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
+//      let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
+        let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
+//      let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
 
         rayHitResult.isHitted = true;
 //      rayHitResult.isHitted = true;
@@ -509,6 +595,81 @@
 //  return finalRayHitResult;
 }
 
+    // stack[stackPointer] = value; stackPointer++; -> push
+//  // stack[stackPointer] = value; stackPointer++; -> push
+    // stackPointer--; value = stack[stackPointer]; -> pop
+//  // stackPointer--; value = stack[stackPointer]; -> pop
+    fn _rayHitBVHTree(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitBVHTree(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+{
+    const bvhRootNodeIndex: i32 = 0;
+//  const bvhRootNodeIndex: i32 = 0;
+    var closestRayHitResult: RayHitResult;
+//  var closestRayHitResult: RayHitResult;
+    closestRayHitResult.isHitted = false;
+//  closestRayHitResult.isHitted = false;
+    closestRayHitResult.minDistance = rayDistanceLimit.max;
+//  closestRayHitResult.minDistance = rayDistanceLimit.max;
+
+    var stack: array<i32, 64>;
+//  var stack: array<i32, 64>;
+    var stackPointer: i32 = 0;
+//  var stackPointer: i32 = 0;
+
+    stack[stackPointer] = bvhRootNodeIndex;
+//  stack[stackPointer] = bvhRootNodeIndex;
+    stackPointer++;
+//  stackPointer++;
+
+    loop
+//  loop
+    {
+        if (stackPointer == 0)
+//      if (stackPointer == 0)
+        {
+            break;
+//          break;
+        }
+
+        stackPointer--;
+//      stackPointer--;
+        let bvhNodeIndex: i32 = stack[stackPointer];
+//      let bvhNodeIndex: i32 = stack[stackPointer];
+        let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
+//      let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
+
+        if (!_rayHitAABB3D(ray, rayDistanceLimit, bvhNode.aabb3d))
+//      if (!_rayHitAABB3D(ray, rayDistanceLimit, bvhNode.aabb3d))
+        {
+            continue;
+//          continue;
+        }
+
+        if (bvhNode.triangleIndex != -1)
+//      if (bvhNode.triangleIndex != -1)
+        {
+            let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayDistanceLimit);
+//          let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayDistanceLimit);
+            if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
+//          if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
+            {
+                closestRayHitResult = temporaryRayHitResult;
+//              closestRayHitResult = temporaryRayHitResult;
+            }
+            continue;
+//          continue;
+        }
+
+        stack[stackPointer] = bvhNode.childIndexR; stackPointer++;
+//      stack[stackPointer] = bvhNode.childIndexR; stackPointer++;
+        stack[stackPointer] = bvhNode.childIndexL; stackPointer++;
+//      stack[stackPointer] = bvhNode.childIndexL; stackPointer++;
+    }
+
+    return closestRayHitResult;
+//  return closestRayHitResult;
+}
+
     fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
 //  fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
 {
@@ -580,8 +741,14 @@
                 if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
 //              if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
                 {
+                    /*
                     materialLightScatteringResult.isScattered = false;
 //                  materialLightScatteringResult.isScattered = false;
+                    */
+                    // The rough reflection scattered below the surface. Fall back to a diffuse reflection to conserve energy.
+//                  // The rough reflection scattered below the surface. Fall back to a diffuse reflection to conserve energy.
+                    scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//                  scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
                 }
                 attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
 //              attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
@@ -719,10 +886,10 @@
     fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
 //  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
 {
-        var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
-//      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00);
-        var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00);
-//      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00);
+        var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
+//      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
+        var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
+//      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
         var currentRay: Ray = initialRay;
 //      var currentRay: Ray = initialRay;
 
@@ -730,8 +897,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles(currentRay, Interval(1.0e-2, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles(currentRay, Interval(1.0e-2, 1.0e+4));
+            let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles/*_rayHitBVHTree*/(currentRay, Interval(1.0e-2, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles/*_rayHitBVHTree*/(currentRay, Interval(1.0e-2, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -858,8 +1025,8 @@
 
                 let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
 //              let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-                let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
-//              let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+                let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
+//              let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
 
                 if (!shadowHit.isHitted)
 //              if (!shadowHit.isHitted)
@@ -900,8 +1067,8 @@
 
                 let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
 //              let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-                let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
-//              let shadowHit: RayHitResult = _rayHitSpheres(shadowRay, Interval(1.0e-3, 1.0e+4));
+                let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
+//              let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
 
                 if (!shadowHit.isHitted)
 //              if (!shadowHit.isHitted)
@@ -979,8 +1146,8 @@
 //  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
 //  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
 //  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
-    @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
-//  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
+    @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
+//  @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
     @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
 //  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
     @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -999,6 +1166,8 @@
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
     @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
 //  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+    @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
+//  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)

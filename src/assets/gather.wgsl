@@ -8,8 +8,8 @@
 //  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
 //  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
 //  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
-    @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
-//  @group(0) @binding(0) var<storage, read> data: array<vec4<f32>, 5>;
+    @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
+//  @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
     @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
 //  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
     @group(0) @binding(2) var outputTexture: texture_storage_2d<rgba32float, write>;
