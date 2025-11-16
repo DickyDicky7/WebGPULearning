@@ -699,8 +699,8 @@
         {
             materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-            materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
-//          materialLightScatteringResult.scatteredRay.direction = _reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal);
+            materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//          materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
             materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
 //          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
@@ -897,8 +897,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles/*_rayHitBVHTree*/(currentRay, Interval(1.0e-2, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitSpheresThenTriangles/*_rayHitBVHTree*/(currentRay, Interval(1.0e-2, 1.0e+4));
+            let rayHitResult: RayHitResult = _rayHitSDF(currentRay, Interval(1.0e-4, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitSDF(currentRay, Interval(1.0e-4, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -950,22 +950,22 @@
 
                         // Tonemapping Solution
                         // Tonemapping Solution
-
+                        /*
                         backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
 //                      backgroundColor = _tonemapACES(textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb);
-
+                        */
 
 
                         // Radiance Clamping Solution
                         // Radiance Clamping Solution
-                        /*
+
                         let rawBackgroundColor: vec3<f32> = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
 //                      let rawBackgroundColor: vec3<f32> = textureSampleLevel(hdriTexture, hdriSampler, vec2<f32>(u, v), 0.0).rgb;
                         let radianceClampValue: f32 = 10.0; // Tune this value to control fireflies
 //                      let radianceClampValue: f32 = 10.0; // Tune this value to control fireflies
                         backgroundColor = min(rawBackgroundColor, vec3<f32>(radianceClampValue));
 //                      backgroundColor = min(rawBackgroundColor, vec3<f32>(radianceClampValue));
-                        */
+
 
 
                         // No Solution
@@ -992,14 +992,6 @@
             }
 
 
-            // --- 1/2 of MIS: Next Event Estimation ---
-            // --- 1/2 of MIS: Next Event Estimation ---
-            /*
-            let material: Material = materials[rayHitResult.materialIndex];
-//          let material: Material = materials[rayHitResult.materialIndex];
-            */
-
-
             let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
 //          let materialLightScatteringResult: MaterialLightScatteringResult = _rayScatter(currentRay, rayHitResult, rng);
 
@@ -1007,91 +999,87 @@
 //          accumulatedColor += attenuation * materialLightScatteringResult.emission;
 
 
-            // --- 2/2 of MIS: Next Event Estimation ---
-            // --- 2/2 of MIS: Next Event Estimation ---
-            // Explicitly sample the sun for diffuse-like surfaces to add its direct light contribution.
-            // Explicitly sample the sun for diffuse-like surfaces to add its direct light contribution.
+            // --- Multiple Importance Sampling: Next Event Estimation ---
+            // --- Multiple Importance Sampling: Next Event Estimation ---
+            // Explicitly sample the sun for surfaces to add its direct light contribution.
+            // Explicitly sample the sun for surfaces to add its direct light contribution.
+
+            // Hard Shadow (Point Light) Solution
+            // Hard Shadow (Point Light) Solution
             /*
-            if (material.materialType == MATERIAL_TYPE_DIFFUSE || material.materialType == MATERIAL_TYPE_GLOSS)
-//          if (material.materialType == MATERIAL_TYPE_DIFFUSE || material.materialType == MATERIAL_TYPE_GLOSS)
+            let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+//          let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+            let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+//          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+
+            let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
+//          let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
+            let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+//          let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+
+            if (!shadowHit.isHitted)
+//          if (!shadowHit.isHitted)
             {
-                // Hard Shadow (Point Light) Solution
-                // Hard Shadow (Point Light) Solution
-                /*
-                let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-//              let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-                let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
-//              let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+                // The path to the sun is clear. Add direct light.
+                // The path to the sun is clear. Add direct light.
+                let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
+//              let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
 
-                let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-//              let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-                let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
-//              let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
+                // Attenuation in scatter result is the albedo/color.
+                // Attenuation in scatter result is the albedo/color.
+                let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+//              let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
 
-                if (!shadowHit.isHitted)
-//              if (!shadowHit.isHitted)
-                {
-                    // The path to the sun is clear. Add direct light.
-                    // The path to the sun is clear. Add direct light.
-                    let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
-//                  let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, sunDirection));
+                let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
+//              let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
 
-                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
-                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
-                    let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
-//                  let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
-
-                    let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
-//                  let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
-
-                    accumulatedColor += attenuation * directLight;
-//                  accumulatedColor += attenuation * directLight;
-                }
-                */
-
-
-                // Soft Shadow (Area Light) Solution
-                // Soft Shadow (Area Light) Solution
-
-                let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-//              let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-                let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
-//              let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
-                let sunRadius: f32 = 0.025; // Increase for softer shadows, decrease for harder shadows
-//              let sunRadius: f32 = 0.025; // Increase for softer shadows, decrease for harder shadows
-
-                // Jitter the sun direction to simulate an area light and get soft shadows
-                // Jitter the sun direction to simulate an area light and get soft shadows
-                let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
-//              let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
-
-                let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-//              let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-                let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
-//              let shadowHit: RayHitResult = _rayHitSpheresThenTriangles(shadowRay, Interval(1.0e-3, 1.0e+4));
-
-                if (!shadowHit.isHitted)
-//              if (!shadowHit.isHitted)
-                {
-                    // The path to the sun is clear. Add direct light.
-                    // The path to the sun is clear. Add direct light.
-                    let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
-//                  let cos_theta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
-
-                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
-                    // For diffuse/gloss, attenuation in scatterResult is the albedo/color.
-                    let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
-//                  let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
-
-                    let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
-//                  let directLight: vec3<f32> = albedo * sunColor * cos_theta / PI;
-
-                    accumulatedColor += attenuation * directLight;
-//                  accumulatedColor += attenuation * directLight;
-                }
-
+                accumulatedColor += attenuation * directLight;
+//              accumulatedColor += attenuation * directLight;
             }
             */
+
+
+            // Soft Shadow (Area Light) Solution
+            // Soft Shadow (Area Light) Solution
+
+            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+            let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+//          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+            let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
+//          let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
+
+            // Jitter the sun direction to simulate an area light and get soft shadows.
+            // Jitter the sun direction to simulate an area light and get soft shadows.
+            let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+//          let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+
+            let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+//          let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+            let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+//          let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+
+            if (!shadowHit.isHitted)
+//          if (!shadowHit.isHitted)
+            {
+                // The path to the sun is clear. Add direct light.
+                // The path to the sun is clear. Add direct light.
+                let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+//              let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+
+                // Attenuation in scatter result is the albedo/color.
+                // Attenuation in scatter result is the albedo/color.
+                let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+//              let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+
+                let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
+//              let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
+
+                accumulatedColor += attenuation * directLight;
+//              accumulatedColor += attenuation * directLight;
+            }
+
+
 
 
             if (!materialLightScatteringResult.isScattered)
@@ -1233,8 +1221,8 @@
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 100, backgroundType, &rng), 1.0);
+    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, backgroundType, &rng), 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, backgroundType, &rng), 1.0);
 
     outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
 //  outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
@@ -1805,4 +1793,303 @@
 //      let scale: f32 = select(0.0, tonemappedLuminance / luminance, luminance > 0.0);
         return value * scale;
 //      return value * scale;
+    }
+
+    struct SDFHitResult
+//  struct SDFHitResult
+{
+    distance: f32,
+//  distance: f32,
+    materialIndex: u32,
+//  materialIndex: u32,
+}
+
+    fn _dot2Vec2(v: vec2<f32>) -> f32 { return dot(v, v); }
+//  fn _dot2Vec2(v: vec2<f32>) -> f32 { return dot(v, v); }
+    fn _dot2Vec3(v: vec3<f32>) -> f32 { return dot(v, v); }
+//  fn _dot2Vec3(v: vec3<f32>) -> f32 { return dot(v, v); }
+    fn _sdfOpRound(distance: f32, radius: f32) -> f32 { return distance - radius; }
+//  fn _sdfOpRound(distance: f32, radius: f32) -> f32 { return distance - radius; }
+    fn _sdfOpOnion(distance: f32, thickness: f32) -> f32 { return abs(distance) - thickness; }
+//  fn _sdfOpOnion(distance: f32, thickness: f32) -> f32 { return abs(distance) - thickness; }
+    fn _sdfSphere(samplePoint: vec3<f32>, sphereCenter: vec3<f32>, sphereRadius: f32) -> f32
+//  fn _sdfSphere(samplePoint: vec3<f32>, sphereCenter: vec3<f32>, sphereRadius: f32) -> f32
+    {
+        return length(samplePoint - sphereCenter) - sphereRadius;
+//      return length(samplePoint - sphereCenter) - sphereRadius;
+    }
+    fn _sdfSpheres(samplePoint: vec3<f32>) -> SDFHitResult
+//  fn _sdfSpheres(samplePoint: vec3<f32>) -> SDFHitResult
+    {
+        var sdfHitResult: SDFHitResult;
+//      var sdfHitResult: SDFHitResult;
+        sdfHitResult.distance = 99999999;
+//      sdfHitResult.distance = 99999999;
+        sdfHitResult.materialIndex = 0;
+//      sdfHitResult.materialIndex = 0;
+        let numberOfSpheres: u32 = arrayLength(&spheres);
+//      let numberOfSpheres: u32 = arrayLength(&spheres);
+        for (var sphereIndex: u32 = 0; sphereIndex < numberOfSpheres; sphereIndex++)
+//      for (var sphereIndex: u32 = 0; sphereIndex < numberOfSpheres; sphereIndex++)
+        {
+            let sphere: Sphere = spheres[sphereIndex];
+//          let sphere: Sphere = spheres[sphereIndex];
+            let temporaryDistance: f32 = _sdfSphere(samplePoint, sphere.center, sphere.radius);
+//          let temporaryDistance: f32 = _sdfSphere(samplePoint, sphere.center, sphere.radius);
+            let condition: bool = temporaryDistance <= sdfHitResult.distance;
+//          let condition: bool = temporaryDistance <= sdfHitResult.distance;
+            sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+//          sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+            sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, sphere.materialIndex, condition);
+//          sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, sphere.materialIndex, condition);
+        }
+        return sdfHitResult;
+//      return sdfHitResult;
+    }
+    fn _sdfBox(samplePoint: vec3<f32>, boxCenter: vec3<f32>, boxHalfSize: vec3<f32>) -> f32
+//  fn _sdfBox(samplePoint: vec3<f32>, boxCenter: vec3<f32>, boxHalfSize: vec3<f32>) -> f32
+    {
+        let offsetFromBox: vec3<f32> = abs(samplePoint - boxCenter) - boxHalfSize;
+//      let offsetFromBox: vec3<f32> = abs(samplePoint - boxCenter) - boxHalfSize;
+        let outsideDistance: f32 = length(max(offsetFromBox, vec3<f32>(0.0, 0.0, 0.0)));
+//      let outsideDistance: f32 = length(max(offsetFromBox, vec3<f32>(0.0, 0.0, 0.0)));
+        let insideDistance: f32 = min(max(offsetFromBox.x, max(offsetFromBox.y, offsetFromBox.z)), 0.0);
+//      let insideDistance: f32 = min(max(offsetFromBox.x, max(offsetFromBox.y, offsetFromBox.z)), 0.0);
+        return outsideDistance + insideDistance;
+//      return outsideDistance + insideDistance;
+    }
+    fn _sdfTriangle(samplePoint: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, pointC: vec3<f32>) -> f32
+//  fn _sdfTriangle(samplePoint: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, pointC: vec3<f32>) -> f32
+    {
+        let edgeAB: vec3<f32> = pointB - pointA; let pointAToSamplePoint: vec3<f32> = samplePoint - pointA;
+//      let edgeAB: vec3<f32> = pointB - pointA; let pointAToSamplePoint: vec3<f32> = samplePoint - pointA;
+        let edgeBC: vec3<f32> = pointC - pointB; let pointBToSamplePoint: vec3<f32> = samplePoint - pointB;
+//      let edgeBC: vec3<f32> = pointC - pointB; let pointBToSamplePoint: vec3<f32> = samplePoint - pointB;
+        let edgeCA: vec3<f32> = pointA - pointC; let pointCToSamplePoint: vec3<f32> = samplePoint - pointC;
+//      let edgeCA: vec3<f32> = pointA - pointC; let pointCToSamplePoint: vec3<f32> = samplePoint - pointC;
+        let normal: vec3<f32> = cross(edgeAB, edgeCA);
+//      let normal: vec3<f32> = cross(edgeAB, edgeCA);
+        let isOutside: bool =
+//      let isOutside: bool =
+            sign(dot(cross(edgeAB, normal), pointAToSamplePoint)) +
+//          sign(dot(cross(edgeAB, normal), pointAToSamplePoint)) +
+            sign(dot(cross(edgeBC, normal), pointBToSamplePoint)) +
+//          sign(dot(cross(edgeBC, normal), pointBToSamplePoint)) +
+            sign(dot(cross(edgeCA, normal), pointCToSamplePoint)) < 2.0;
+//          sign(dot(cross(edgeCA, normal), pointCToSamplePoint)) < 2.0;
+        var distanceSquared: f32;
+//      var distanceSquared: f32;
+        if (isOutside)
+//      if (isOutside)
+        {
+            distanceSquared = min(min(
+//          distanceSquared = min(min(
+                _dot2Vec3(edgeAB * clamp(dot(edgeAB, pointAToSamplePoint) / _dot2Vec3(edgeAB), 0.0, 1.0) - pointAToSamplePoint) ,
+//              _dot2Vec3(edgeAB * clamp(dot(edgeAB, pointAToSamplePoint) / _dot2Vec3(edgeAB), 0.0, 1.0) - pointAToSamplePoint) ,
+                _dot2Vec3(edgeBC * clamp(dot(edgeBC, pointBToSamplePoint) / _dot2Vec3(edgeBC), 0.0, 1.0) - pointBToSamplePoint)),
+//              _dot2Vec3(edgeBC * clamp(dot(edgeBC, pointBToSamplePoint) / _dot2Vec3(edgeBC), 0.0, 1.0) - pointBToSamplePoint)),
+                _dot2Vec3(edgeCA * clamp(dot(edgeCA, pointCToSamplePoint) / _dot2Vec3(edgeCA), 0.0, 1.0) - pointCToSamplePoint));
+//              _dot2Vec3(edgeCA * clamp(dot(edgeCA, pointCToSamplePoint) / _dot2Vec3(edgeCA), 0.0, 1.0) - pointCToSamplePoint));
+        }
+        else
+//      else
+        {
+            distanceSquared = dot(normal, pointAToSamplePoint) * dot(normal, pointAToSamplePoint) / _dot2Vec3(normal);
+//          distanceSquared = dot(normal, pointAToSamplePoint) * dot(normal, pointAToSamplePoint) / _dot2Vec3(normal);
+        }
+        return sqrt(distanceSquared);
+//      return sqrt(distanceSquared);
+    }
+    fn _sdfTriangles(samplePoint: vec3<f32>) -> SDFHitResult
+//  fn _sdfTriangles(samplePoint: vec3<f32>) -> SDFHitResult
+    {
+        var sdfHitResult: SDFHitResult;
+//      var sdfHitResult: SDFHitResult;
+        sdfHitResult.distance = 99999999;
+//      sdfHitResult.distance = 99999999;
+        sdfHitResult.materialIndex = 0;
+//      sdfHitResult.materialIndex = 0;
+        let numberOfTriangles: u32 = arrayLength(&triangles);
+//      let numberOfTriangles: u32 = arrayLength(&triangles);
+        for (var triangleIndex: u32 = 0; triangleIndex < numberOfTriangles; triangleIndex++)
+//      for (var triangleIndex: u32 = 0; triangleIndex < numberOfTriangles; triangleIndex++)
+        {
+            let triangle: Triangle = triangles[triangleIndex];
+//          let triangle: Triangle = triangles[triangleIndex];
+            let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangle.vertex0, triangle.vertex1, triangle.vertex2);
+//          let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangle.vertex0, triangle.vertex1, triangle.vertex2);
+            let condition: bool = temporaryDistance <= sdfHitResult.distance;
+//          let condition: bool = temporaryDistance <= sdfHitResult.distance;
+            sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+//          sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+            sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, triangle.materialIndex, condition);
+//          sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, triangle.materialIndex, condition);
+        }
+        return sdfHitResult;
+//      return sdfHitResult;
+    }
+    fn _sdfMain(samplePoint: vec3<f32>) -> SDFHitResult
+//  fn _sdfMain(samplePoint: vec3<f32>) -> SDFHitResult
+    {
+        var sdfHitResult0: SDFHitResult;
+//      var sdfHitResult0: SDFHitResult;
+        let sdfHitResult1: SDFHitResult = _sdfSpheres(samplePoint);
+//      let sdfHitResult1: SDFHitResult = _sdfSpheres(samplePoint);
+        let sdfHitResult2: SDFHitResult = _sdfTriangles(samplePoint);
+//      let sdfHitResult2: SDFHitResult = _sdfTriangles(samplePoint);
+        sdfHitResult0.distance = min(sdfHitResult1.distance, sdfHitResult2.distance);
+//      sdfHitResult0.distance = min(sdfHitResult1.distance, sdfHitResult2.distance);
+        sdfHitResult0.materialIndex = select(
+//      sdfHitResult0.materialIndex = select(
+            sdfHitResult2.materialIndex,
+//          sdfHitResult2.materialIndex,
+            sdfHitResult1.materialIndex,
+//          sdfHitResult1.materialIndex,
+            sdfHitResult1.distance < sdfHitResult2.distance
+//          sdfHitResult1.distance < sdfHitResult2.distance
+        );
+//      );
+        let distanceBox: f32 = _sdfBox(samplePoint, vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0));
+//      let distanceBox: f32 = _sdfBox(samplePoint, vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0));
+        sdfHitResult0.distance = min(sdfHitResult0.distance, distanceBox);
+//      sdfHitResult0.distance = min(sdfHitResult0.distance, distanceBox);
+        sdfHitResult0.materialIndex = select(sdfHitResult0.materialIndex, 4, distanceBox <= sdfHitResult0.distance);
+//      sdfHitResult0.materialIndex = select(sdfHitResult0.materialIndex, 4, distanceBox <= sdfHitResult0.distance);
+        return sdfHitResult0;
+//      return sdfHitResult0;
+    }
+
+    const IMPLICIT_NORMAL_EPSILON: f32 = 1.0e-4;
+//  const IMPLICIT_NORMAL_EPSILON: f32 = 1.0e-4;
+
+    fn _calculateImplicitNormal(samplePoint: vec3<f32>) -> vec3<f32>
+//  fn _calculateImplicitNormal(samplePoint: vec3<f32>) -> vec3<f32>
+    {
+        return normalize(
+//      return normalize(
+            vec3<f32>(
+//          vec3<f32>(
+                _sdfMain(vec3<f32>(samplePoint.x + IMPLICIT_NORMAL_EPSILON, samplePoint.y, samplePoint.z)).distance
+//              _sdfMain(vec3<f32>(samplePoint.x + IMPLICIT_NORMAL_EPSILON, samplePoint.y, samplePoint.z)).distance
+            -   _sdfMain(vec3<f32>(samplePoint.x - IMPLICIT_NORMAL_EPSILON, samplePoint.y, samplePoint.z)).distance
+//          -   _sdfMain(vec3<f32>(samplePoint.x - IMPLICIT_NORMAL_EPSILON, samplePoint.y, samplePoint.z)).distance
+            ,
+//          ,
+                _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y + IMPLICIT_NORMAL_EPSILON, samplePoint.z)).distance
+//              _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y + IMPLICIT_NORMAL_EPSILON, samplePoint.z)).distance
+            -   _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y - IMPLICIT_NORMAL_EPSILON, samplePoint.z)).distance
+//          -   _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y - IMPLICIT_NORMAL_EPSILON, samplePoint.z)).distance
+            ,
+//          ,
+                _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y, samplePoint.z + IMPLICIT_NORMAL_EPSILON)).distance
+//              _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y, samplePoint.z + IMPLICIT_NORMAL_EPSILON)).distance
+            -   _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y, samplePoint.z - IMPLICIT_NORMAL_EPSILON)).distance
+//          -   _sdfMain(vec3<f32>(samplePoint.x, samplePoint.y, samplePoint.z - IMPLICIT_NORMAL_EPSILON)).distance
+            )
+//          )
+        );
+//      );
+    }
+
+    /*
+    Gradient-based local parameterization
+//  Gradient-based local parameterization
+    n = normalize(grad(sdf(p)))
+//  n = normalize(grad(sdf(p)))
+    a = (abs(n.x) < 0.5) ? (1,0,0) : (0,1,0)
+//  a = (abs(n.x) < 0.5) ? (1,0,0) : (0,1,0)
+    t = normalize(cross(a, n))
+//  t = normalize(cross(a, n))
+    b = cross(n, t)
+//  b = cross(n, t)
+    u = dot(p, t)
+//  u = dot(p, t)
+    v = dot(p, b)
+//  v = dot(p, b)
+    */
+    fn _calculateImplicitUVSurfaceCoordinate(samplePoint: vec3<f32>, normal: vec3<f32>, scale: vec2<f32>) -> vec2<f32>
+//  fn _calculateImplicitUVSurfaceCoordinate(samplePoint: vec3<f32>, normal: vec3<f32>, scale: vec2<f32>) -> vec2<f32>
+    {
+        let anchor: vec3<f32> = select(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), abs(normal.x) < 0.5);
+//      let anchor: vec3<f32> = select(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), abs(normal.x) < 0.5);
+        let   tangent: vec3<f32> = normalize(cross(anchor, normal));
+//      let   tangent: vec3<f32> = normalize(cross(anchor, normal));
+        let bitangent: vec3<f32> = cross(normal, tangent);
+//      let bitangent: vec3<f32> = cross(normal, tangent);
+        let u: f32 = dot(samplePoint,   tangent);
+//      let u: f32 = dot(samplePoint,   tangent);
+        let v: f32 = dot(samplePoint, bitangent);
+//      let v: f32 = dot(samplePoint, bitangent);
+        return vec2<f32>(u, v) * scale;
+//      return vec2<f32>(u, v) * scale;
+    }
+
+    const SDF_MAX_MARCHING_STEPS: u32 = 1000;
+//  const SDF_MAX_MARCHING_STEPS: u32 = 1000;
+    const SDF_MAX_MARCHING_DISTANCE: f32 = 1000.0;
+//  const SDF_MAX_MARCHING_DISTANCE: f32 = 1000.0;
+    const SDF_HIT_EPSILON: f32 = 1.0e-5;
+//  const SDF_HIT_EPSILON: f32 = 1.0e-5;
+
+    fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+    {
+        var currentDistance: f32 = rayDistanceLimit.min;
+//      var currentDistance: f32 = rayDistanceLimit.min;
+        var sdfHitResult: SDFHitResult;
+//      var sdfHitResult: SDFHitResult;
+        var rayHitResult: RayHitResult;
+//      var rayHitResult: RayHitResult;
+        rayHitResult.isHitted = false;
+//      rayHitResult.isHitted = false;
+        for (var sdfMarchingStep: u32 = 0; sdfMarchingStep < SDF_MAX_MARCHING_STEPS; sdfMarchingStep += 1)
+//      for (var sdfMarchingStep: u32 = 0; sdfMarchingStep < SDF_MAX_MARCHING_STEPS; sdfMarchingStep += 1)
+            {
+                let currentPoint: vec3<f32> = _rayMarch(ray, currentDistance);
+//              let currentPoint: vec3<f32> = _rayMarch(ray, currentDistance);
+                sdfHitResult = _sdfMain(currentPoint);
+//              sdfHitResult = _sdfMain(currentPoint);
+                if (sdfHitResult.distance < SDF_HIT_EPSILON)
+//              if (sdfHitResult.distance < SDF_HIT_EPSILON)
+                {
+                    rayHitResult.materialIndex = sdfHitResult.materialIndex;
+//                  rayHitResult.materialIndex = sdfHitResult.materialIndex;
+                    rayHitResult.isHitted = true;
+//                  rayHitResult.isHitted = true;
+                    rayHitResult.minDistance = currentDistance;
+//                  rayHitResult.minDistance = currentDistance;
+                    rayHitResult.at = currentPoint;
+//                  rayHitResult.at = currentPoint;
+                    let outwardNormal: vec3<f32> = _calculateImplicitNormal(currentPoint);
+//                  let outwardNormal: vec3<f32> = _calculateImplicitNormal(currentPoint);
+                    rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
+//                  rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
+                    rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
+//                  rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
+                    rayHitResult.uvSurfaceCoordinate = _calculateImplicitUVSurfaceCoordinate(currentPoint, rayHitResult.hittedSideNormal, vec2<f32>(0.01, 0.01));
+//                  rayHitResult.uvSurfaceCoordinate = _calculateImplicitUVSurfaceCoordinate(currentPoint, rayHitResult.hittedSideNormal, vec2<f32>(0.01, 0.01));
+                    /*
+                    let finalSDFHitResult: SDFHitResult = _sdfMain(rayHitResult.at);
+//                  let finalSDFHitResult: SDFHitResult = _sdfMain(rayHitResult.at);
+                    if (finalSDFHitResult.distance < 0.0)
+//                  if (finalSDFHitResult.distance < 0.0)
+                    {
+                        rayHitResult.at -= outwardNormal * finalSDFHitResult.distance;
+//                      rayHitResult.at -= outwardNormal * finalSDFHitResult.distance;
+                    }
+                    */
+                    break;
+//                  break;
+                }
+                currentDistance += sdfHitResult.distance;
+//              currentDistance += sdfHitResult.distance;
+                if (currentDistance > rayDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
+//              if (currentDistance > rayDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
+                {
+                    break;
+//                  break;
+                }
+            }
+            return rayHitResult;
+//          return rayHitResult;
     }
