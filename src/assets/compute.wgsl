@@ -151,6 +151,17 @@
 //  materialIndex: u32,
 }
 
+//     struct Cube
+// //  struct Cube
+// {
+//     center: vec3<f32>,
+// //  center: vec3<f32>,
+//     halfSize: vec3<f32>,
+// //  halfSize: vec3<f32>,
+//     materialIndex: u32,
+// //  materialIndex: u32,
+// }
+
     struct AABB3D
 //  struct AABB3D
 {
@@ -1154,6 +1165,12 @@
 //  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
     @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
 //  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+//     const cubes: array<Cube, 1> = array<Cube, 1>(
+// //  const cubes: array<Cube, 1> = array<Cube, 1>(
+//         Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
+// //      Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
+//     );
+// //  );
     @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
 //  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
 
@@ -1800,8 +1817,14 @@
 {
     distance: f32,
 //  distance: f32,
-    materialIndex: u32,
-//  materialIndex: u32,
+    geometryIndex: u32,
+//  geometryIndex: u32,
+    isSphere: bool,
+//  isSphere: bool,
+    isTriangle: bool,
+//  isTriangle: bool,
+//     isCube: bool,
+// //  isCube: bool,
 }
 
     fn _dot2Vec2(v: vec2<f32>) -> f32 { return dot(v, v); }
@@ -1812,11 +1835,13 @@
 //  fn _sdfOpRound(distance: f32, radius: f32) -> f32 { return distance - radius; }
     fn _sdfOpOnion(distance: f32, thickness: f32) -> f32 { return abs(distance) - thickness; }
 //  fn _sdfOpOnion(distance: f32, thickness: f32) -> f32 { return abs(distance) - thickness; }
-    fn _sdfSphere(samplePoint: vec3<f32>, sphereCenter: vec3<f32>, sphereRadius: f32) -> f32
-//  fn _sdfSphere(samplePoint: vec3<f32>, sphereCenter: vec3<f32>, sphereRadius: f32) -> f32
+    fn _sdfSphere(samplePoint: vec3<f32>, sphereIndex: u32) -> f32
+//  fn _sdfSphere(samplePoint: vec3<f32>, sphereIndex: u32) -> f32
     {
-        return length(samplePoint - sphereCenter) - sphereRadius;
-//      return length(samplePoint - sphereCenter) - sphereRadius;
+        let sphere: Sphere = spheres[sphereIndex];
+//      let sphere: Sphere = spheres[sphereIndex];
+        return length(samplePoint - sphere.center) - sphere.radius;
+//      return length(samplePoint - sphere.center) - sphere.radius;
     }
     fn _sdfSpheres(samplePoint: vec3<f32>) -> SDFHitResult
 //  fn _sdfSpheres(samplePoint: vec3<f32>) -> SDFHitResult
@@ -1825,58 +1850,52 @@
 //      var sdfHitResult: SDFHitResult;
         sdfHitResult.distance = 99999999;
 //      sdfHitResult.distance = 99999999;
-        sdfHitResult.materialIndex = 0;
-//      sdfHitResult.materialIndex = 0;
+        sdfHitResult.geometryIndex = 0;
+//      sdfHitResult.geometryIndex = 0;
+        sdfHitResult.isSphere = true;
+//      sdfHitResult.isSphere = true;
+        sdfHitResult.isTriangle = false;
+//      sdfHitResult.isTriangle = false;
+//         sdfHitResult.isCube = false;
+// //      sdfHitResult.isCube = false;
         let numberOfSpheres: u32 = arrayLength(&spheres);
 //      let numberOfSpheres: u32 = arrayLength(&spheres);
         for (var sphereIndex: u32 = 0; sphereIndex < numberOfSpheres; sphereIndex++)
 //      for (var sphereIndex: u32 = 0; sphereIndex < numberOfSpheres; sphereIndex++)
         {
-            let sphere: Sphere = spheres[sphereIndex];
-//          let sphere: Sphere = spheres[sphereIndex];
-            let temporaryDistance: f32 = _sdfSphere(samplePoint, sphere.center, sphere.radius);
-//          let temporaryDistance: f32 = _sdfSphere(samplePoint, sphere.center, sphere.radius);
+            let temporaryDistance: f32 = _sdfSphere(samplePoint, sphereIndex);
+//          let temporaryDistance: f32 = _sdfSphere(samplePoint, sphereIndex);
             let condition: bool = temporaryDistance <= sdfHitResult.distance;
 //          let condition: bool = temporaryDistance <= sdfHitResult.distance;
             sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
 //          sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
-            sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, sphere.materialIndex, condition);
-//          sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, sphere.materialIndex, condition);
+            sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, sphereIndex, condition);
+//          sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, sphereIndex, condition);
         }
         return sdfHitResult;
 //      return sdfHitResult;
     }
-    fn _sdfBox(samplePoint: vec3<f32>, boxCenter: vec3<f32>, boxHalfSize: vec3<f32>) -> f32
-//  fn _sdfBox(samplePoint: vec3<f32>, boxCenter: vec3<f32>, boxHalfSize: vec3<f32>) -> f32
+    fn _sdfTriangle(samplePoint: vec3<f32>, triangleIndex: u32) -> f32
+//  fn _sdfTriangle(samplePoint: vec3<f32>, triangleIndex: u32) -> f32
     {
-        let offsetFromBox: vec3<f32> = abs(samplePoint - boxCenter) - boxHalfSize;
-//      let offsetFromBox: vec3<f32> = abs(samplePoint - boxCenter) - boxHalfSize;
-        let outsideDistance: f32 = length(max(offsetFromBox, vec3<f32>(0.0, 0.0, 0.0)));
-//      let outsideDistance: f32 = length(max(offsetFromBox, vec3<f32>(0.0, 0.0, 0.0)));
-        let insideDistance: f32 = min(max(offsetFromBox.x, max(offsetFromBox.y, offsetFromBox.z)), 0.0);
-//      let insideDistance: f32 = min(max(offsetFromBox.x, max(offsetFromBox.y, offsetFromBox.z)), 0.0);
-        return outsideDistance + insideDistance;
-//      return outsideDistance + insideDistance;
-    }
-    fn _sdfTriangle(samplePoint: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, pointC: vec3<f32>) -> f32
-//  fn _sdfTriangle(samplePoint: vec3<f32>, pointA: vec3<f32>, pointB: vec3<f32>, pointC: vec3<f32>) -> f32
-    {
-        let edgeAB: vec3<f32> = pointB - pointA; let pointAToSamplePoint: vec3<f32> = samplePoint - pointA;
-//      let edgeAB: vec3<f32> = pointB - pointA; let pointAToSamplePoint: vec3<f32> = samplePoint - pointA;
-        let edgeBC: vec3<f32> = pointC - pointB; let pointBToSamplePoint: vec3<f32> = samplePoint - pointB;
-//      let edgeBC: vec3<f32> = pointC - pointB; let pointBToSamplePoint: vec3<f32> = samplePoint - pointB;
-        let edgeCA: vec3<f32> = pointA - pointC; let pointCToSamplePoint: vec3<f32> = samplePoint - pointC;
-//      let edgeCA: vec3<f32> = pointA - pointC; let pointCToSamplePoint: vec3<f32> = samplePoint - pointC;
-        let normal: vec3<f32> = cross(edgeAB, edgeCA);
-//      let normal: vec3<f32> = cross(edgeAB, edgeCA);
+        let triangle: Triangle = triangles[triangleIndex];
+//      let triangle: Triangle = triangles[triangleIndex];
+        let edge01: vec3<f32> = triangle.vertex1 - triangle.vertex0; let vertex0ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex0;
+//      let edge01: vec3<f32> = triangle.vertex1 - triangle.vertex0; let vertex0ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex0;
+        let edge12: vec3<f32> = triangle.vertex2 - triangle.vertex1; let vertex1ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex1;
+//      let edge12: vec3<f32> = triangle.vertex2 - triangle.vertex1; let vertex1ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex1;
+        let edge20: vec3<f32> = triangle.vertex0 - triangle.vertex2; let vertex2ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex2;
+//      let edge20: vec3<f32> = triangle.vertex0 - triangle.vertex2; let vertex2ToSamplePoint: vec3<f32> = samplePoint - triangle.vertex2;
+        let normal: vec3<f32> = cross(edge01, edge20);
+//      let normal: vec3<f32> = cross(edge01, edge20);
         let isOutside: bool =
 //      let isOutside: bool =
-            sign(dot(cross(edgeAB, normal), pointAToSamplePoint)) +
-//          sign(dot(cross(edgeAB, normal), pointAToSamplePoint)) +
-            sign(dot(cross(edgeBC, normal), pointBToSamplePoint)) +
-//          sign(dot(cross(edgeBC, normal), pointBToSamplePoint)) +
-            sign(dot(cross(edgeCA, normal), pointCToSamplePoint)) < 2.0;
-//          sign(dot(cross(edgeCA, normal), pointCToSamplePoint)) < 2.0;
+            sign(dot(cross(edge01, normal), vertex0ToSamplePoint)) +
+//          sign(dot(cross(edge01, normal), vertex0ToSamplePoint)) +
+            sign(dot(cross(edge12, normal), vertex1ToSamplePoint)) +
+//          sign(dot(cross(edge12, normal), vertex1ToSamplePoint)) +
+            sign(dot(cross(edge20, normal), vertex2ToSamplePoint)) < 2.0;
+//          sign(dot(cross(edge20, normal), vertex2ToSamplePoint)) < 2.0;
         var distanceSquared: f32;
 //      var distanceSquared: f32;
         if (isOutside)
@@ -1884,18 +1903,18 @@
         {
             distanceSquared = min(min(
 //          distanceSquared = min(min(
-                _dot2Vec3(edgeAB * clamp(dot(edgeAB, pointAToSamplePoint) / _dot2Vec3(edgeAB), 0.0, 1.0) - pointAToSamplePoint) ,
-//              _dot2Vec3(edgeAB * clamp(dot(edgeAB, pointAToSamplePoint) / _dot2Vec3(edgeAB), 0.0, 1.0) - pointAToSamplePoint) ,
-                _dot2Vec3(edgeBC * clamp(dot(edgeBC, pointBToSamplePoint) / _dot2Vec3(edgeBC), 0.0, 1.0) - pointBToSamplePoint)),
-//              _dot2Vec3(edgeBC * clamp(dot(edgeBC, pointBToSamplePoint) / _dot2Vec3(edgeBC), 0.0, 1.0) - pointBToSamplePoint)),
-                _dot2Vec3(edgeCA * clamp(dot(edgeCA, pointCToSamplePoint) / _dot2Vec3(edgeCA), 0.0, 1.0) - pointCToSamplePoint));
-//              _dot2Vec3(edgeCA * clamp(dot(edgeCA, pointCToSamplePoint) / _dot2Vec3(edgeCA), 0.0, 1.0) - pointCToSamplePoint));
+                _dot2Vec3(edge01 * clamp(dot(edge01, vertex0ToSamplePoint) / _dot2Vec3(edge01), 0.0, 1.0) - vertex0ToSamplePoint) ,
+//              _dot2Vec3(edge01 * clamp(dot(edge01, vertex0ToSamplePoint) / _dot2Vec3(edge01), 0.0, 1.0) - vertex0ToSamplePoint) ,
+                _dot2Vec3(edge12 * clamp(dot(edge12, vertex1ToSamplePoint) / _dot2Vec3(edge12), 0.0, 1.0) - vertex1ToSamplePoint)),
+//              _dot2Vec3(edge12 * clamp(dot(edge12, vertex1ToSamplePoint) / _dot2Vec3(edge12), 0.0, 1.0) - vertex1ToSamplePoint)),
+                _dot2Vec3(edge20 * clamp(dot(edge20, vertex2ToSamplePoint) / _dot2Vec3(edge20), 0.0, 1.0) - vertex2ToSamplePoint));
+//              _dot2Vec3(edge20 * clamp(dot(edge20, vertex2ToSamplePoint) / _dot2Vec3(edge20), 0.0, 1.0) - vertex2ToSamplePoint));
         }
         else
 //      else
         {
-            distanceSquared = dot(normal, pointAToSamplePoint) * dot(normal, pointAToSamplePoint) / _dot2Vec3(normal);
-//          distanceSquared = dot(normal, pointAToSamplePoint) * dot(normal, pointAToSamplePoint) / _dot2Vec3(normal);
+            distanceSquared = dot(normal, vertex0ToSamplePoint) * dot(normal, vertex0ToSamplePoint) / _dot2Vec3(normal);
+//          distanceSquared = dot(normal, vertex0ToSamplePoint) * dot(normal, vertex0ToSamplePoint) / _dot2Vec3(normal);
         }
         return sqrt(distanceSquared);
 //      return sqrt(distanceSquared);
@@ -1907,58 +1926,115 @@
 //      var sdfHitResult: SDFHitResult;
         sdfHitResult.distance = 99999999;
 //      sdfHitResult.distance = 99999999;
-        sdfHitResult.materialIndex = 0;
-//      sdfHitResult.materialIndex = 0;
+        sdfHitResult.geometryIndex = 0;
+//      sdfHitResult.geometryIndex = 0;
+        sdfHitResult.isSphere = false;
+//      sdfHitResult.isSphere = false;
+        sdfHitResult.isTriangle = true;
+//      sdfHitResult.isTriangle = true;
+//         sdfHitResult.isCube = false;
+// //      sdfHitResult.isCube = false;
         let numberOfTriangles: u32 = arrayLength(&triangles);
 //      let numberOfTriangles: u32 = arrayLength(&triangles);
         for (var triangleIndex: u32 = 0; triangleIndex < numberOfTriangles; triangleIndex++)
 //      for (var triangleIndex: u32 = 0; triangleIndex < numberOfTriangles; triangleIndex++)
         {
-            let triangle: Triangle = triangles[triangleIndex];
-//          let triangle: Triangle = triangles[triangleIndex];
-            let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangle.vertex0, triangle.vertex1, triangle.vertex2);
-//          let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangle.vertex0, triangle.vertex1, triangle.vertex2);
+            let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangleIndex);
+//          let temporaryDistance: f32 = _sdfTriangle(samplePoint, triangleIndex);
             let condition: bool = temporaryDistance <= sdfHitResult.distance;
 //          let condition: bool = temporaryDistance <= sdfHitResult.distance;
             sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
 //          sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
-            sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, triangle.materialIndex, condition);
-//          sdfHitResult.materialIndex = select(sdfHitResult.materialIndex, triangle.materialIndex, condition);
+            sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, triangleIndex, condition);
+//          sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, triangleIndex, condition);
         }
+        return sdfHitResult;
+//      return sdfHitResult;
+    }
+//     fn _sdfCube(samplePoint: vec3<f32>, cubeIndex: u32) -> f32
+// //  fn _sdfCube(samplePoint: vec3<f32>, cubeIndex: u32) -> f32
+//     {
+//         let cube: Cube = cubes[cubeIndex];
+// //      let cube: Cube = cubes[cubeIndex];
+//         let offsetFromCube: vec3<f32> = abs(samplePoint - cube.center) - cube.halfSize;
+// //      let offsetFromCube: vec3<f32> = abs(samplePoint - cube.center) - cube.halfSize;
+//         let outsideDistance: f32 = length(max(offsetFromCube, vec3<f32>(0.0, 0.0, 0.0)));
+// //      let outsideDistance: f32 = length(max(offsetFromCube, vec3<f32>(0.0, 0.0, 0.0)));
+//         let insideDistance: f32 = min(max(offsetFromCube.x, max(offsetFromCube.y, offsetFromCube.z)), 0.0);
+// //      let insideDistance: f32 = min(max(offsetFromCube.x, max(offsetFromCube.y, offsetFromCube.z)), 0.0);
+//         return outsideDistance + insideDistance;
+// //      return outsideDistance + insideDistance;
+//     }
+//     fn _sdfCubes(samplePoint: vec3<f32>) -> SDFHitResult
+// //  fn _sdfCubes(samplePoint: vec3<f32>) -> SDFHitResult
+//     {
+//         var sdfHitResult: SDFHitResult;
+// //      var sdfHitResult: SDFHitResult;
+//         sdfHitResult.distance = 99999999;
+// //      sdfHitResult.distance = 99999999;
+//         sdfHitResult.geometryIndex = 0;
+// //      sdfHitResult.geometryIndex = 0;
+//         sdfHitResult.isSphere = false;
+// //      sdfHitResult.isSphere = false;
+//         sdfHitResult.isTriangle = false;
+// //      sdfHitResult.isTriangle = false;
+//         sdfHitResult.isCube = true;
+// //      sdfHitResult.isCube = true;
+//         let numberOfCubes: u32 = 1; // arrayLength(&cubes);
+// //      let numberOfCubes: u32 = 1; // arrayLength(&cubes);
+//         for (var cubeIndex: u32 = 0; cubeIndex < numberOfCubes; cubeIndex++)
+// //      for (var cubeIndex: u32 = 0; cubeIndex < numberOfCubes; cubeIndex++)
+//         {
+//             let temporaryDistance: f32 = _sdfCube(samplePoint, cubeIndex);
+// //          let temporaryDistance: f32 = _sdfCube(samplePoint, cubeIndex);
+//             let condition: bool = temporaryDistance <= sdfHitResult.distance;
+// //          let condition: bool = temporaryDistance <= sdfHitResult.distance;
+//             sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+// //          sdfHitResult.distance = select(sdfHitResult.distance, temporaryDistance, condition);
+//             sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, cubeIndex, condition);
+// //          sdfHitResult.geometryIndex = select(sdfHitResult.geometryIndex, cubeIndex, condition);
+//         }
+//         return sdfHitResult;
+// //      return sdfHitResult;
+//     }
+    fn _selectSDFHitResult(falseSDFHitResult: SDFHitResult, trueSDFHitResult: SDFHitResult, condition: bool) -> SDFHitResult
+//  fn _selectSDFHitResult(falseSDFHitResult: SDFHitResult, trueSDFHitResult: SDFHitResult, condition: bool) -> SDFHitResult
+    {
+        var sdfHitResult: SDFHitResult;
+//      var sdfHitResult: SDFHitResult;
+        sdfHitResult.distance = select(falseSDFHitResult.distance, trueSDFHitResult.distance, condition);
+//      sdfHitResult.distance = select(falseSDFHitResult.distance, trueSDFHitResult.distance, condition);
+        sdfHitResult.geometryIndex = select(falseSDFHitResult.geometryIndex, trueSDFHitResult.geometryIndex, condition);
+//      sdfHitResult.geometryIndex = select(falseSDFHitResult.geometryIndex, trueSDFHitResult.geometryIndex, condition);
+        sdfHitResult.isSphere = select(falseSDFHitResult.isSphere, trueSDFHitResult.isSphere, condition);
+//      sdfHitResult.isSphere = select(falseSDFHitResult.isSphere, trueSDFHitResult.isSphere, condition);
+        sdfHitResult.isTriangle = select(falseSDFHitResult.isTriangle, trueSDFHitResult.isTriangle, condition);
+//      sdfHitResult.isTriangle = select(falseSDFHitResult.isTriangle, trueSDFHitResult.isTriangle, condition);
+//         sdfHitResult.isCube = select(falseSDFHitResult.isCube, trueSDFHitResult.isCube, condition);
+// //      sdfHitResult.isCube = select(falseSDFHitResult.isCube, trueSDFHitResult.isCube, condition);
         return sdfHitResult;
 //      return sdfHitResult;
     }
     fn _sdfMain(samplePoint: vec3<f32>) -> SDFHitResult
 //  fn _sdfMain(samplePoint: vec3<f32>) -> SDFHitResult
     {
-        var sdfHitResult0: SDFHitResult;
-//      var sdfHitResult0: SDFHitResult;
-        let sdfHitResult1: SDFHitResult = _sdfSpheres(samplePoint);
-//      let sdfHitResult1: SDFHitResult = _sdfSpheres(samplePoint);
-        let sdfHitResult2: SDFHitResult = _sdfTriangles(samplePoint);
-//      let sdfHitResult2: SDFHitResult = _sdfTriangles(samplePoint);
-        sdfHitResult0.distance = min(sdfHitResult1.distance, sdfHitResult2.distance);
-//      sdfHitResult0.distance = min(sdfHitResult1.distance, sdfHitResult2.distance);
-        sdfHitResult0.materialIndex = select(
-//      sdfHitResult0.materialIndex = select(
-            sdfHitResult2.materialIndex,
-//          sdfHitResult2.materialIndex,
-            sdfHitResult1.materialIndex,
-//          sdfHitResult1.materialIndex,
-            sdfHitResult1.distance < sdfHitResult2.distance
-//          sdfHitResult1.distance < sdfHitResult2.distance
-        );
-//      );
-        let distanceBox: f32 = _sdfBox(samplePoint, vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0));
-//      let distanceBox: f32 = _sdfBox(samplePoint, vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0));
-        sdfHitResult0.distance = min(sdfHitResult0.distance, distanceBox);
-//      sdfHitResult0.distance = min(sdfHitResult0.distance, distanceBox);
-        sdfHitResult0.materialIndex = select(sdfHitResult0.materialIndex, 4, distanceBox <= sdfHitResult0.distance);
-//      sdfHitResult0.materialIndex = select(sdfHitResult0.materialIndex, 4, distanceBox <= sdfHitResult0.distance);
-        return sdfHitResult0;
-//      return sdfHitResult0;
+        var sdfHitResultFinal: SDFHitResult;
+//      var sdfHitResultFinal: SDFHitResult;
+        let sdfHitResultSpheres: SDFHitResult = _sdfSpheres(samplePoint);
+//      let sdfHitResultSpheres: SDFHitResult = _sdfSpheres(samplePoint);
+        let sdfHitResultTriangles: SDFHitResult = _sdfTriangles(samplePoint);
+//      let sdfHitResultTriangles: SDFHitResult = _sdfTriangles(samplePoint);
+//         let sdfHitResultCubes: SDFHitResult = _sdfCubes(samplePoint);
+// //      let sdfHitResultCubes: SDFHitResult = _sdfCubes(samplePoint);
+        sdfHitResultFinal = _selectSDFHitResult(sdfHitResultTriangles, sdfHitResultSpheres, sdfHitResultSpheres.distance <= sdfHitResultTriangles.distance);
+//      sdfHitResultFinal = _selectSDFHitResult(sdfHitResultTriangles, sdfHitResultSpheres, sdfHitResultSpheres.distance <= sdfHitResultTriangles.distance);
+//         sdfHitResultFinal = _selectSDFHitResult(sdfHitResultFinal, sdfHitResultCubes, sdfHitResultCubes.distance <= sdfHitResultFinal.distance);
+// //      sdfHitResultFinal = _selectSDFHitResult(sdfHitResultFinal, sdfHitResultCubes, sdfHitResultCubes.distance <= sdfHitResultFinal.distance);
+        return sdfHitResultFinal;
+//      return sdfHitResultFinal;
     }
 
+    /*
     const IMPLICIT_NORMAL_EPSILON: f32 = 1.0e-4;
 //  const IMPLICIT_NORMAL_EPSILON: f32 = 1.0e-4;
 
@@ -2023,6 +2099,7 @@
         return vec2<f32>(u, v) * scale;
 //      return vec2<f32>(u, v) * scale;
     }
+    */
 
     const SDF_MAX_MARCHING_STEPS: u32 = 1000;
 //  const SDF_MAX_MARCHING_STEPS: u32 = 1000;
@@ -2034,6 +2111,26 @@
     fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
     {
+        const sceneAABB3D = AABB3D(
+//      const sceneAABB3D = AABB3D(
+            Interval(-50, 50),
+//          Interval(-50, 50),
+            Interval(-50, 50),
+//          Interval(-50, 50),
+            Interval(-50, 50),
+//          Interval(-50, 50),
+        );
+//      );
+        if (!_rayHitAABB3D(ray, rayDistanceLimit, sceneAABB3D))
+//      if (!_rayHitAABB3D(ray, rayDistanceLimit, sceneAABB3D))
+        {
+            var rayHitResult: RayHitResult;
+//          var rayHitResult: RayHitResult;
+            rayHitResult.isHitted = false;
+//          rayHitResult.isHitted = false;
+            return rayHitResult;
+//          return rayHitResult;
+        }
         var currentDistance: f32 = rayDistanceLimit.min;
 //      var currentDistance: f32 = rayDistanceLimit.min;
         var sdfHitResult: SDFHitResult;
@@ -2052,22 +2149,108 @@
                 if (sdfHitResult.distance < SDF_HIT_EPSILON)
 //              if (sdfHitResult.distance < SDF_HIT_EPSILON)
                 {
-                    rayHitResult.materialIndex = sdfHitResult.materialIndex;
-//                  rayHitResult.materialIndex = sdfHitResult.materialIndex;
                     rayHitResult.isHitted = true;
 //                  rayHitResult.isHitted = true;
-                    rayHitResult.minDistance = currentDistance;
-//                  rayHitResult.minDistance = currentDistance;
                     rayHitResult.at = currentPoint;
 //                  rayHitResult.at = currentPoint;
-                    let outwardNormal: vec3<f32> = _calculateImplicitNormal(currentPoint);
-//                  let outwardNormal: vec3<f32> = _calculateImplicitNormal(currentPoint);
-                    rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
-//                  rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
-                    rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
-//                  rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
-                    rayHitResult.uvSurfaceCoordinate = _calculateImplicitUVSurfaceCoordinate(currentPoint, rayHitResult.hittedSideNormal, vec2<f32>(0.01, 0.01));
-//                  rayHitResult.uvSurfaceCoordinate = _calculateImplicitUVSurfaceCoordinate(currentPoint, rayHitResult.hittedSideNormal, vec2<f32>(0.01, 0.01));
+                    rayHitResult.minDistance = currentDistance;
+//                  rayHitResult.minDistance = currentDistance;
+                    var materialIndex: u32;
+//                  var materialIndex: u32;
+                    var outwardNormal: vec3<f32>;
+//                  var outwardNormal: vec3<f32>;
+                    var uvSurfaceCoordinate: vec2<f32>;
+//                  var uvSurfaceCoordinate: vec2<f32>;
+                    if (sdfHitResult.isSphere)
+//                  if (sdfHitResult.isSphere)
+                    {
+                        let sphere: Sphere = spheres[sdfHitResult.geometryIndex];
+//                      let sphere: Sphere = spheres[sdfHitResult.geometryIndex];
+                        materialIndex = sphere.materialIndex;
+//                      materialIndex = sphere.materialIndex;
+                        outwardNormal = normalize(rayHitResult.at - sphere.center);
+//                      outwardNormal = normalize(rayHitResult.at - sphere.center);
+                        let theta: f32 = acos (-outwardNormal.y); // latitude
+//                      let theta: f32 = acos (-outwardNormal.y); // latitude
+                        let phi  : f32 = atan2(-outwardNormal.z, outwardNormal.x) + PI; // longitude
+//                      let phi  : f32 = atan2(-outwardNormal.z, outwardNormal.x) + PI; // longitude
+                        uvSurfaceCoordinate = vec2<f32>(phi / (2.0 * PI), theta / PI);
+//                      uvSurfaceCoordinate = vec2<f32>(phi / (2.0 * PI), theta / PI);
+                    }
+                    else
+//                  else
+                    if (sdfHitResult.isTriangle)
+//                  if (sdfHitResult.isTriangle)
+                    {
+                        let triangle: Triangle = triangles[sdfHitResult.geometryIndex];
+//                      let triangle: Triangle = triangles[sdfHitResult.geometryIndex];
+                        materialIndex = triangle.materialIndex;
+//                      materialIndex = triangle.materialIndex;
+
+                        let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+//                      let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+                        let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+//                      let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+
+                        let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+//                      let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+                        let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+//                      let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+
+                        let inverseDeterminant: f32 = 1.0 / determinant;
+//                      let inverseDeterminant: f32 = 1.0 / determinant;
+                        let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+//                      let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+
+                        let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+//                      let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+
+                        let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+//                      let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+                        let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+//                      let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+
+                        let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+//                      let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+                        let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+//                      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+                        let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+//                      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+                        let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
+//                      let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
+                        let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
+//                      let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
+                        let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
+//                      let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
+
+                        let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+//                      let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+                        let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+//                      let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+                        outwardNormal = interpolatedFrontFaceNormal; // normalize(cross(triangle.vertex1 - triangle.vertex0, triangle.vertex2 - triangle.vertex0));
+//                      outwardNormal = interpolatedFrontFaceNormal; // normalize(cross(triangle.vertex1 - triangle.vertex0, triangle.vertex2 - triangle.vertex0));
+        
+                        uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+//                      uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+                    }
+//                     else
+// //                  else
+//                     if (sdfHitResult.isCube)
+// //                  if (sdfHitResult.isCube)
+//                     {
+//                         let cube: Cube = cubes[sdfHitResult.geometryIndex];
+// //                      let cube: Cube = cubes[sdfHitResult.geometryIndex];
+//                         materialIndex = cube.materialIndex;
+// //                      materialIndex = cube.materialIndex;
+//                     }
+                    rayHitResult.materialIndex = materialIndex;
+//                  rayHitResult.materialIndex = materialIndex;
+                    rayHitResult.isFrontFaceHitted = true;
+//                  rayHitResult.isFrontFaceHitted = true;
+                    rayHitResult.hittedSideNormal = outwardNormal;
+//                  rayHitResult.hittedSideNormal = outwardNormal;
+                    rayHitResult.uvSurfaceCoordinate = uvSurfaceCoordinate;
+//                  rayHitResult.uvSurfaceCoordinate = uvSurfaceCoordinate;
                     /*
                     let finalSDFHitResult: SDFHitResult = _sdfMain(rayHitResult.at);
 //                  let finalSDFHitResult: SDFHitResult = _sdfMain(rayHitResult.at);
