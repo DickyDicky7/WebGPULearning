@@ -191,6 +191,24 @@
 //      childIndexR: number,
     };
 //  };
+    type CPUTimeMeasurement = {
+//  type CPUTimeMeasurement = {
+        thenInSeconds: number,
+//      thenInSeconds: number,
+        nowInSeconds: number,
+//      nowInSeconds: number,
+        deltaTimeInSeconds: number,
+//      deltaTimeInSeconds: number,
+        startInMilliseconds: number,
+//      startInMilliseconds: number,
+        ceaseInMilliseconds: number,
+//      ceaseInMilliseconds: number,
+        fps: string,
+//      fps: string,
+        eachCycleExecutionInMilliseconds: string,
+//      eachCycleExecutionInMilliseconds: string,
+    };
+//  };
 
 
 
@@ -396,11 +414,72 @@
 //  let _tweenCameraLookAtIsBusy: boolean = false;
     let _tweenCameraViewUpIsBusy: boolean = false;
 //  let _tweenCameraViewUpIsBusy: boolean = false;
+    let _cpuTimeMeasurementRenderLoop: CPUTimeMeasurement = $state({
+//  let _cpuTimeMeasurementRenderLoop: CPUTimeMeasurement = $state({
+        thenInSeconds: 0,
+//      thenInSeconds: 0,
+        nowInSeconds: 0,
+//      nowInSeconds: 0,
+        deltaTimeInSeconds: 0,
+//      deltaTimeInSeconds: 0,
+        startInMilliseconds: 0,
+//      startInMilliseconds: 0,
+        ceaseInMilliseconds: 0,
+//      ceaseInMilliseconds: 0,
+        fps: "",
+//      fps: "",
+        eachCycleExecutionInMilliseconds: "",
+//      eachCycleExecutionInMilliseconds: "",
+    });
+//  });
+    let _cpuTimeMeasurementGeneralLoop: CPUTimeMeasurement = $state({
+//  let _cpuTimeMeasurementGeneralLoop: CPUTimeMeasurement = $state({
+        thenInSeconds: 0,
+//      thenInSeconds: 0,
+        nowInSeconds: 0,
+//      nowInSeconds: 0,
+        deltaTimeInSeconds: 0,
+//      deltaTimeInSeconds: 0,
+        startInMilliseconds: 0,
+//      startInMilliseconds: 0,
+        ceaseInMilliseconds: 0,
+//      ceaseInMilliseconds: 0,
+        fps: "",
+//      fps: "",
+        eachCycleExecutionInMilliseconds: "",
+//      eachCycleExecutionInMilliseconds: "",
+    });
+//  });
 
 
 
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
 //  $inspect(_viewportU, _viewportTL, _pixel00Coordinates, );
+
+
+
+    function startCPUTimeMeasurement(cpuTimeMeasurement: CPUTimeMeasurement, cpuTimeInMilliseconds: number): void {
+//  function startCPUTimeMeasurement(cpuTimeMeasurement: CPUTimeMeasurement, cpuTimeInMilliseconds: number): void {
+        cpuTimeMeasurement.nowInSeconds = cpuTimeInMilliseconds * 0.001; // convert to seconds
+//      cpuTimeMeasurement.nowInSeconds = cpuTimeInMilliseconds * 0.001; // convert to seconds
+        cpuTimeMeasurement.deltaTimeInSeconds = cpuTimeMeasurement.nowInSeconds - cpuTimeMeasurement.thenInSeconds;
+//      cpuTimeMeasurement.deltaTimeInSeconds = cpuTimeMeasurement.nowInSeconds - cpuTimeMeasurement.thenInSeconds;
+        cpuTimeMeasurement.thenInSeconds = cpuTimeMeasurement.nowInSeconds;
+//      cpuTimeMeasurement.thenInSeconds = cpuTimeMeasurement.nowInSeconds;
+        cpuTimeMeasurement.startInMilliseconds = performance.now();
+//      cpuTimeMeasurement.startInMilliseconds = performance.now();
+    };
+//  };
+    function ceaseCPUTimeMeasurement(cpuTimeMeasurement: CPUTimeMeasurement): void {
+//  function ceaseCPUTimeMeasurement(cpuTimeMeasurement: CPUTimeMeasurement): void {
+        cpuTimeMeasurement.ceaseInMilliseconds = performance.now();
+//      cpuTimeMeasurement.ceaseInMilliseconds = performance.now();
+        cpuTimeMeasurement.fps = `${(1 / cpuTimeMeasurement.deltaTimeInSeconds).toFixed(1)}fps`;
+//      cpuTimeMeasurement.fps = `${(1 / cpuTimeMeasurement.deltaTimeInSeconds).toFixed(1)}fps`;
+        cpuTimeMeasurement.eachCycleExecutionInMilliseconds = `${(cpuTimeMeasurement.ceaseInMilliseconds - cpuTimeMeasurement.startInMilliseconds).toFixed(1)}ms`;
+//      cpuTimeMeasurement.eachCycleExecutionInMilliseconds = `${(cpuTimeMeasurement.ceaseInMilliseconds - cpuTimeMeasurement.startInMilliseconds).toFixed(1)}ms`;
+    };
+//  };
 
 
 
@@ -1849,20 +1928,22 @@
 
 
 
-    const renderLoop = (time: number): void => {
-//  const renderLoop = (time: number): void => {
+    const renderLoop = (cpuTimeInMilliseconds: number): void => {
+//  const renderLoop = (cpuTimeInMilliseconds: number): void => {
         if (!_isRunningRenderLoop) {
 //      if (!_isRunningRenderLoop) {
             return;
 //          return;
         }
 //      }
+        startCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop, cpuTimeInMilliseconds);
+//      startCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop, cpuTimeInMilliseconds);
         prepare();
 //      prepare();
         render();
 //      render();
-//      console.info("loop");
-//      console.info("loop");
+        ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
+//      ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
         if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
 //      if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
             _stratifiedSampleX++;
@@ -2641,26 +2722,30 @@
 
 
 
-    function generalLoop(time: number): void {
-//  function generalLoop(time: number): void {
+    function generalLoop(cpuTimeInMilliseconds: number): void {
+//  function generalLoop(cpuTimeInMilliseconds: number): void {
+        startCPUTimeMeasurement(_cpuTimeMeasurementGeneralLoop, cpuTimeInMilliseconds);
+//      startCPUTimeMeasurement(_cpuTimeMeasurementGeneralLoop, cpuTimeInMilliseconds);
         if (_tweenCameraLookFrom) {
 //      if (_tweenCameraLookFrom) {
-            _tweenCameraLookFrom.update(time);
-//          _tweenCameraLookFrom.update(time);
+            _tweenCameraLookFrom.update(cpuTimeInMilliseconds);
+//          _tweenCameraLookFrom.update(cpuTimeInMilliseconds);
         }
 //      }
         if (_tweenCameraLookAt) {
 //      if (_tweenCameraLookAt) {
-            _tweenCameraLookAt.update(time);
-//          _tweenCameraLookAt.update(time);
+            _tweenCameraLookAt.update(cpuTimeInMilliseconds);
+//          _tweenCameraLookAt.update(cpuTimeInMilliseconds);
         }
 //      }
         if (_tweenCameraViewUp) {
 //      if (_tweenCameraViewUp) {
-            _tweenCameraViewUp.update(time);
-//          _tweenCameraViewUp.update(time);
+            _tweenCameraViewUp.update(cpuTimeInMilliseconds);
+//          _tweenCameraViewUp.update(cpuTimeInMilliseconds);
         }
 //      }
+        ceaseCPUTimeMeasurement(_cpuTimeMeasurementGeneralLoop);
+//      ceaseCPUTimeMeasurement(_cpuTimeMeasurementGeneralLoop);
         requestAnimationFrame(generalLoop);
 //      requestAnimationFrame(generalLoop);
     }
@@ -2800,6 +2885,11 @@
 <!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
     <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
 <!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+
+<!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
+<!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
+<!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
+
 <!--<svelte:options runes={true}></svelte:options>-->
     <svelte:options runes={true}></svelte:options>
 <!--<svelte:options runes={true}></svelte:options>-->
