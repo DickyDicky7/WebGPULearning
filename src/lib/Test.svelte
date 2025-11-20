@@ -330,8 +330,8 @@
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(100.0);
-//  let _samplesPerPixel: number = $state(100.0);
+    let _samplesPerPixel: number = $state(64.0);
+//  let _samplesPerPixel: number = $state(64.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -511,471 +511,329 @@
 //      return aabb3d;
     };
 //  };
-    type Axis = 0 | 1 | 2; // "x" | "y" | "z"
-//  type Axis = 0 | 1 | 2; // "x" | "y" | "z"
-    function getCentroid(aabb3d: AABB3D, axis: Axis): number {
-//  function getCentroid(aabb3d: AABB3D, axis: Axis): number {
-        return (aabb3d.minCornersLimit[axis] + aabb3d.maxCornersLimit[axis]) / 2.0;
-//      return (aabb3d.minCornersLimit[axis] + aabb3d.maxCornersLimit[axis]) / 2.0;
+    // Helper: expands a 10-bit integer into 30 bits by inserting 2 zeros after each bit.
+    // Helper: expands a 10-bit integer into 30 bits by inserting 2 zeros after each bit.
+    // Used for Morton code generation.
+    // Used for Morton code generation.
+    function expandBits(v: number): number {
+//  function expandBits(v: number): number {
+        v = (v * 0x00010001) & 0xFF0000FF;
+//      v = (v * 0x00010001) & 0xFF0000FF;
+        v = (v * 0x00000101) & 0x0F00F00F;
+//      v = (v * 0x00000101) & 0x0F00F00F;
+        v = (v * 0x00000011) & 0xC30C30C3;
+//      v = (v * 0x00000011) & 0xC30C30C3;
+        v = (v * 0x00000005) & 0x49249249;
+//      v = (v * 0x00000005) & 0x49249249;
+        return v;
+//      return v;
     };
 //  };
-    function surfaceArea(aabb3d: AABB3D): number {
-//  function surfaceArea(aabb3d: AABB3D): number {
-        const     w: number = aabb3d.maxCornersLimit[0] - aabb3d.minCornersLimit[0];
-//      const     w: number = aabb3d.maxCornersLimit[0] - aabb3d.minCornersLimit[0];
-        const     h: number = aabb3d.maxCornersLimit[1] - aabb3d.minCornersLimit[1];
-//      const     h: number = aabb3d.maxCornersLimit[1] - aabb3d.minCornersLimit[1];
-        const depth: number = aabb3d.maxCornersLimit[2] - aabb3d.minCornersLimit[2];
-//      const depth: number = aabb3d.maxCornersLimit[2] - aabb3d.minCornersLimit[2];
-        return 2.0 * (w * h + w * depth + h * depth);
-//      return 2.0 * (w * h + w * depth + h * depth);
+    // Calculates a 30-bit Morton code for a 3D point within a unit box [0,1].
+    // Calculates a 30-bit Morton code for a 3D point within a unit box [0,1].
+    function morton3D(x: number, y: number, z: number): number {
+//  function morton3D(x: number, y: number, z: number): number {
+        x = Math.min(Math.max(x * 1024.0, 0.0), 1023.0);
+//      x = Math.min(Math.max(x * 1024.0, 0.0), 1023.0);
+        y = Math.min(Math.max(y * 1024.0, 0.0), 1023.0);
+//      y = Math.min(Math.max(y * 1024.0, 0.0), 1023.0);
+        z = Math.min(Math.max(z * 1024.0, 0.0), 1023.0);
+//      z = Math.min(Math.max(z * 1024.0, 0.0), 1023.0);
+        return expandBits(Math.floor(x)) | (expandBits(Math.floor(y)) << 1) | (expandBits(Math.floor(z)) << 2);
+//      return expandBits(Math.floor(x)) | (expandBits(Math.floor(y)) << 1) | (expandBits(Math.floor(z)) << 2);
     };
 //  };
-    function union(aabb3d1: AABB3D, aabb3d2: AABB3D): AABB3D {
-//  function union(aabb3d1: AABB3D, aabb3d2: AABB3D): AABB3D {
-        const aabb3d: AABB3D = {
-//      const aabb3d: AABB3D = {
-            minCornersLimit: [ 0.0, 0.0, 0.0, ],
-//          minCornersLimit: [ 0.0, 0.0, 0.0, ],
-            maxCornersLimit: [ 0.0, 0.0, 0.0, ],
-//          maxCornersLimit: [ 0.0, 0.0, 0.0, ],
+    // Unions two AABB3Ds.
+    // Unions two AABB3Ds.
+    function unionAABB(a: AABB3D, b: AABB3D): AABB3D {
+//  function unionAABB(a: AABB3D, b: AABB3D): AABB3D {
+        return {
+//      return {
+            minCornersLimit: [
+//          minCornersLimit: [
+                Math.min(a.minCornersLimit[0], b.minCornersLimit[0]),
+//              Math.min(a.minCornersLimit[0], b.minCornersLimit[0]),
+                Math.min(a.minCornersLimit[1], b.minCornersLimit[1]),
+//              Math.min(a.minCornersLimit[1], b.minCornersLimit[1]),
+                Math.min(a.minCornersLimit[2], b.minCornersLimit[2]),
+//              Math.min(a.minCornersLimit[2], b.minCornersLimit[2]),
+            ],
+//          ],
+            maxCornersLimit: [
+//          maxCornersLimit: [
+                Math.max(a.maxCornersLimit[0], b.maxCornersLimit[0]),
+//              Math.max(a.maxCornersLimit[0], b.maxCornersLimit[0]),
+                Math.max(a.maxCornersLimit[1], b.maxCornersLimit[1]),
+//              Math.max(a.maxCornersLimit[1], b.maxCornersLimit[1]),
+                Math.max(a.maxCornersLimit[2], b.maxCornersLimit[2]),
+//              Math.max(a.maxCornersLimit[2], b.maxCornersLimit[2]),
+            ],
+//          ],
         };
 //      };
-        aabb3d.minCornersLimit[0] = Math.min(aabb3d1.minCornersLimit[0], aabb3d2.minCornersLimit[0]);
-//      aabb3d.minCornersLimit[0] = Math.min(aabb3d1.minCornersLimit[0], aabb3d2.minCornersLimit[0]);
-        aabb3d.minCornersLimit[1] = Math.min(aabb3d1.minCornersLimit[1], aabb3d2.minCornersLimit[1]);
-//      aabb3d.minCornersLimit[1] = Math.min(aabb3d1.minCornersLimit[1], aabb3d2.minCornersLimit[1]);
-        aabb3d.minCornersLimit[2] = Math.min(aabb3d1.minCornersLimit[2], aabb3d2.minCornersLimit[2]);
-//      aabb3d.minCornersLimit[2] = Math.min(aabb3d1.minCornersLimit[2], aabb3d2.minCornersLimit[2]);
-        aabb3d.maxCornersLimit[0] = Math.max(aabb3d1.maxCornersLimit[0], aabb3d2.maxCornersLimit[0]);
-//      aabb3d.maxCornersLimit[0] = Math.max(aabb3d1.maxCornersLimit[0], aabb3d2.maxCornersLimit[0]);
-        aabb3d.maxCornersLimit[1] = Math.max(aabb3d1.maxCornersLimit[1], aabb3d2.maxCornersLimit[1]);
-//      aabb3d.maxCornersLimit[1] = Math.max(aabb3d1.maxCornersLimit[1], aabb3d2.maxCornersLimit[1]);
-        aabb3d.maxCornersLimit[2] = Math.max(aabb3d1.maxCornersLimit[2], aabb3d2.maxCornersLimit[2]);
-//      aabb3d.maxCornersLimit[2] = Math.max(aabb3d1.maxCornersLimit[2], aabb3d2.maxCornersLimit[2]);
-        return aabb3d;
-//      return aabb3d;
     };
 //  };
-    // SAH BVH
-//  // SAH BVH
-    function buildBVHTreeIterativeStrict(): number {
-//  function buildBVHTreeIterativeStrict(): number {
-        if (_triangles.length === 0) {
-//      if (_triangles.length === 0) {
-            return -1; // No root node
-//          return -1; // No root node
+    // Internal structure to hold sorting data
+    // Internal structure to hold sorting data
+    type PrimitiveInfo = {
+        index: number; // Original index in _triangles
+//      index: number; // Original index in _triangles
+        code: number; // Morton code
+//      code: number; // Morton code
+        centroid: Vec3; // Centroid for verification
+//      centroid: Vec3; // Centroid for verification
+        aabb: AABB3D; // Cached AABB
+//      aabb: AABB3D; // Cached AABB
+    };
+//  };
+    function buildLBVH(triangles: Triangle[]): BVHNode[] {
+//  function buildLBVH(triangles: Triangle[]): BVHNode[] {
+        if (triangles.length === 0) {
+//      if (triangles.length === 0) {
+            return [];
+//          return [];
         }
 //      }
-
-        // Stack stores tasks for nodes that need to be processed.
-//      // Stack stores tasks for nodes that need to be processed.
-        const stack: { start: number; cease: number; nodeIndex: number }[] = [];
-//      const stack: { start: number; cease: number; nodeIndex: number }[] = [];
-
-        // Pre-allocate the root node and push it as the first task.
-//      // Pre-allocate the root node and push it as the first task.
-        _bvhNodes.push({} as BVHNode); // Root node at index 0
-//      _bvhNodes.push({} as BVHNode); // Root node at index 0
-        stack.push({ start: 0, cease: _triangles.length, nodeIndex: 0 });
-//      stack.push({ start: 0, cease: _triangles.length, nodeIndex: 0 });
-
-        while (stack.length > 0) {
-//      while (stack.length > 0) {
-            const { start, cease, nodeIndex } = stack.pop()!;
-//          const { start, cease, nodeIndex } = stack.pop()!;
-            const objectSpan: number = cease - start;
-//          const objectSpan: number = cease - start;
-
-            // --- Base Case: If only one triangle remains, create a leaf node ---
-//          // --- Base Case: If only one triangle remains, create a leaf node ---
-            if (objectSpan === 1) {
-//          if (objectSpan === 1) {
-                _bvhNodes[nodeIndex] = {
-//              _bvhNodes[nodeIndex] = {
-                    aabb3d: _triangles[start].aabb3d,
-//                  aabb3d: _triangles[start].aabb3d,
-                    triangleIndex: start,
-//                  triangleIndex: start,
-                    childIndexL: -1,
-//                  childIndexL: -1,
-                    childIndexR: -1,
-//                  childIndexR: -1,
+        // 1. Calculate Global Bounds and Triangle Centroids
+        // 1. Calculate Global Bounds and Triangle Centroids
+        let globalMin: Vec3 = [ +Infinity, +Infinity, +Infinity ];
+//      let globalMin: Vec3 = [ +Infinity, +Infinity, +Infinity ];
+        let globalMax: Vec3 = [ -Infinity, -Infinity, -Infinity ];
+//      let globalMax: Vec3 = [ -Infinity, -Infinity, -Infinity ];
+        const primitives: PrimitiveInfo[] = triangles.map(
+//      const primitives: PrimitiveInfo[] = triangles.map(
+            (triangle: Triangle, triangleIndex: number): PrimitiveInfo => {
+//          (triangle: Triangle, triangleIndex: number): PrimitiveInfo => {
+                // Centroid = (min + max) * 0.5
+                // Centroid = (min + max) * 0.5
+                const cx: number = (triangle.aabb3d.minCornersLimit[0] + triangle.aabb3d.maxCornersLimit[0]) * 0.5;
+//              const cx: number = (triangle.aabb3d.minCornersLimit[0] + triangle.aabb3d.maxCornersLimit[0]) * 0.5;
+                const cy: number = (triangle.aabb3d.minCornersLimit[1] + triangle.aabb3d.maxCornersLimit[1]) * 0.5;
+//              const cy: number = (triangle.aabb3d.minCornersLimit[1] + triangle.aabb3d.maxCornersLimit[1]) * 0.5;
+                const cz: number = (triangle.aabb3d.minCornersLimit[2] + triangle.aabb3d.maxCornersLimit[2]) * 0.5;
+//              const cz: number = (triangle.aabb3d.minCornersLimit[2] + triangle.aabb3d.maxCornersLimit[2]) * 0.5;
+                // Update global bounds
+                // Update global bounds
+                globalMin[0] = Math.min(globalMin[0], cx);
+//              globalMin[0] = Math.min(globalMin[0], cx);
+                globalMin[1] = Math.min(globalMin[1], cy);
+//              globalMin[1] = Math.min(globalMin[1], cy);
+                globalMin[2] = Math.min(globalMin[2], cz);
+//              globalMin[2] = Math.min(globalMin[2], cz);
+                globalMax[0] = Math.max(globalMax[0], cx);
+//              globalMax[0] = Math.max(globalMax[0], cx);
+                globalMax[1] = Math.max(globalMax[1], cy);
+//              globalMax[1] = Math.max(globalMax[1], cy);
+                globalMax[2] = Math.max(globalMax[2], cz);
+//              globalMax[2] = Math.max(globalMax[2], cz);
+                return {
+//              return {
+                    index: triangleIndex,
+//                  index: triangleIndex,
+                    code: 0,
+//                  code: 0,
+                    centroid: [ cx, cy, cz ],
+//                  centroid: [ cx, cy, cz ],
+                    aabb: triangle.aabb3d,
+//                  aabb: triangle.aabb3d,
                 };
 //              };
-                continue; // This task is done.
-//              continue; // This task is done.
             }
 //          }
-
-            // --- Find the best possible split for the current node ---
-//          // --- Find the best possible split for the current node ---
-            let bestCost: number = Infinity;
-//          let bestCost: number = Infinity;
-            let bestAxis: Axis | undefined = undefined;
-//          let bestAxis: Axis | undefined = undefined;
-            let bestIndexToSplit: number = -1;
-//          let bestIndexToSplit: number = -1;
-
-            for (let axis: number = 0; axis < 3; ++axis) {
-//          for (let axis: number = 0; axis < 3; ++axis) {
-                // Sort primitives along the current axis.
-//              // Sort primitives along the current axis.
-                // NOTE: This splice/sort is very slow but matches your original algorithm.
-//              // NOTE: This splice/sort is very slow but matches your original algorithm.
-                const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-//              const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-                    (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis)
-//                  (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis)
-                );
-//              );
-                for (let i: number = 0; i < sortedSlice.length; i++) {
-//              for (let i: number = 0; i < sortedSlice.length; i++) {
-                    _triangles[start + i] = sortedSlice[i];
-//                  _triangles[start + i] = sortedSlice[i];
-                }
-//              }
-
-                // Compute cumulative AABBs from the left
-//              // Compute cumulative AABBs from the left
-                const lAABB3Ds: AABB3D[] = new Array(objectSpan);
-//              const lAABB3Ds: AABB3D[] = new Array(objectSpan);
-                lAABB3Ds[0] = _triangles[start].aabb3d;
-//              lAABB3Ds[0] = _triangles[start].aabb3d;
-                for (let i: number = 1; i < objectSpan; ++i) {
-//              for (let i: number = 1; i < objectSpan; ++i) {
-                    lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
-//                  lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
-                }
-//              }
-
-                // Compute cumulative AABBs from the right
-//              // Compute cumulative AABBs from the right
-                const rAABB3Ds: AABB3D[] = new Array(objectSpan);
-//              const rAABB3Ds: AABB3D[] = new Array(objectSpan);
-                rAABB3Ds[objectSpan - 1] = _triangles[cease - 1].aabb3d;
-//              rAABB3Ds[objectSpan - 1] = _triangles[cease - 1].aabb3d;
-                for (let i: number = objectSpan - 2; i >= 0; --i) {
-//              for (let i: number = objectSpan - 2; i >= 0; --i) {
-                    rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
-//                  rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
-                }
-//              }
-
-                // Evaluate all possible splits
-//              // Evaluate all possible splits
-                for (let i: number = 0; i < objectSpan - 1; ++i) {
-//              for (let i: number = 0; i < objectSpan - 1; ++i) {
-                    const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
-//                  const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
-                    if (cost < bestCost) {
-//                  if (cost < bestCost) {
-                        bestCost = cost;
-//                      bestCost = cost;
-                        bestAxis = axis as Axis;
-//                      bestAxis = axis as Axis;
-                        bestIndexToSplit = i;
-//                      bestIndexToSplit = i;
-                    }
-//                  }
-                }
-//              }
-            }
-//          }
-
-            let mid: number;
-//          let mid: number;
-
-            // --- Partition the triangles based on the best split ---
-//          // --- Partition the triangles based on the best split ---
-            // If a good split was found, use it.
-//          // If a good split was found, use it.
-            if (bestAxis !== undefined) {
-//          if (bestAxis !== undefined) {
-                // Re-sort along the best axis to ensure the correct order for splitting.
-//              // Re-sort along the best axis to ensure the correct order for splitting.
-                const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-//              const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-                    (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, bestAxis as Axis) - getCentroid(triangle2.aabb3d, bestAxis as Axis)
-//                  (triangle1: Triangle, triangle2: Triangle): number => getCentroid(triangle1.aabb3d, bestAxis as Axis) - getCentroid(triangle2.aabb3d, bestAxis as Axis)
-                );
-//              );
-                for (let i: number = 0; i < sortedSlice.length; i++) {
-//              for (let i: number = 0; i < sortedSlice.length; i++) {
-                    _triangles[start + i] = sortedSlice[i];
-//                  _triangles[start + i] = sortedSlice[i];
-                }
-//              }
-
-                mid = start + bestIndexToSplit + 1;
-//              mid = start + bestIndexToSplit + 1;
-            } else {
-//          } else {
-                // Fallback: If no split was found (e.g., all centroids are identical),
-//              // Fallback: If no split was found (e.g., all centroids are identical),
-                // we MUST still split to satisfy the 1-primitive-per-leaf rule.
-//              // we MUST still split to satisfy the 1-primitive-per-leaf rule.
-                // So, we simply split the group in the middle.
-//              // So, we simply split the group in the middle.
-                mid = start + Math.floor(objectSpan / 2);
-//              mid = start + Math.floor(objectSpan / 2);
-            }
-//          }
-
-            // Pre-allocate children nodes and get their indices.
-//          // Pre-allocate children nodes and get their indices.
-            const childIndexL: number = _bvhNodes.length;
-//          const childIndexL: number = _bvhNodes.length;
-            _bvhNodes.push({} as BVHNode);
-//          _bvhNodes.push({} as BVHNode);
-            const childIndexR: number = _bvhNodes.length;
-//          const childIndexR: number = _bvhNodes.length;
-            _bvhNodes.push({} as BVHNode);
-//          _bvhNodes.push({} as BVHNode);
-
-            // Update the current node to be an internal node.
-//          // Update the current node to be an internal node.
-            // Its AABB will be calculated in the bottom-up pass.
-//          // Its AABB will be calculated in the bottom-up pass.
-            _bvhNodes[nodeIndex] = {
-//          _bvhNodes[nodeIndex] = {
-                aabb3d: {} as AABB3D, // To be computed later
-//              aabb3d: {} as AABB3D, // To be computed later
+        );
+//      );
+        // Prevent divide by zero if scene is flat or single point
+        // Prevent divide by zero if scene is flat or single point
+        const extent: Vec3 = [
+//      const extent: Vec3 = [
+            Math.max(globalMax[0] - globalMin[0], 1e-6),
+//          Math.max(globalMax[0] - globalMin[0], 1e-6),
+            Math.max(globalMax[1] - globalMin[1], 1e-6),
+//          Math.max(globalMax[1] - globalMin[1], 1e-6),
+            Math.max(globalMax[2] - globalMin[2], 1e-6),
+//          Math.max(globalMax[2] - globalMin[2], 1e-6),
+        ];
+//      ];
+        // 2. Calculate Morton Codes
+        // 2. Calculate Morton Codes
+        for (let i = 0; i < primitives.length; i++) {
+//      for (let i = 0; i < primitives.length; i++) {
+            const p: PrimitiveInfo = primitives[i];
+//          const p: PrimitiveInfo = primitives[i];
+            const nx: number = (p.centroid[0] - globalMin[0]) / extent[0];
+//          const nx: number = (p.centroid[0] - globalMin[0]) / extent[0];
+            const ny: number = (p.centroid[1] - globalMin[1]) / extent[1];
+//          const ny: number = (p.centroid[1] - globalMin[1]) / extent[1];
+            const nz: number = (p.centroid[2] - globalMin[2]) / extent[2];
+//          const nz: number = (p.centroid[2] - globalMin[2]) / extent[2];
+            p.code = morton3D(nx, ny, nz);
+//          p.code = morton3D(nx, ny, nz);
+        }
+//      }
+        // 3. Sort Primitives by Morton Code
+        // 3. Sort Primitives by Morton Code
+        primitives.sort((a: PrimitiveInfo, b: PrimitiveInfo): number => a.code - b.code);
+//      primitives.sort((a: PrimitiveInfo, b: PrimitiveInfo): number => a.code - b.code);
+        // 4. Build Hierarchy
+        // 4. Build Hierarchy
+        const bvhNodes: BVHNode[] = [];
+//      const bvhNodes: BVHNode[] = [];
+        // Recursive builder function
+        // Recursive builder function
+        // Returns the index of the node created in bvhNodes array
+        // Returns the index of the node created in bvhNodes array
+        function buildRecursive(first: number, last: number): number {
+//      function buildRecursive(first: number, last: number): number {
+            // Create a new node placeholder
+            // Create a new node placeholder
+            const nodeIndex: number = bvhNodes.length;
+//          const nodeIndex: number = bvhNodes.length;
+            bvhNodes.push({ // Temporary init, will be overwritten
+//          bvhNodes.push({ // Temporary init, will be overwritten
+                aabb3d: {
+//              aabb3d: {
+                    minCornersLimit: [ 0, 0, 0 ],
+//                  minCornersLimit: [ 0, 0, 0 ],
+                    maxCornersLimit: [ 0, 0, 0 ],
+//                  maxCornersLimit: [ 0, 0, 0 ],
+                },
+//              },
                 triangleIndex: -1,
 //              triangleIndex: -1,
-                childIndexL: childIndexL,
-//              childIndexL: childIndexL,
-                childIndexR: childIndexR,
-//              childIndexR: childIndexR,
-            };
-//          };
-
-            // Push the new children tasks onto the stack.
-//          // Push the new children tasks onto the stack.
-            stack.push({ start: start, cease: mid, nodeIndex: childIndexL });
-//          stack.push({ start: start, cease: mid, nodeIndex: childIndexL });
-            stack.push({ start: mid, cease: cease, nodeIndex: childIndexR });
-//          stack.push({ start: mid, cease: cease, nodeIndex: childIndexR });
-        }
-//      }
-
-        // --- Pass 2: Bottom-Up calculation of internal node AABBs ---
-//      // --- Pass 2: Bottom-Up calculation of internal node AABBs ---
-        // This part remains the same.
-//      // This part remains the same.
-        for (let i: number = _bvhNodes.length - 1; i >= 0; --i) {
-//      for (let i: number = _bvhNodes.length - 1; i >= 0; --i) {
-            const node: BVHNode = _bvhNodes[i];
-//          const node: BVHNode = _bvhNodes[i];
-            if (node.childIndexL !== -1) { // If it's an internal node
-//          if (node.childIndexL !== -1) { // If it's an internal node
-                const childL: BVHNode = _bvhNodes[node.childIndexL];
-//              const childL: BVHNode = _bvhNodes[node.childIndexL];
-                const childR: BVHNode = _bvhNodes[node.childIndexR];
-//              const childR: BVHNode = _bvhNodes[node.childIndexR];
-                node.aabb3d = union(childL.aabb3d, childR.aabb3d);
-//              node.aabb3d = union(childL.aabb3d, childR.aabb3d);
+                childIndexL: -1,
+//              childIndexL: -1,
+                childIndexR: -1,
+//              childIndexR: -1,
+            });
+//          });
+            // CASE: Leaf Node
+            // CASE: Leaf Node
+            if (first === last) {
+//          if (first === last) {
+                const p: PrimitiveInfo = primitives[first];
+//              const p: PrimitiveInfo = primitives[first];
+                bvhNodes[nodeIndex].aabb3d = p.aabb;
+//              bvhNodes[nodeIndex].aabb3d = p.aabb;
+                bvhNodes[nodeIndex].triangleIndex = p.index;
+//              bvhNodes[nodeIndex].triangleIndex = p.index;
+                return nodeIndex;
+//              return nodeIndex;
             }
 //          }
-        }
-//      }
-
-        return 0; // The root node is at index 0
-//      return 0; // The root node is at index 0
-    }
-//  }
-    function buildBVHTree(start: number, cease: number): number {
-//  function buildBVHTree(start: number, cease: number): number {
-        const objectSpan: number = cease - start;
-//      const objectSpan: number = cease - start;
-        // Base case: create a leaf node with a single geometry
-//      // Base case: create a leaf node with a single geometry
-        if (objectSpan === 1) {
-//      if (objectSpan === 1) {
-            const current: number = _bvhNodes.length;
-//          const current: number = _bvhNodes.length;
-            _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
-//          _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
-            return current;
-//          return current;
-        }
-//      }
-        // Variables to track the best split
-//      // Variables to track the best split
-        let bestCost: number = +Infinity;
-//      let bestCost: number = +Infinity;
-        let bestAxis: Axis | undefined = undefined;
-//      let bestAxis: Axis | undefined = undefined;
-        let bestIndexToSplit: number = -1;
-//      let bestIndexToSplit: number = -1;
-        // Evaluate splits along each axis ( x = 0 | y = 1 | z = 2 )
-//      // Evaluate splits along each axis ( x = 0 | y = 1 | z = 2 )
-        for (let axis: number = 0; axis < 3; ++axis) {
-//      for (let axis: number = 0; axis < 3; ++axis) {
-            // Sort geometries based on centroid along the current axis
-            // Sort geometries based on centroid along the current axis
-            _triangles.splice(
-//          _triangles.splice(
-                start,
-//              start,
-                cease - start,
-//              cease - start,
-                ..._triangles
-//              ..._triangles
-                            .slice(start, cease)
-//                          .slice(start, cease)
-                            .sort((triangle1: Triangle, triangle2: Triangle): number => {
-//                          .sort((triangle1: Triangle, triangle2: Triangle): number => {
-                                return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
-//                              return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
-                            })
-//                          })
+            // CASE: Internal Node
+            // CASE: Internal Node
+            // Determine split position
+            // Determine split position
+            const splitIndex: number = findSplit(primitives, first, last);
+//          const splitIndex: number = findSplit(primitives, first, last);
+            // Process Children
+            // Process Children
+            const childL: number = buildRecursive(first, splitIndex);
+//          const childL: number = buildRecursive(first, splitIndex);
+            const childR: number = buildRecursive(splitIndex + 1, last);
+//          const childR: number = buildRecursive(splitIndex + 1, last);
+            // Link children
+            // Link children
+            bvhNodes[nodeIndex].childIndexL = childL;
+//          bvhNodes[nodeIndex].childIndexL = childL;
+            bvhNodes[nodeIndex].childIndexR = childR;
+//          bvhNodes[nodeIndex].childIndexR = childR;
+            // Refit AABB (Union of children)
+            // Refit AABB (Union of children)
+            bvhNodes[nodeIndex].aabb3d = unionAABB(
+//          bvhNodes[nodeIndex].aabb3d = unionAABB(
+                bvhNodes[childL].aabb3d,
+//              bvhNodes[childL].aabb3d,
+                bvhNodes[childR].aabb3d,
+//              bvhNodes[childR].aabb3d,
             );
 //          );
-            /*
-            const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-//          const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-                (triangle1: Triangle, triangle2: Triangle): number => {
-//              (triangle1: Triangle, triangle2: Triangle): number => {
-                    return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
-//                  return getCentroid(triangle1.aabb3d, axis as Axis) - getCentroid(triangle2.aabb3d, axis as Axis);
-                }
-//              }
-            );
-//          );
-            for (let i: number = 0; i < sortedSlice.length; i++) {
-//          for (let i: number = 0; i < sortedSlice.length; i++) {
-                _triangles[start + i] = sortedSlice[i];
-//              _triangles[start + i] = sortedSlice[i];
-            }
-//          }
-            */
-            // Compute cumulative AABB3Ds from the left!
-//          // Compute cumulative AABB3Ds from the left!
-            const lAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
-//          const lAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
-            lAABB3Ds[0] = _triangles[start].aabb3d;
-//          lAABB3Ds[0] = _triangles[start].aabb3d;
-            for (let i: number = 1; i < objectSpan; ++i) {
-//          for (let i: number = 1; i < objectSpan; ++i) {
-                lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
-//              lAABB3Ds[i] = union(lAABB3Ds[i - 1], _triangles[start + i].aabb3d);
-            }
-//          }
-            // Compute cumulative AABB3Ds from the right
-            // Compute cumulative AABB3Ds from the right
-            const rAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
-//          const rAABB3Ds: AABB3D[] = new Array<AABB3D>(objectSpan).fill({ minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], });
-            const r1: number = objectSpan - 1;
-//          const r1: number = objectSpan - 1;
-            const r2: number = cease - 1;
-//          const r2: number = cease - 1;
-            rAABB3Ds[r1] = _triangles[r2].aabb3d;
-//          rAABB3Ds[r1] = _triangles[r2].aabb3d;
-            for (let i: number = objectSpan - 2; i >= 0; --i) {
-//          for (let i: number = objectSpan - 2; i >= 0; --i) {
-                rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
-//              rAABB3Ds[i] = union(_triangles[start + i].aabb3d, rAABB3Ds[i + 1]);
-            }
-//          }
-            // Evaluate all possible splits
-//          // Evaluate all possible splits
-            for (let i: number = 0; i < objectSpan - 1; ++i) {
-//          for (let i: number = 0; i < objectSpan - 1; ++i) {
-                const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
-//              const cost: number = surfaceArea(lAABB3Ds[i]) * (i + 1) + surfaceArea(rAABB3Ds[i + 1]) * (objectSpan - i - 1);
-                if (cost < bestCost) {
-//              if (cost < bestCost) {
-                    bestCost = cost;
-//                  bestCost = cost;
-                    bestAxis = axis as Axis;
-//                  bestAxis = axis as Axis;
-                    bestIndexToSplit = i;
-//                  bestIndexToSplit = i;
+            return nodeIndex;
+//          return nodeIndex;
+        };
+//      };
+        // Start the build
+        // Start the build
+        buildRecursive(0, primitives.length - 1);
+//      buildRecursive(0, primitives.length - 1);
+        return bvhNodes;
+//      return bvhNodes;
+    };
+//  };
+    // Finds the split index for the range [first, last] using Morton codes.
+    // Finds the split index for the range [first, last] using Morton codes.
+    // It finds the highest bit that differs between the first and last keys,
+    // It finds the highest bit that differs between the first and last keys,
+    // and finds the position where that bit flips.
+    // and finds the position where that bit flips.
+    function findSplit(primitives: PrimitiveInfo[], first: number, last: number): number {
+//  function findSplit(primitives: PrimitiveInfo[], first: number, last: number): number {
+        const firstCode: number = primitives[first].code;
+//      const firstCode: number = primitives[first].code;
+        const lastCode: number = primitives[last].code;
+//      const lastCode: number = primitives[last].code;
+        // If all primitives in this range have the same Morton code,
+        // If all primitives in this range have the same Morton code,
+        // we cannot split by bit. Split exactly in the middle.
+        // we cannot split by bit. Split exactly in the middle.
+        if (firstCode === lastCode) {
+//      if (firstCode === lastCode) {
+            return (first + last) >> 1;
+//          return (first + last) >> 1;
+        }
+//      }
+        // Find the highest differing bit between the first and last code
+        // Find the highest differing bit between the first and last code
+        // XOR results in 1s where bits differ.
+        // XOR results in 1s where bits differ.
+        // clz32 (Count Leading Zeros) gives us the most significant differing bit.
+        // clz32 (Count Leading Zeros) gives us the most significant differing bit.
+        const commonPrefix: number = Math.clz32(firstCode ^ lastCode);
+//      const commonPrefix: number = Math.clz32(firstCode ^ lastCode);
+        // Use binary search to find the index where the bit at 'commonPrefix' flips
+        // Use binary search to find the index where the bit at 'commonPrefix' flips
+        let split: number = first; // Initialize split
+//      let split: number = first; // Initialize split
+        let step: number = last - first;
+//      let step: number = last - first;
+        // Standard binary search to find the boundary
+        // Standard binary search to find the boundary
+        // We look for the largest index 'i' such that primitives[i] shares the
+        // We look for the largest index 'i' such that primitives[i] shares the
+        // same bit at 'commonPrefix' as primitives[first].
+        // same bit at 'commonPrefix' as primitives[first].
+        do {
+//      do {
+            step = (step + 1) >> 1;
+//          step = (step + 1) >> 1;
+            const newSplit: number = split + step;
+//          const newSplit: number = split + step;
+            if (newSplit < last) {
+//          if (newSplit < last) {
+                const splitCode: number = primitives[newSplit].code;
+//              const splitCode: number = primitives[newSplit].code;
+                // Compare the most significant differing bit
+                // Compare the most significant differing bit
+                const splitPrefix: number = Math.clz32(firstCode ^ splitCode);
+//              const splitPrefix: number = Math.clz32(firstCode ^ splitCode);
+                // If the prefix is larger (more leading zeros), it means the differing bit
+                // If the prefix is larger (more leading zeros), it means the differing bit
+                // hasn't been encountered yet, so this code is on the "Left" side.
+                // hasn't been encountered yet, so this code is on the "Left" side.
+                if (splitPrefix > commonPrefix) {
+//              if (splitPrefix > commonPrefix) {
+                    split = newSplit;
+//                  split = newSplit;
                 }
 //              }
             }
 //          }
-        }
-//      }
-        // If no valid split is found (shouldn't happen), create a leaf node as fallback
-//      // If no valid split is found (shouldn't happen), create a leaf node as fallback
-        if (bestAxis === undefined) {
-//      if (bestAxis === undefined) {
-            const current: number = _bvhNodes.length;
-//          const current: number = _bvhNodes.length;
-            _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
-//          _bvhNodes.push({ aabb3d: _triangles[start].aabb3d, triangleIndex: start, childIndexL: -1, childIndexR: -1, });
-            return current;
-//          return current;
-        }
-//      }
-        // Apply the best split
-//      // Apply the best split
-        _triangles.splice(
-//      _triangles.splice(
-            start,
-//          start,
-            cease - start,
-//          cease - start,
-            ..._triangles
-//          ..._triangles
-                        .slice(start, cease)
-//                      .slice(start, cease)
-                        .sort((triangle1: Triangle, triangle2: Triangle): number => {
-//                      .sort((triangle1: Triangle, triangle2: Triangle): number => {
-                            return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
-//                          return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
-                        })
-//                      })
-        );
-//      );
-        /*
-        const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-//      const sortedSlice: Triangle[] = _triangles.slice(start, cease).sort(
-            (triangle1: Triangle, triangle2: Triangle): number => {
-//          (triangle1: Triangle, triangle2: Triangle): number => {
-                return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
-//              return getCentroid(triangle1.aabb3d, bestAxis) - getCentroid(triangle2.aabb3d, bestAxis);
-            }
-//          }
-        );
-//      );
-        for (let i: number = 0; i < sortedSlice.length; i++) {
-//      for (let i: number = 0; i < sortedSlice.length; i++) {
-            _triangles[start + i] = sortedSlice[i];
-//          _triangles[start + i] = sortedSlice[i];
-        }
-//      }
-        */
-        const mid: number = start + bestIndexToSplit + 1;
-//      const mid: number = start + bestIndexToSplit + 1;
-        // Create an internal node
-//      // Create an internal node
-        const current: number = _bvhNodes.length;
-//      const current: number = _bvhNodes.length;
-        _bvhNodes.push({ aabb3d: { minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], }, triangleIndex: -1, childIndexL: -1, childIndexR: -1, });
-//      _bvhNodes.push({ aabb3d: { minCornersLimit: [ 0.0, 0.0, 0.0, ], maxCornersLimit: [ 0.0, 0.0, 0.0, ], }, triangleIndex: -1, childIndexL: -1, childIndexR: -1, });
-        // Recursively build left! and right subtrees
-//      // Recursively build left! and right subtrees
-        const childIndexL: number = buildBVHTree(start, mid       );
-//      const childIndexL: number = buildBVHTree(start, mid       );
-        const childIndexR: number = buildBVHTree(       mid, cease);
-//      const childIndexR: number = buildBVHTree(       mid, cease);
-        // Set up the internal node
-//      // Set up the internal node
-        _bvhNodes[current].aabb3d = union(_bvhNodes[childIndexL].aabb3d, _bvhNodes[childIndexR].aabb3d);
-//      _bvhNodes[current].aabb3d = union(_bvhNodes[childIndexL].aabb3d, _bvhNodes[childIndexR].aabb3d);
-        _bvhNodes[current].triangleIndex = -1;
-//      _bvhNodes[current].triangleIndex = -1;
-        _bvhNodes[current].childIndexL = childIndexL;
-//      _bvhNodes[current].childIndexL = childIndexL;
-        _bvhNodes[current].childIndexR = childIndexR;
-//      _bvhNodes[current].childIndexR = childIndexR;
-        return current;
-//      return current;
-}
-
+        } while (step > 1);
+//      } while (step > 1);
+        return split;
+//      return split;
+    };
+//  };
 
 
     const prepareSpheres = (): void => {
@@ -1254,8 +1112,8 @@
 //      });
         _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
-        const _ = buildBVHTree(0, _triangles.length);
-//      const _ = buildBVHTree(0, _triangles.length);
+        _bvhNodes = buildLBVH(_triangles);
+//      _bvhNodes = buildLBVH(_triangles);
         if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
 //      if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
             _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 36);
@@ -1735,8 +1593,8 @@
 //              layer1IOR: RefractiveIndex.MARBLE,
                 layer1Roughness: 0.1,
 //              layer1Roughness: 0.1,
-                materialType: MaterialType.METAL,
-//              materialType: MaterialType.METAL,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 6,
 //              textureIndex: 6,
             },
@@ -1843,8 +1701,8 @@
 //          },
             {
 //          {
-                albedo: [ 0.3, 1.0, 1.0 ],
-//              albedo: [ 0.3, 1.0, 1.0 ],
+                albedo: [ 0.3, 0.5, 0.5 ],
+//              albedo: [ 0.3, 0.5, 0.5 ],
                 imageIndex: 6,
 //              imageIndex: 6,
                 textureType: TextureType.COLOR,
@@ -2041,12 +1899,12 @@
 //          const floorY: number = -20.0;
             let minModelY: number = Infinity;
 //          let minModelY: number = Infinity;
-            const scaleX: number = 1.0;
-//          const scaleX: number = 1.0;
-            const scaleY: number = 1.0;
-//          const scaleY: number = 1.0;
-            const scaleZ: number = 1.0;
-//          const scaleZ: number = 1.0;
+            const scaleX: number = 2.0;
+//          const scaleX: number = 2.0;
+            const scaleY: number = 2.0;
+//          const scaleY: number = 2.0;
+            const scaleZ: number = 2.0;
+//          const scaleZ: number = 2.0;
             for (let mesh of model["meshes"]) {
 //          for (let mesh of model["meshes"]) {
                 const l: number = (mesh["vertices"] as number[]).length;
@@ -2202,10 +2060,8 @@
         // return;
 
 
-        /*
         await loadModels();
 //      await loadModels();
-        */
 
 
         await initOnce();
@@ -2882,9 +2738,9 @@
     <svelte:window on:keydown={OnKeydown} />
 <!--<svelte:window on:keydown={OnKeydown} />-->
 
-<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
-    <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
-<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
+    <canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>
+<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
 
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
