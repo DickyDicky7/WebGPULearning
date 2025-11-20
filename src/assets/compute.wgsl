@@ -207,8 +207,8 @@
     fn _minVec3F32(v: vec3<f32>) -> f32 { return min(v.x, min(v.y, v.z)); }
 //  fn _minVec3F32(v: vec3<f32>) -> f32 { return min(v.x, min(v.y, v.z)); }
 
-    fn _rayHitAABB3D(ray: Ray, rayDistanceLimit: Interval, aabb3d: AABB3D) -> bool
-//  fn _rayHitAABB3D(ray: Ray, rayDistanceLimit: Interval, aabb3d: AABB3D) -> bool
+    fn _rayHitAABB3D(ray: Ray, rayTravelDistanceLimit: Interval, aabb3d: AABB3D) -> bool
+//  fn _rayHitAABB3D(ray: Ray, rayTravelDistanceLimit: Interval, aabb3d: AABB3D) -> bool
 {
     // Represent the AABB as two vectors for min and max corners.
 //  // Represent the AABB as two vectors for min and max corners.
@@ -246,10 +246,10 @@
 
     // Combine with the user's initial ray distance limits.
 //  // Combine with the user's initial ray distance limits.
-    let finalDistanceMin: f32 = max(rayDistanceLimit.min, overallDistanceMin);
-//  let finalDistanceMin: f32 = max(rayDistanceLimit.min, overallDistanceMin);
-    let finalDistanceMax: f32 = min(rayDistanceLimit.max, overallDistanceMax);
-//  let finalDistanceMax: f32 = min(rayDistanceLimit.max, overallDistanceMax);
+    let finalDistanceMin: f32 = max(rayTravelDistanceLimit.min, overallDistanceMin);
+//  let finalDistanceMin: f32 = max(rayTravelDistanceLimit.min, overallDistanceMin);
+    let finalDistanceMax: f32 = min(rayTravelDistanceLimit.max, overallDistanceMax);
+//  let finalDistanceMax: f32 = min(rayTravelDistanceLimit.max, overallDistanceMax);
 
     // The final check is the same: the interval must be valid.
 //  // The final check is the same: the interval must be valid.
@@ -339,8 +339,8 @@
 }
 */
 
-    fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 {
     let triangle: Triangle = triangles[triangleIndex];
 //  let triangle: Triangle = triangles[triangleIndex];
@@ -405,8 +405,8 @@
     let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
 //  let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
 
-    if (!_intervalSurround(rayDistanceLimit, distanceFromRayOriginToIntersectionPoint))
-//  if (!_intervalSurround(rayDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+    if (!_intervalSurround(rayTravelDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+//  if (!_intervalSurround(rayTravelDistanceLimit, distanceFromRayOriginToIntersectionPoint))
     {
         rayHitResult.isHitted = false;
 //      rayHitResult.isHitted = false;
@@ -472,8 +472,8 @@
     }
 }
 
-    fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSphere(ray: Ray, sphereIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 {
     let sphere: Sphere = spheres[sphereIndex];
 //  let sphere: Sphere = spheres[sphereIndex];
@@ -506,14 +506,14 @@
         var t: f32 = (h - sqrtDiscriminant) / a;
 //      var t: f32 = (h - sqrtDiscriminant) / a;
 
-        if (!_intervalSurround(rayDistanceLimit, t))
-//      if (!_intervalSurround(rayDistanceLimit, t))
+        if (!_intervalSurround(rayTravelDistanceLimit, t))
+//      if (!_intervalSurround(rayTravelDistanceLimit, t))
         {
             t = (h + sqrtDiscriminant) / a;
 //          t = (h + sqrtDiscriminant) / a;
 
-            if (!_intervalSurround(rayDistanceLimit, t))
-//          if (!_intervalSurround(rayDistanceLimit, t))
+            if (!_intervalSurround(rayTravelDistanceLimit, t))
+//          if (!_intervalSurround(rayTravelDistanceLimit, t))
             {
                 rayHitResult.isHitted = false;
 //              rayHitResult.isHitted = false;
@@ -562,8 +562,8 @@
 //  return rayHitResult;
 }
 
-    fn _rayHitSpheresThenTriangles(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitSpheresThenTriangles(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitSpheresThenTriangles(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSpheresThenTriangles(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
 {
     let numberOfSpheres: u32 = arrayLength(&spheres);
 //  let numberOfSpheres: u32 = arrayLength(&spheres);
@@ -571,13 +571,13 @@
 //  let numberOfTriangles: u32 = arrayLength(&triangles);
     var finalRayHitResult: RayHitResult;
 //  var finalRayHitResult: RayHitResult;
-    var closestRayDistanceSoFar: f32 = rayDistanceLimit.max;
-//  var closestRayDistanceSoFar: f32 = rayDistanceLimit.max;
+    var closestRayDistanceSoFar: f32 = rayTravelDistanceLimit.max;
+//  var closestRayDistanceSoFar: f32 = rayTravelDistanceLimit.max;
     for (var sphereIndex: u32 = 0u; sphereIndex < numberOfSpheres; sphereIndex++)
 //  for (var sphereIndex: u32 = 0u; sphereIndex < numberOfSpheres; sphereIndex++)
     {
-        let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
-//      let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+        let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayTravelDistanceLimit.min, closestRayDistanceSoFar));
+//      let temporaryRayHitResult: RayHitResult = _rayHitSphere(ray, sphereIndex, Interval(rayTravelDistanceLimit.min, closestRayDistanceSoFar));
         if (temporaryRayHitResult.isHitted)
 //      if (temporaryRayHitResult.isHitted)
         {
@@ -590,8 +590,8 @@
     for (var triangleIndex: u32 = 0u; triangleIndex < numberOfTriangles; triangleIndex++)
 //  for (var triangleIndex: u32 = 0u; triangleIndex < numberOfTriangles; triangleIndex++)
     {
-        let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
-//      let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayDistanceLimit.min, closestRayDistanceSoFar));
+        let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayTravelDistanceLimit.min, closestRayDistanceSoFar));
+//      let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, Interval(rayTravelDistanceLimit.min, closestRayDistanceSoFar));
         if (temporaryRayHitResult.isHitted)
 //      if (temporaryRayHitResult.isHitted)
         {
@@ -610,8 +610,8 @@
 //  // stack[stackPointer] = value; stackPointer++; -> push
     // stackPointer--; value = stack[stackPointer]; -> pop
 //  // stackPointer--; value = stack[stackPointer]; -> pop
-    fn _rayHitBVHTree(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitBVHTree(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitBVHTree(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitBVHTree(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
 {
     const bvhRootNodeIndex: i32 = 0;
 //  const bvhRootNodeIndex: i32 = 0;
@@ -619,8 +619,8 @@
 //  var closestRayHitResult: RayHitResult;
     closestRayHitResult.isHitted = false;
 //  closestRayHitResult.isHitted = false;
-    closestRayHitResult.minDistance = rayDistanceLimit.max;
-//  closestRayHitResult.minDistance = rayDistanceLimit.max;
+    closestRayHitResult.minDistance = rayTravelDistanceLimit.max;
+//  closestRayHitResult.minDistance = rayTravelDistanceLimit.max;
 
     var stack: array<i32, 64>;
 //  var stack: array<i32, 64>;
@@ -649,8 +649,8 @@
         let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
 //      let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
 
-        if (!_rayHitAABB3D(ray, rayDistanceLimit, bvhNode.aabb3d))
-//      if (!_rayHitAABB3D(ray, rayDistanceLimit, bvhNode.aabb3d))
+        if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, bvhNode.aabb3d))
+//      if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, bvhNode.aabb3d))
         {
             continue;
 //          continue;
@@ -659,8 +659,8 @@
         if (bvhNode.triangleIndex != -1)
 //      if (bvhNode.triangleIndex != -1)
         {
-            let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayDistanceLimit);
-//          let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayDistanceLimit);
+            let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayTravelDistanceLimit);
+//          let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayTravelDistanceLimit);
             if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
 //          if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
             {
@@ -908,8 +908,8 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitSDF(currentRay, Interval(1.0e-4, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitSDF(currentRay, Interval(1.0e-4, 1.0e+4));
+            let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
+//          let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
 
 
             if (!rayHitResult.isHitted)
@@ -1025,8 +1025,8 @@
 
             let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
 //          let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-            let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
-//          let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+            let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+//          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
 
             if (!shadowHit.isHitted)
 //          if (!shadowHit.isHitted)
@@ -1067,8 +1067,8 @@
 
             let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
 //          let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-            let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
-//          let shadowHit: RayHitResult = _rayHitSDF(shadowRay, Interval(1.0e-4, 1.0e+4));
+            let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+//          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
 
             if (!shadowHit.isHitted)
 //          if (!shadowHit.isHitted)
@@ -2108,8 +2108,8 @@
     const SDF_HIT_EPSILON: f32 = 1.0e-5;
 //  const SDF_HIT_EPSILON: f32 = 1.0e-5;
 
-    fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitSDF(ray: Ray, rayDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitSDF(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitSDF(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
     {
         const sceneAABB3D = AABB3D(
 //      const sceneAABB3D = AABB3D(
@@ -2121,8 +2121,8 @@
 //          Interval(-50, 50),
         );
 //      );
-        if (!_rayHitAABB3D(ray, rayDistanceLimit, sceneAABB3D))
-//      if (!_rayHitAABB3D(ray, rayDistanceLimit, sceneAABB3D))
+        if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, sceneAABB3D))
+//      if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, sceneAABB3D))
         {
             var rayHitResult: RayHitResult;
 //          var rayHitResult: RayHitResult;
@@ -2131,8 +2131,8 @@
             return rayHitResult;
 //          return rayHitResult;
         }
-        var currentDistance: f32 = rayDistanceLimit.min;
-//      var currentDistance: f32 = rayDistanceLimit.min;
+        var currentDistance: f32 = rayTravelDistanceLimit.min;
+//      var currentDistance: f32 = rayTravelDistanceLimit.min;
         var sdfHitResult: SDFHitResult;
 //      var sdfHitResult: SDFHitResult;
         var rayHitResult: RayHitResult;
@@ -2229,7 +2229,7 @@
 //                      let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
                         outwardNormal = interpolatedFrontFaceNormal; // normalize(cross(triangle.vertex1 - triangle.vertex0, triangle.vertex2 - triangle.vertex0));
 //                      outwardNormal = interpolatedFrontFaceNormal; // normalize(cross(triangle.vertex1 - triangle.vertex0, triangle.vertex2 - triangle.vertex0));
-        
+
                         uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
 //                      uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
                     }
@@ -2266,8 +2266,8 @@
                 }
                 currentDistance += sdfHitResult.distance;
 //              currentDistance += sdfHitResult.distance;
-                if (currentDistance > rayDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
-//              if (currentDistance > rayDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
+                if (currentDistance > rayTravelDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
+//              if (currentDistance > rayTravelDistanceLimit.max || currentDistance > SDF_MAX_MARCHING_DISTANCE)
                 {
                     break;
 //                  break;
@@ -2275,4 +2275,207 @@
             }
             return rayHitResult;
 //          return rayHitResult;
+    }
+
+    fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+    {
+
+        var finalRayHitResult: RayHitResult;
+//      var finalRayHitResult: RayHitResult;
+        finalRayHitResult.isHitted = false;
+//      finalRayHitResult.isHitted = false;
+        var maxTravelableDistanceSoFarForRay: f32 = rayTravelDistanceLimit.max;
+//      var maxTravelableDistanceSoFarForRay: f32 = rayTravelDistanceLimit.max;
+
+        // 1. Initialize stack.
+//      // 1. Initialize stack.
+        // Size 32 is sufficient for 2^32 triangles (4 billion), which is plenty.
+//      // Size 32 is sufficient for 2^32 triangles (4 billion), which is plenty.
+        var stack: array<i32, 32>;
+//      var stack: array<i32, 32>;
+        var stackPointer: i32 = 0;
+//      var stackPointer: i32 = 0;
+
+        // Push root node (index 0) into stack.
+//      // Push root node (index 0) into stack.
+        stack[0] = 0;
+//      stack[0] = 0;
+        stackPointer = 1;
+//      stackPointer = 1;
+
+        loop
+//      loop
+        {
+            // Check if stack is empty.
+//          // Check if stack is empty.
+            if (stackPointer == 0)
+//          if (stackPointer == 0)
+            {
+                break;
+//              break;
+            }
+
+            // Pop stack.
+//          // Pop stack.
+            stackPointer = stackPointer - 1;
+//          stackPointer = stackPointer - 1;
+            let nodeIndex: i32 = stack[stackPointer];
+//          let nodeIndex: i32 = stack[stackPointer];
+            let node: BVHNode = bvhNodes[nodeIndex];
+//          let node: BVHNode = bvhNodes[nodeIndex];
+
+            let updatedRayTravelDistanceLimit: Interval = Interval(rayTravelDistanceLimit.min, maxTravelableDistanceSoFarForRay);
+//          let updatedRayTravelDistanceLimit: Interval = Interval(rayTravelDistanceLimit.min, maxTravelableDistanceSoFarForRay);
+
+            // 2. Check AABB intersection.
+//          // 2. Check AABB intersection.
+            if (!_rayHitAABB3D(ray, updatedRayTravelDistanceLimit, node.aabb3d))
+//          if (!_rayHitAABB3D(ray, updatedRayTravelDistanceLimit, node.aabb3d))
+            {
+                continue;
+//              continue;
+            }
+
+            // 3. Leaf node case.
+//          // 3. Leaf node case.
+            if (node.triangleIndex >= 0)
+//          if (node.triangleIndex >= 0)
+            {
+                let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(node.triangleIndex), updatedRayTravelDistanceLimit);
+//              let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(node.triangleIndex), updatedRayTravelDistanceLimit);
+                if (temporaryRayHitResult.isHitted && temporaryRayHitResult.minDistance < maxTravelableDistanceSoFarForRay)
+//              if (temporaryRayHitResult.isHitted && temporaryRayHitResult.minDistance < maxTravelableDistanceSoFarForRay)
+                {
+                    finalRayHitResult = temporaryRayHitResult;
+//                  finalRayHitResult = temporaryRayHitResult;
+                    maxTravelableDistanceSoFarForRay = temporaryRayHitResult.minDistance;
+//                  maxTravelableDistanceSoFarForRay = temporaryRayHitResult.minDistance;
+                }
+                continue;
+//              continue;
+            }
+
+            // 4. Internal node case (THE OPTIMIZATION).
+//          // 4. Internal node case (THE OPTIMIZATION).
+
+            // We need to look at the children.
+//          // We need to look at the children.
+            // To do front-to-back traversal, we calculate the distance to both children.
+//          // To do front-to-back traversal, we calculate the distance to both children.
+            // NOTE: This adds some overhead, but usually pays off by culling huge branches later.
+//          // NOTE: This adds some overhead, but usually pays off by culling huge branches later.
+
+            let childL: BVHNode = bvhNodes[node.childIndexL];
+//          let childL: BVHNode = bvhNodes[node.childIndexL];
+            let childR: BVHNode = bvhNodes[node.childIndexR];
+//          let childR: BVHNode = bvhNodes[node.childIndexR];
+
+            // Quick distance check (returns infinity if miss).
+//          // Quick distance check (returns infinity if miss).
+            let distanceL: f32 = _calculateDistanceToAABB3D(ray, updatedRayTravelDistanceLimit, childL.aabb3d);
+//          let distanceL: f32 = _calculateDistanceToAABB3D(ray, updatedRayTravelDistanceLimit, childL.aabb3d);
+            let distanceR: f32 = _calculateDistanceToAABB3D(ray, updatedRayTravelDistanceLimit, childR.aabb3d);
+//          let distanceR: f32 = _calculateDistanceToAABB3D(ray, updatedRayTravelDistanceLimit, childR.aabb3d);
+
+            // OPTIMIZATION: If both are Infinity (missed), continue.
+//          // OPTIMIZATION: If both are Infinity (missed), continue.
+            if (distanceL == 9999999.0 && distanceR == 9999999.0)
+//          if (distanceL == 9999999.0 && distanceR == 9999999.0)
+            {
+                continue;
+//              continue;
+            }
+
+            // PUSH ORDER: Push the FAR one first, so we process the NEAR one next.
+//          // PUSH ORDER: Push the FAR one first, so we process the NEAR one next.
+            if (distanceL < distanceR)
+//          if (distanceL < distanceR)
+            {
+                // L is closer.
+//              // L is closer.
+                // Push R first (if it is hitted).
+//              // Push R first (if it is hitted).
+                if (distanceR < maxTravelableDistanceSoFarForRay)
+//              if (distanceR < maxTravelableDistanceSoFarForRay)
+                {
+                    stack[stackPointer] = node.childIndexR;
+//                  stack[stackPointer] = node.childIndexR;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+                // Push L second (so it pops first).
+//              // Push L second (so it pops first).
+                if (distanceL < maxTravelableDistanceSoFarForRay)
+//              if (distanceL < maxTravelableDistanceSoFarForRay)
+                {
+                    stack[stackPointer] = node.childIndexL;
+//                  stack[stackPointer] = node.childIndexL;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+            }
+            else
+            {
+                // R is closer (or equal).
+//              // R is closer (or equal).
+                // Push L first (if it is hitted).
+//              // Push L first (if it is hitted).
+                if (distanceL < maxTravelableDistanceSoFarForRay)
+//              if (distanceL < maxTravelableDistanceSoFarForRay)
+                {
+                    stack[stackPointer] = node.childIndexL;
+//                  stack[stackPointer] = node.childIndexL;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+                // Push R second (so it pops first).
+//              // Push R second (so it pops first).
+                if (distanceR < maxTravelableDistanceSoFarForRay)
+//              if (distanceR < maxTravelableDistanceSoFarForRay)
+                {
+                    stack[stackPointer] = node.childIndexR;
+//                  stack[stackPointer] = node.childIndexR;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+            }
+        }
+
+        return finalRayHitResult;
+//      return finalRayHitResult;
+    
+    }
+
+    // HELPER: Simply returns the distance to the bounding box, or huge number if miss.
+//  // HELPER: Simply returns the distance to the bounding box, or huge number if miss.
+    fn _calculateDistanceToAABB3D(ray: Ray, rayTravelDistanceLimit: Interval, aabb3d: AABB3D) -> f32
+//  fn _calculateDistanceToAABB3D(ray: Ray, rayTravelDistanceLimit: Interval, aabb3d: AABB3D) -> f32
+    {
+
+        let aabb3dMinCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.min, aabb3d.cornerLimitAxisY.min, aabb3d.cornerLimitAxisZ.min);
+//      let aabb3dMinCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.min, aabb3d.cornerLimitAxisY.min, aabb3d.cornerLimitAxisZ.min);
+        let aabb3dMaxCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
+//      let aabb3dMaxCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
+        let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
+//      let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
+
+        let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * rayDirectionInverse;
+//      let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * rayDirectionInverse;
+        let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * rayDirectionInverse;
+//      let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * rayDirectionInverse;
+
+        let distancesMin: vec3<f32> = max(min(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.min));
+//      let distancesMin: vec3<f32> = max(min(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.min));
+        let distancesMax: vec3<f32> = min(max(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.max));
+//      let distancesMax: vec3<f32> = min(max(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.max));
+
+        let distanceToBoxMin: f32 = max(max(distancesMin.x, distancesMin.y), distancesMin.z);
+//      let distanceToBoxMin: f32 = max(max(distancesMin.x, distancesMin.y), distancesMin.z);
+        let distanceToBoxMax: f32 = min(min(distancesMax.x, distancesMax.y), distancesMax.z);
+//      let distanceToBoxMax: f32 = min(min(distancesMax.x, distancesMax.y), distancesMax.z);
+
+        return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
+//      return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
+
     }
