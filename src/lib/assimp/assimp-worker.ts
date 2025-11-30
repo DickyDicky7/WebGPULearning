@@ -1,10 +1,10 @@
 //  @ts-nocheck
 //  @ts-nocheck
 
-    import type { MainModule } from "assimpts";
-//  import type { MainModule } from "assimpts";
-    import init from "./wasm/dist/assimpts";
-//  import init from "./wasm/dist/assimpts";
+    import type { MainModule } from "../wasm/assimpts/dist/assimpts";
+//  import type { MainModule } from "../wasm/assimpts/dist/assimpts";
+    import init from "../wasm/assimpts/dist/assimpts";
+//  import init from "../wasm/assimpts/dist/assimpts";
 
 //  Initialize the WASM module once when the worker is created.
 //  Initialize the WASM module once when the worker is created.
@@ -53,6 +53,8 @@
 //              |   assimp.PostProcessFlags.optimizeGraph.value
                 |   assimp.PostProcessFlags.optimizeMeshes.value
 //              |   assimp.PostProcessFlags.optimizeMeshes.value
+                |   assimp.PostProcessFlags.preTransformVertices.value
+//              |   assimp.PostProcessFlags.preTransformVertices.value
             );
 //          );
 

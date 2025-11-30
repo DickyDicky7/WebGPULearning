@@ -315,7 +315,6 @@
 //  return (quantizedX << 16u) | quantizedY;
 }
 
-/*
     fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
 //  fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
 {
@@ -337,7 +336,6 @@
     return (quantizedU << 16u) | quantizedV;
 //  return (quantizedU << 16u) | quantizedV;
 }
-*/
 
     fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
@@ -423,12 +421,12 @@
 //      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
         let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
 //      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
-        let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
-//      let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
-        let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
-//      let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
-        let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
-//      let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
+        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+//      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+//      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
+//      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
 
         rayHitResult.isHitted = true;
 //      rayHitResult.isHitted = true;
@@ -604,81 +602,6 @@
 
     return finalRayHitResult;
 //  return finalRayHitResult;
-}
-
-    // stack[stackPointer] = value; stackPointer++; -> push
-//  // stack[stackPointer] = value; stackPointer++; -> push
-    // stackPointer--; value = stack[stackPointer]; -> pop
-//  // stackPointer--; value = stack[stackPointer]; -> pop
-    fn _rayHitBVHTree(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitBVHTree(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
-{
-    const bvhRootNodeIndex: i32 = 0;
-//  const bvhRootNodeIndex: i32 = 0;
-    var closestRayHitResult: RayHitResult;
-//  var closestRayHitResult: RayHitResult;
-    closestRayHitResult.isHitted = false;
-//  closestRayHitResult.isHitted = false;
-    closestRayHitResult.minDistance = rayTravelDistanceLimit.max;
-//  closestRayHitResult.minDistance = rayTravelDistanceLimit.max;
-
-    var stack: array<i32, 64>;
-//  var stack: array<i32, 64>;
-    var stackPointer: i32 = 0;
-//  var stackPointer: i32 = 0;
-
-    stack[stackPointer] = bvhRootNodeIndex;
-//  stack[stackPointer] = bvhRootNodeIndex;
-    stackPointer++;
-//  stackPointer++;
-
-    loop
-//  loop
-    {
-        if (stackPointer == 0)
-//      if (stackPointer == 0)
-        {
-            break;
-//          break;
-        }
-
-        stackPointer--;
-//      stackPointer--;
-        let bvhNodeIndex: i32 = stack[stackPointer];
-//      let bvhNodeIndex: i32 = stack[stackPointer];
-        let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
-//      let bvhNode: BVHNode = bvhNodes[bvhNodeIndex];
-
-        if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, bvhNode.aabb3d))
-//      if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, bvhNode.aabb3d))
-        {
-            continue;
-//          continue;
-        }
-
-        if (bvhNode.triangleIndex != -1)
-//      if (bvhNode.triangleIndex != -1)
-        {
-            let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayTravelDistanceLimit);
-//          let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(bvhNode.triangleIndex), rayTravelDistanceLimit);
-            if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
-//          if (temporaryRayHitResult.isHitted && (!closestRayHitResult.isHitted || temporaryRayHitResult.minDistance < closestRayHitResult.minDistance))
-            {
-                closestRayHitResult = temporaryRayHitResult;
-//              closestRayHitResult = temporaryRayHitResult;
-            }
-            continue;
-//          continue;
-        }
-
-        stack[stackPointer] = bvhNode.childIndexR; stackPointer++;
-//      stack[stackPointer] = bvhNode.childIndexR; stackPointer++;
-        stack[stackPointer] = bvhNode.childIndexL; stackPointer++;
-//      stack[stackPointer] = bvhNode.childIndexL; stackPointer++;
-    }
-
-    return closestRayHitResult;
-//  return closestRayHitResult;
 }
 
     fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
@@ -1106,7 +1029,7 @@
 
             // Russian Roulette Solution
             // Russian Roulette Solution
-            /*
+
             let minBouncesForRR: u32 = 4u;
 //          let minBouncesForRR: u32 = 4u;
             if (depth >= minBouncesForRR)
@@ -1123,7 +1046,7 @@
                 attenuation *= 1.0 / p; // Boost the survivor
 //              attenuation *= 1.0 / p; // Boost the survivor
             }
-            */
+
 
 
             currentRay   = materialLightScatteringResult.scatteredRay;
@@ -1135,18 +1058,37 @@
 
 }
 
-//  [0]=canvasWidth&Height:vec2<f32>+stratifiedSamplesPerPixel:f32+inverseStratifiedSamplesPerPixel:f32,
-//  [0]=canvasWidth&Height:vec2<f32>+stratifiedSamplesPerPixel:f32+inverseStratifiedSamplesPerPixel:f32,
-//  [1]=cameraCenter:vec3<f32>+pixelSamplesScale:f32,
-//  [1]=cameraCenter:vec3<f32>+pixelSamplesScale:f32,
-//  [2]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:f32,
-//  [2]=fromPixelToPixelDeltaU:vec3<f32>+stratifiedSampleX:f32,
-//  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
-//  [3]=fromPixelToPixelDeltaV:vec3<f32>+stratifiedSampleY:f32,
-//  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
-//  [4]=pixel00Coordinates:vec3<f32>+backgroundType:f32,
-    @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
-//  @group(0) @binding(0) var<uniform> data: array<vec4<f32>, 5>;
+    struct GeneralData
+//  struct GeneralData
+{
+    canvasSize: vec2<u32>,
+//  canvasSize: vec2<u32>,
+    stratifiedSamplesPerPixel: f32,
+//  stratifiedSamplesPerPixel: f32,
+    inverseStratifiedSamplesPerPixel: f32,
+//  inverseStratifiedSamplesPerPixel: f32,
+    cameraCenter: vec3<f32>,
+//  cameraCenter: vec3<f32>,
+    pixelSamplesScale: f32,
+//  pixelSamplesScale: f32,
+    fromPixelToPixelDeltaU: vec3<f32>,
+//  fromPixelToPixelDeltaU: vec3<f32>,
+    stratifiedSampleX: f32,
+//  stratifiedSampleX: f32,
+    fromPixelToPixelDeltaV: vec3<f32>,
+//  fromPixelToPixelDeltaV: vec3<f32>,
+    stratifiedSampleY: f32,
+//  stratifiedSampleY: f32,
+    pixel00Coordinates: vec3<f32>,
+//  pixel00Coordinates: vec3<f32>,
+    backgroundType: u32,
+//  backgroundType: u32,
+    numberOfImages: u32,
+//  numberOfImages: u32,
+}
+
+    @group(0) @binding(0) var<uniform> generalData: GeneralData;
+//  @group(0) @binding(0) var<uniform> generalData: GeneralData;
     @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
 //  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
     @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -1155,10 +1097,10 @@
 //  @group(0) @binding(3) var<storage, read> materials: array<Material>;
     @group(0) @binding(4) var<storage, read> textures: array<Texture>;
 //  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var atlasSampler: sampler;
-//  @group(0) @binding(5) var atlasSampler: sampler;
-    @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
-//  @group(0) @binding(6) var atlasTexture: texture_2d<f32>;
+    @group(0) @binding(5) var columnAtlasSampler: sampler;
+//  @group(0) @binding(5) var columnAtlasSampler: sampler;
+    @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
+//  @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
     @group(0) @binding(7) var hdriSampler: sampler;
 //  @group(0) @binding(7) var hdriSampler: sampler;
     @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
@@ -1177,72 +1119,50 @@
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 {
-    let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
-//  let canvasSize: vec2<u32> = vec2<u32>(data[0].xy);
 
-    if (gid.x >= canvasSize.x || gid.y >= canvasSize.y)
-//  if (gid.x >= canvasSize.x || gid.y >= canvasSize.y)
+    if (gid.x >= generalData.canvasSize.x || gid.y >= generalData.canvasSize.y)
+//  if (gid.x >= generalData.canvasSize.x || gid.y >= generalData.canvasSize.y)
     {
         return;
 //      return;
     }
 
-    let stratifiedSamplesPerPixel: f32 = data[0].z;
-//  let stratifiedSamplesPerPixel: f32 = data[0].z;
-    let inverseStratifiedSamplesPerPixel: f32 = data[0].w;
-//  let inverseStratifiedSamplesPerPixel: f32 = data[0].w;
-    let cameraCenter: vec3<f32> = data[1].xyz;
-//  let cameraCenter: vec3<f32> = data[1].xyz;
-    let pixelSamplesScale: f32 = data[1].w;
-//  let pixelSamplesScale: f32 = data[1].w;
-    let fromPixelToPixelDeltaU: vec3<f32> = data[2].xyz;
-//  let fromPixelToPixelDeltaU: vec3<f32> = data[2].xyz;
-    let stratifiedSampleX: f32 = data[2].w;
-//  let stratifiedSampleX: f32 = data[2].w;
-    let fromPixelToPixelDeltaV: vec3<f32> = data[3].xyz;
-//  let fromPixelToPixelDeltaV: vec3<f32> = data[3].xyz;
-    let stratifiedSampleY: f32 = data[3].w;
-//  let stratifiedSampleY: f32 = data[3].w;
-    let pixel00Coordinates: vec3<f32> = data[4].xyz;
-//  let pixel00Coordinates: vec3<f32> = data[4].xyz;
-    let backgroundType: u32 = u32(data[4].w);
-//  let backgroundType: u32 = u32(data[4].w);
-
-    let frameIndexForSeed: u32 = u32((stratifiedSampleY * stratifiedSamplesPerPixel + stratifiedSampleX) * 10000.0);
-//  let frameIndexForSeed: u32 = u32((stratifiedSampleY * stratifiedSamplesPerPixel + stratifiedSampleX) * 10000.0);
-    var rng: RNG = _rngInit(gid.x, gid.y, canvasSize.x, frameIndexForSeed);
-//  var rng: RNG = _rngInit(gid.x, gid.y, canvasSize.x, frameIndexForSeed);
+    let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+//  let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+    var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
+//  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
 //  _ = _pcg32Next(&rng);
     let ray: Ray = _generatePrimaryRay(
 //  let ray: Ray = _generatePrimaryRay(
-        stratifiedSampleX,
-//      stratifiedSampleX,
-        stratifiedSampleY,
-//      stratifiedSampleY,
-        inverseStratifiedSamplesPerPixel,
-//      inverseStratifiedSamplesPerPixel,
-        pixel00Coordinates,
-//      pixel00Coordinates,
-        fromPixelToPixelDeltaU,
-//      fromPixelToPixelDeltaU,
-        fromPixelToPixelDeltaV,
-//      fromPixelToPixelDeltaV,
+        generalData.stratifiedSampleX,
+//      generalData.stratifiedSampleX,
+        generalData.stratifiedSampleY,
+//      generalData.stratifiedSampleY,
+        generalData.inverseStratifiedSamplesPerPixel,
+//      generalData.inverseStratifiedSamplesPerPixel,
+        generalData.pixel00Coordinates,
+//      generalData.pixel00Coordinates,
+        generalData.fromPixelToPixelDeltaU,
+//      generalData.fromPixelToPixelDeltaU,
+        generalData.fromPixelToPixelDeltaV,
+//      generalData.fromPixelToPixelDeltaV,
         f32(gid.x),
 //      f32(gid.x),
         f32(gid.y),
 //      f32(gid.y),
-        cameraCenter,
-//      cameraCenter,
+        generalData.cameraCenter,
+//      generalData.cameraCenter,
         &rng,
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, backgroundType, &rng), 1.0);
+    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
 
-    outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
-//  outputStorage[gid.y * canvasSize.x + gid.x] += pixelColor;
+    outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
+//  outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
+
 }
 
     fn _generatePrimaryRay(
@@ -1467,8 +1387,8 @@
 //          var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
             uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
 //          uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
-            textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
-//          textureSampleValue = _sampleAtlas(uvTextureCoordinate, texture.imageIndex);
+            textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.imageIndex);
+//          textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.imageIndex);
         }
         case TEXTURE_TYPE_CHECKER_STYLE_A:
 //      case TEXTURE_TYPE_CHECKER_STYLE_A:
@@ -1505,20 +1425,13 @@
 //  return textureSampleValue;
 }
 
-    const atlasGridSize: vec2<f32> = vec2<f32>(4.0, 4.0); // 4x4 grid
-//  const atlasGridSize: vec2<f32> = vec2<f32>(4.0, 4.0); // 4x4 grid
-
-    fn _sampleAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
-//  fn _sampleAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
+    fn _sampleColumnAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
+//  fn _sampleColumnAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
 {
-    let cell : vec2<f32> = vec2<f32>(f32(imageIndex % 4u), f32(imageIndex / 4u));
-//  let cell : vec2<f32> = vec2<f32>(f32(imageIndex % 4u), f32(imageIndex / 4u));
-    let scale: vec2<f32> = 1.0 / atlasGridSize;
-//  let scale: vec2<f32> = 1.0 / atlasGridSize;
-    let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
-//  let atlasUVTextureCoordinate: vec2<f32> = (uvTextureCoordinate * scale) + (cell * scale);
-    return textureSampleLevel(atlasTexture, atlasSampler, atlasUVTextureCoordinate, 0.0).rgb;
-//  return textureSampleLevel(atlasTexture, atlasSampler, atlasUVTextureCoordinate, 0.0).rgb;
+    let columnAtlasUVTextureCoordinate: vec2<f32> = uvTextureCoordinate * vec2<f32>(1.0, 1.0 / f32(generalData.numberOfImages)) + vec2<f32>(0.0, f32(imageIndex) * (1.0 / f32(generalData.numberOfImages)));
+//  let columnAtlasUVTextureCoordinate: vec2<f32> = uvTextureCoordinate * vec2<f32>(1.0, 1.0 / f32(generalData.numberOfImages)) + vec2<f32>(0.0, f32(imageIndex) * (1.0 / f32(generalData.numberOfImages)));
+    return textureSampleLevel(columnAtlasTexture, columnAtlasSampler, columnAtlasUVTextureCoordinate, 0.0).rgb;
+//  return textureSampleLevel(columnAtlasTexture, columnAtlasSampler, columnAtlasUVTextureCoordinate, 0.0).rgb;
 }
 
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
@@ -2216,12 +2129,12 @@
 //                      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
                         let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
 //                      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
-                        let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
-//                      let triangleVertex0UV: vec2<f32> = unpack2x16unorm(triangle.vertex0UVEncoded); // decodeQuantizedUV(triangle.vertex0UVEncoded);
-                        let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
-//                      let triangleVertex1UV: vec2<f32> = unpack2x16unorm(triangle.vertex1UVEncoded); // decodeQuantizedUV(triangle.vertex1UVEncoded);
-                        let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
-//                      let triangleVertex2UV: vec2<f32> = unpack2x16unorm(triangle.vertex2UVEncoded); // decodeQuantizedUV(triangle.vertex2UVEncoded);
+                        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+//                      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+                        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+//                      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+                        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
+//                      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
 
                         let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
 //                      let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
@@ -2277,6 +2190,10 @@
 //          return rayHitResult;
     }
 
+    // stack[stackPointer] = value; stackPointer++; -> push
+//  // stack[stackPointer] = value; stackPointer++; -> push
+    // stackPointer--; value = stack[stackPointer]; -> pop
+//  // stackPointer--; value = stack[stackPointer]; -> pop
     fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
     {
@@ -2444,7 +2361,7 @@
 
         return finalRayHitResult;
 //      return finalRayHitResult;
-    
+
     }
 
     // HELPER: Simply returns the distance to the bounding box, or huge number if miss.
