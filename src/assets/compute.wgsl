@@ -1631,69 +1631,6 @@
 //  return textureSampleValue;
 }
 
-/*
-    fn _textureSampleEmission(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
-//  fn _textureSampleEmission(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
-{
-    var textureSampleValue: vec3<f32>;
-//  var textureSampleValue: vec3<f32>;
-    let texture: Texture = textures[textureIndex];
-//  let texture: Texture = textures[textureIndex];
-    switch (texture.emissionTextureType)
-//  switch (texture.emissionTextureType)
-    {
-        case TEXTURE_TYPE_COLOR:
-//      case TEXTURE_TYPE_COLOR:
-        {
-            textureSampleValue = texture.emission;
-//          textureSampleValue = texture.emission;
-        }
-        case TEXTURE_TYPE_IMAGE:
-//      case TEXTURE_TYPE_IMAGE:
-        {
-            var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
-//          var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
-            uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
-//          uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
-            textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.emissionImageIndex);
-//          textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.emissionImageIndex);
-        }
-        case TEXTURE_TYPE_CHECKER_STYLE_A:
-//      case TEXTURE_TYPE_CHECKER_STYLE_A:
-        {
-            let oTileTexture: Texture = textures[texture.emissionOTileTextureIndex];
-//          let oTileTexture: Texture = textures[texture.emissionOTileTextureIndex];
-            let eTileTexture: Texture = textures[texture.emissionETileTextureIndex];
-//          let eTileTexture: Texture = textures[texture.emissionETileTextureIndex];
-            let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.emissionScale * surfaceCoordinate));
-//          let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.emissionScale * surfaceCoordinate));
-            textureSampleValue = select(oTileTexture.emission, eTileTexture.emission, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
-//          textureSampleValue = select(oTileTexture.emission, eTileTexture.emission, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
-        }
-        case TEXTURE_TYPE_CHECKER_STYLE_B:
-//      case TEXTURE_TYPE_CHECKER_STYLE_B:
-        {
-            let oTileTexture: Texture = textures[texture.emissionOTileTextureIndex];
-//          let oTileTexture: Texture = textures[texture.emissionOTileTextureIndex];
-            let eTileTexture: Texture = textures[texture.emissionETileTextureIndex];
-//          let eTileTexture: Texture = textures[texture.emissionETileTextureIndex];
-            let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.emissionScale * uvSurfaceCoordinate));
-//          let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.emissionScale * uvSurfaceCoordinate));
-            textureSampleValue = select(oTileTexture.emission, eTileTexture.emission, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
-//          textureSampleValue = select(oTileTexture.emission, eTileTexture.emission, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
-        }
-        case default:
-//      case default:
-        {
-            textureSampleValue = vec3<f32>(0.0, 0.0, 0.0);
-//          textureSampleValue = vec3<f32>(0.0, 0.0, 0.0);
-        }
-    }
-    return textureSampleValue;
-//  return textureSampleValue;
-}
-*/
-
     fn _sampleColumnAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
 //  fn _sampleColumnAtlas(uvTextureCoordinate: vec2<f32>, imageIndex: u32) -> vec3<f32>
 {
