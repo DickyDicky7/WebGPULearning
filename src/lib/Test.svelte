@@ -85,6 +85,24 @@
 //      materialIndex: number,
     };
 //  };
+    const MaterialType = {
+//  const MaterialType = {
+        DIFFUSE   : 0,
+//      DIFFUSE   : 0,
+        METAL     : 1,
+//      METAL     : 1,
+        GLOSS     : 2,
+//      GLOSS     : 2,
+        DIELECTRIC: 3,
+//      DIELECTRIC: 3,
+        LIGHT     : 4,
+//      LIGHT     : 4,
+        PRINCIPLED: 5,
+//      PRINCIPLED: 5,
+    } as const;
+//  } as const;
+    type MaterialType = typeof MaterialType[keyof typeof MaterialType];
+//  type MaterialType = typeof MaterialType[keyof typeof MaterialType];
     type Material = {
 //  type Material = {
         layer1Roughness: number,    // 0.0=smooth     1.0=rough
@@ -99,6 +117,8 @@
 //      layer1IOR: RefractiveIndex,
         textureIndex: number,
 //      textureIndex: number,
+        materialType: MaterialType,
+//      materialType: MaterialType,
     };
 //  };
     const TextureType = {
@@ -898,10 +918,10 @@
 //  };
     const prepareMaterials = (): void => {
 //  const prepareMaterials = (): void => {
-        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 24) {
-//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 24) {
-            _materialsStorageValues = new ArrayBuffer(_materials.length * 24);
-//          _materialsStorageValues = new ArrayBuffer(_materials.length * 24);
+        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 28) {
+//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 28) {
+            _materialsStorageValues = new ArrayBuffer(_materials.length * 28);
+//          _materialsStorageValues = new ArrayBuffer(_materials.length * 28);
             _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
 //          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
             if (_materialsStorageBuffer) {
@@ -937,11 +957,13 @@
 //              layer1IOR,
                 textureIndex,
 //              textureIndex,
+                materialType,
+//              materialType,
             }
             : Material, materialIndex: number): void => {
 //          : Material, materialIndex: number): void => {
-                const base: number = materialIndex * 24;
-//              const base: number = materialIndex * 24;
+                const base: number = materialIndex * 28;
+//              const base: number = materialIndex * 28;
                 _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
 //              _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
                 _materialsStorageValuesDataView.setFloat32(base + 4, layer1Metallic, true);
@@ -954,6 +976,8 @@
 //              _materialsStorageValuesDataView.setFloat32(base + 16, layer1IOR, true);
                 _materialsStorageValuesDataView.setUint32(base + 20, textureIndex, true);
 //              _materialsStorageValuesDataView.setUint32(base + 20, textureIndex, true);
+                _materialsStorageValuesDataView.setUint32(base + 24, materialType, true);
+//              _materialsStorageValuesDataView.setUint32(base + 24, materialType, true);
         });
 //      });
         _device.queue.writeBuffer(_materialsStorageBuffer, 0, _materialsStorageValues as GPUAllowSharedBufferSource);
@@ -1657,6 +1681,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 0,
 //              textureIndex: 0,
             },
@@ -1675,6 +1701,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 1,
 //              textureIndex: 1,
             },
@@ -1693,6 +1721,8 @@
 //              layer0IOR: RefractiveIndex.NOTHING,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 2,
 //              textureIndex: 2,
             },
@@ -1711,6 +1741,8 @@
 //              layer0IOR: RefractiveIndex.NOTHING,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 3,
 //              textureIndex: 3,
             },
@@ -1729,6 +1761,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 4,
 //              textureIndex: 4,
             },
@@ -1747,6 +1781,8 @@
 //              layer0IOR: RefractiveIndex.NOTHING,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 5,
 //              textureIndex: 5,
             },
@@ -1765,6 +1801,8 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 6,
 //              textureIndex: 6,
             },
