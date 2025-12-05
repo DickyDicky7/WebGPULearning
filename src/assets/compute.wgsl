@@ -1301,8 +1301,8 @@
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
+    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 8, generalData.backgroundType, &rng), 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 8, generalData.backgroundType, &rng), 1.0);
 
     outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
 //  outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
