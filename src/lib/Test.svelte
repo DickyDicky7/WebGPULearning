@@ -298,6 +298,10 @@
 //  let _texturesStorageBuffer: GPUBuffer;
     let _textures: Texture[] = [];
 //  let _textures: Texture[] = [];
+    let _blueNoiseSampler: GPUSampler;
+//  let _blueNoiseSampler: GPUSampler;
+    let _blueNoiseTexture: GPUTexture;
+//  let _blueNoiseTexture: GPUTexture;
     let _columnAtlasSampler: GPUSampler;
 //  let _columnAtlasSampler: GPUSampler;
     let _columnAtlasTexture: GPUTexture;
@@ -1257,10 +1261,14 @@
 //              { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
                 { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
 //              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
-                { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-//              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-                { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-//              { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 9, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+//              { binding: 9, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+                { binding: 10, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+//              { binding: 10, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+                { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 12, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 12, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
             ],
 //          ],
         });
@@ -1383,6 +1391,14 @@
 //      });
         _generalDataUniformValuesDataView = new DataView(_generalDataUniformValues);
 //      _generalDataUniformValuesDataView = new DataView(_generalDataUniformValues);
+        _blueNoiseSampler = _device.createSampler({
+//      _blueNoiseSampler = _device.createSampler({
+            magFilter: "linear",
+//          magFilter: "linear",
+            minFilter: "linear",
+//          minFilter: "linear",
+        });
+//      });
         _columnAtlasSampler = _device.createSampler({
 //      _columnAtlasSampler = _device.createSampler({
             magFilter: "linear",
@@ -1425,10 +1441,78 @@
         const bytesPerPixel: number = 16; // 4 channels * 4 byte(s) per channel (32-bit float)
 //      const bytesPerPixel: number = 16; // 4 channels * 4 byte(s) per channel (32-bit float)
 */
+        const blueNoise: ColumnAtlas = await createColumnAtlas({
+//      const blueNoise: ColumnAtlas = await createColumnAtlas({
+            publicURLs: [ "/LDR_RGBA_0.png" ],
+//          publicURLs: [ "/LDR_RGBA_0.png" ],
+            cellImageWidth: 1024,
+//          cellImageWidth: 1024,
+            cellImageHeight: 1024,
+//          cellImageHeight: 1024,
+        });
+//      });
+        _blueNoiseTexture = _device.createTexture({
+//      _blueNoiseTexture = _device.createTexture({
+            label: "GPU_TEXTURE_BLUE_NOISE",
+//          label: "GPU_TEXTURE_BLUE_NOISE",
+            size: [ blueNoise.mergedImageWidth, blueNoise.mergedImageHeight, ],
+//          size: [ blueNoise.mergedImageWidth, blueNoise.mergedImageHeight, ],
+            format: "rgba8unorm",
+//          format: "rgba8unorm",
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+//          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        });
+//      });
+        const blueNoiseTextureBytesPerPixel: number = 4;
+//      const blueNoiseTextureBytesPerPixel: number = 4;
+        const blueNoiseTextureUnalignedBytesPerRow: number = blueNoise.mergedImageWidth * blueNoiseTextureBytesPerPixel;
+//      const blueNoiseTextureUnalignedBytesPerRow: number = blueNoise.mergedImageWidth * blueNoiseTextureBytesPerPixel;
+        const blueNoiseTextureAlignedBytesPerRow: number = Math.ceil(blueNoiseTextureUnalignedBytesPerRow / 256) * 256;
+//      const blueNoiseTextureAlignedBytesPerRow: number = Math.ceil(blueNoiseTextureUnalignedBytesPerRow / 256) * 256;
+        _device.queue.writeTexture(
+//      _device.queue.writeTexture(
+            {
+//          {
+                aspect: "all",
+//              aspect: "all",
+                mipLevel: 0,
+//              mipLevel: 0,
+                origin: undefined,
+//              origin: undefined,
+                texture: _blueNoiseTexture,
+//              texture: _blueNoiseTexture,
+            },
+//          },
+            blueNoise.mergedImageBuffer as GPUAllowSharedBufferSource,
+//          blueNoise.mergedImageBuffer as GPUAllowSharedBufferSource,
+            {
+//          {
+                bytesPerRow: blueNoiseTextureAlignedBytesPerRow,
+//              bytesPerRow: blueNoiseTextureAlignedBytesPerRow,
+                offset: undefined,
+//              offset: undefined,
+                rowsPerImage: blueNoise.mergedImageHeight,
+//              rowsPerImage: blueNoise.mergedImageHeight,
+            },
+//          },
+            {
+//          {
+                depthOrArrayLayers: undefined,
+//              depthOrArrayLayers: undefined,
+                height: blueNoise.mergedImageHeight,
+//              height: blueNoise.mergedImageHeight,
+                width: blueNoise.mergedImageWidth,
+//              width: blueNoise.mergedImageWidth,
+                depth: undefined,
+//              depth: undefined,
+            },
+//          },
+        );
+//      );
         const publicURLs: string[] = [
 //      const publicURLs: string[] = [
-            "/ChinaVase.png",
-//          "/ChinaVase.png",
+            "/ChinaVase.jpg",
+//          "/ChinaVase.jpg",
         ];
 //      ];
         const cellImageWidth: number = 8192;
@@ -2628,6 +2712,8 @@
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
 //                  });
+//                  const blueNoiseTextureView: GPUTextureView = _blueNoiseTexture.createView();
+//                  const blueNoiseTextureView: GPUTextureView = _blueNoiseTexture.createView();
 //                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
 //                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
 //                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
@@ -2686,14 +2772,32 @@
 //                          {
                                 binding: 5,
 //                              binding: 5,
-                                resource: _columnAtlasSampler,
-//                              resource: _columnAtlasSampler,
+                                resource: _blueNoiseSampler,
+//                              resource: _blueNoiseSampler,
                             },
 //                          },
                             {
 //                          {
                                 binding: 6,
 //                              binding: 6,
+                                resource: _blueNoiseTexture,
+//                              resource: _blueNoiseTexture,
+//                              resource:  blueNoiseTextureView,
+//                              resource:  blueNoiseTextureView,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 7,
+//                              binding: 7,
+                                resource: _columnAtlasSampler,
+//                              resource: _columnAtlasSampler,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 8,
+//                              binding: 8,
                                 resource: _columnAtlasTexture,
 //                              resource: _columnAtlasTexture,
 //                              resource:  columnAtlasTextureView,
@@ -2702,16 +2806,16 @@
 //                          },
                             {
 //                          {
-                                binding: 7,
-//                              binding: 7,
+                                binding: 9,
+//                              binding: 9,
                                 resource: _hdriSampler,
 //                              resource: _hdriSampler,
                             },
 //                          },
                             {
 //                          {
-                                binding: 8,
-//                              binding: 8,
+                                binding: 10,
+//                              binding: 10,
                                 resource: _hdriTexture,
 //                              resource: _hdriTexture,
 //                              resource:  hdriTextureView,
@@ -2720,16 +2824,16 @@
 //                          },
                             {
 //                          {
-                                binding: 9,
-//                              binding: 9,
+                                binding: 11,
+//                              binding: 11,
                                 resource: _trianglesStorageBuffer,
 //                              resource: _trianglesStorageBuffer,
                             },
 //                          },
                             {
 //                          {
-                                binding: 10,
-//                              binding: 10,
+                                binding: 12,
+//                              binding: 12,
                                 resource: _bvhNodesStorageBuffer,
 //                              resource: _bvhNodesStorageBuffer,
                             },
@@ -2851,6 +2955,12 @@
 //      if (_columnAtlasTexture) {
             _columnAtlasTexture.destroy();
 //          _columnAtlasTexture.destroy();
+        }
+//      }
+        if (_blueNoiseTexture) {
+//      if (_blueNoiseTexture) {
+            _blueNoiseTexture.destroy();
+//          _blueNoiseTexture.destroy();
         }
 //      }
         if (_texturesStorageBuffer) {
