@@ -97,14 +97,20 @@
 //      DIELECTRIC: 3,
         LIGHT     : 4,
 //      LIGHT     : 4,
+        PRINCIPLED: 5,
+//      PRINCIPLED: 5,
     } as const;
 //  } as const;
     type MaterialType = typeof MaterialType[keyof typeof MaterialType];
 //  type MaterialType = typeof MaterialType[keyof typeof MaterialType];
     type Material = {
 //  type Material = {
-        layer1Roughness: number,
-//      layer1Roughness: number,
+        layer1Roughness: number,    // 0.0=smooth     1.0=rough
+//      layer1Roughness: number,    // 0.0=smooth     1.0=rough
+        layer1Metallic: number,     // 0.0=dielectric 1.0=metal
+//      layer1Metallic: number,     // 0.0=dielectric 1.0=metal
+        layer1Transmission: number, // 0.0=opaque     1.0=glass
+//      layer1Transmission: number, // 0.0=opaque     1.0=glass
         layer0IOR: RefractiveIndex,
 //      layer0IOR: RefractiveIndex,
         layer1IOR: RefractiveIndex,
@@ -133,16 +139,28 @@
 //  type Texture = {
         albedo: Vec3,
 //      albedo: Vec3,
-        imageIndex: number,
-//      imageIndex: number,
-        textureType: TextureType,
-//      textureType: TextureType,
-        scale: number,
-//      scale: number,
-        oTileTextureIndex: number,
-//      oTileTextureIndex: number,
-        eTileTextureIndex: number,
-//      eTileTextureIndex: number,
+        albedoImageIndex: number,
+//      albedoImageIndex: number,
+        emission: Vec3,
+//      emission: Vec3,
+        emissionImageIndex: number,
+//      emissionImageIndex: number,
+        albedoTextureType: TextureType,
+//      albedoTextureType: TextureType,
+        emissionTextureType: TextureType,
+//      emissionTextureType: TextureType,
+        albedoScale: number,
+//      albedoScale: number,
+        emissionScale: number,
+//      emissionScale: number,
+        albedoOTileTextureIndex: number,
+//      albedoOTileTextureIndex: number,
+        albedoETileTextureIndex: number,
+//      albedoETileTextureIndex: number,
+        emissionOTileTextureIndex: number,
+//      emissionOTileTextureIndex: number,
+        emissionETileTextureIndex: number,
+//      emissionETileTextureIndex: number,
     };
 //  };
     type Triangle = {
@@ -334,8 +352,8 @@
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(64.0);
-//  let _samplesPerPixel: number = $state(64.0);
+    let _samplesPerPixel: number = $state(3600.0);
+//  let _samplesPerPixel: number = $state(3600.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -396,8 +414,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
     let _numberOfImages: number;
 //  let _numberOfImages: number;
     let _isRunningRenderLoop: boolean;
@@ -900,10 +918,10 @@
 //  };
     const prepareMaterials = (): void => {
 //  const prepareMaterials = (): void => {
-        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
-//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 20) {
-            _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
-//          _materialsStorageValues = new ArrayBuffer(_materials.length * 20);
+        if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 28) {
+//      if (!_materialsStorageValues || _materials.length !== _materialsStorageValues.byteLength / 28) {
+            _materialsStorageValues = new ArrayBuffer(_materials.length * 28);
+//          _materialsStorageValues = new ArrayBuffer(_materials.length * 28);
             _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
 //          _materialsStorageValuesDataView = new DataView(_materialsStorageValues);
             if (_materialsStorageBuffer) {
@@ -929,6 +947,10 @@
             {
                 layer1Roughness,
 //              layer1Roughness,
+                layer1Metallic,
+//              layer1Metallic,
+                layer1Transmission,
+//              layer1Transmission,
                 layer0IOR,
 //              layer0IOR,
                 layer1IOR,
@@ -940,18 +962,22 @@
             }
             : Material, materialIndex: number): void => {
 //          : Material, materialIndex: number): void => {
-                const base: number = materialIndex * 20;
-//              const base: number = materialIndex * 20;
+                const base: number = materialIndex * 28;
+//              const base: number = materialIndex * 28;
                 _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
 //              _materialsStorageValuesDataView.setFloat32(base + 0, layer1Roughness, true);
-                _materialsStorageValuesDataView.setFloat32(base + 4, layer0IOR, true);
-//              _materialsStorageValuesDataView.setFloat32(base + 4, layer0IOR, true);
-                _materialsStorageValuesDataView.setFloat32(base + 8, layer1IOR, true);
-//              _materialsStorageValuesDataView.setFloat32(base + 8, layer1IOR, true);
-                _materialsStorageValuesDataView.setUint32(base + 12, textureIndex, true);
-//              _materialsStorageValuesDataView.setUint32(base + 12, textureIndex, true);
-                _materialsStorageValuesDataView.setUint32(base + 16, materialType, true);
-//              _materialsStorageValuesDataView.setUint32(base + 16, materialType, true);
+                _materialsStorageValuesDataView.setFloat32(base + 4, layer1Metallic, true);
+//              _materialsStorageValuesDataView.setFloat32(base + 4, layer1Metallic, true);
+                _materialsStorageValuesDataView.setFloat32(base + 8, layer1Transmission, true);
+//              _materialsStorageValuesDataView.setFloat32(base + 8, layer1Transmission, true);
+                _materialsStorageValuesDataView.setFloat32(base + 12, layer0IOR, true);
+//              _materialsStorageValuesDataView.setFloat32(base + 12, layer0IOR, true);
+                _materialsStorageValuesDataView.setFloat32(base + 16, layer1IOR, true);
+//              _materialsStorageValuesDataView.setFloat32(base + 16, layer1IOR, true);
+                _materialsStorageValuesDataView.setUint32(base + 20, textureIndex, true);
+//              _materialsStorageValuesDataView.setUint32(base + 20, textureIndex, true);
+                _materialsStorageValuesDataView.setUint32(base + 24, materialType, true);
+//              _materialsStorageValuesDataView.setUint32(base + 24, materialType, true);
         });
 //      });
         _device.queue.writeBuffer(_materialsStorageBuffer, 0, _materialsStorageValues as GPUAllowSharedBufferSource);
@@ -960,10 +986,10 @@
 //  };
     const prepareTextures = (): void => {
 //  const prepareTextures = (): void => {
-        if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
-//      if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
-            _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
-//          _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
+        if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 64) {
+//      if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 64) {
+            _texturesStorageValues = new ArrayBuffer(_textures.length * 64);
+//          _texturesStorageValues = new ArrayBuffer(_textures.length * 64);
             _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
 //          _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
             if (_texturesStorageBuffer) {
@@ -989,37 +1015,65 @@
             {
                 albedo,
 //              albedo,
-                imageIndex,
-//              imageIndex,
-                textureType,
-//              textureType,
-                scale,
-//              scale,
-                oTileTextureIndex,
-//              oTileTextureIndex,
-                eTileTextureIndex,
-//              eTileTextureIndex,
+                albedoImageIndex,
+//              albedoImageIndex,
+                emission,
+//              emission,
+                emissionImageIndex,
+//              emissionImageIndex,
+                albedoTextureType,
+//              albedoTextureType,
+                emissionTextureType,
+//              emissionTextureType,
+                albedoScale,
+//              albedoScale,
+                emissionScale,
+//              emissionScale,
+                albedoOTileTextureIndex,
+//              albedoOTileTextureIndex,
+                albedoETileTextureIndex,
+//              albedoETileTextureIndex,
+                emissionOTileTextureIndex,
+//              emissionOTileTextureIndex,
+                emissionETileTextureIndex,
+//              emissionETileTextureIndex,
             }
             : Texture, textureIndex: number): void => {
 //          : Texture, textureIndex: number): void => {
-                const base: number = textureIndex * 32;
-//              const base: number = textureIndex * 32;
+                const base: number = textureIndex * 64;
+//              const base: number = textureIndex * 64;
                 _texturesStorageValuesDataView.setFloat32(base + 0, albedo[0], true);
 //              _texturesStorageValuesDataView.setFloat32(base + 0, albedo[0], true);
                 _texturesStorageValuesDataView.setFloat32(base + 4, albedo[1], true);
 //              _texturesStorageValuesDataView.setFloat32(base + 4, albedo[1], true);
                 _texturesStorageValuesDataView.setFloat32(base + 8, albedo[2], true);
 //              _texturesStorageValuesDataView.setFloat32(base + 8, albedo[2], true);
-                _texturesStorageValuesDataView.setUint32(base + 12, imageIndex, true);
-//              _texturesStorageValuesDataView.setUint32(base + 12, imageIndex, true);
-                _texturesStorageValuesDataView.setUint32(base + 16, textureType, true);
-//              _texturesStorageValuesDataView.setUint32(base + 16, textureType, true);
-                _texturesStorageValuesDataView.setFloat32(base + 20, scale, true);
-//              _texturesStorageValuesDataView.setFloat32(base + 20, scale, true);
-                _texturesStorageValuesDataView.setUint32(base + 24, oTileTextureIndex, true);
-//              _texturesStorageValuesDataView.setUint32(base + 24, oTileTextureIndex, true);
-                _texturesStorageValuesDataView.setUint32(base + 28, eTileTextureIndex, true);
-//              _texturesStorageValuesDataView.setUint32(base + 28, eTileTextureIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 12, albedoImageIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 12, albedoImageIndex, true);
+                _texturesStorageValuesDataView.setFloat32(base + 16, emission[0], true);
+//              _texturesStorageValuesDataView.setFloat32(base + 16, emission[0], true);
+                _texturesStorageValuesDataView.setFloat32(base + 20, emission[1], true);
+//              _texturesStorageValuesDataView.setFloat32(base + 20, emission[1], true);
+                _texturesStorageValuesDataView.setFloat32(base + 24, emission[2], true);
+//              _texturesStorageValuesDataView.setFloat32(base + 24, emission[2], true);
+                _texturesStorageValuesDataView.setUint32(base + 28, emissionImageIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 28, emissionImageIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 32, albedoTextureType, true);
+//              _texturesStorageValuesDataView.setUint32(base + 32, albedoTextureType, true);
+                _texturesStorageValuesDataView.setUint32(base + 36, emissionTextureType, true);
+//              _texturesStorageValuesDataView.setUint32(base + 36, emissionTextureType, true);
+                _texturesStorageValuesDataView.setFloat32(base + 40, albedoScale, true);
+//              _texturesStorageValuesDataView.setFloat32(base + 40, albedoScale, true);
+                _texturesStorageValuesDataView.setFloat32(base + 44, emissionScale, true);
+//              _texturesStorageValuesDataView.setFloat32(base + 44, emissionScale, true);
+                _texturesStorageValuesDataView.setUint32(base + 48, albedoOTileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 48, albedoOTileTextureIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 52, albedoETileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 52, albedoETileTextureIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 56, emissionOTileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 56, emissionOTileTextureIndex, true);
+                _texturesStorageValuesDataView.setUint32(base + 60, emissionETileTextureIndex, true);
+//              _texturesStorageValuesDataView.setUint32(base + 60, emissionETileTextureIndex, true);
         });
 //      });
         _device.queue.writeBuffer(_texturesStorageBuffer, 0, _texturesStorageValues as GPUAllowSharedBufferSource);
@@ -1613,98 +1667,140 @@
 //      );
         _materials.push(
 //      _materials.push(
+            // MARBLE GLOSS (GLOSSY DIELECTRIC)
+//          // MARBLE GLOSS (GLOSSY DIELECTRIC)
             {
 //          {
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                layer1Metallic: 0.01,
+//              layer1Metallic: 0.01,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 0,
 //              textureIndex: 0,
             },
 //          },
+            // MARBLE GLOSS (GLOSSY DIELECTRIC)
+//          // MARBLE GLOSS (GLOSSY DIELECTRIC)
             {
 //          {
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                layer1Metallic: 0.01,
+//              layer1Metallic: 0.01,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 1,
 //              textureIndex: 1,
             },
 //          },
+            // DIFFUSE
+//          // DIFFUSE
             {
 //          {
-                layer0IOR: RefractiveIndex.AIR,
-//              layer0IOR: RefractiveIndex.AIR,
-                layer1IOR: RefractiveIndex.MARBLE,
-//              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 1.0,
+//              layer1Roughness: 1.0,
+                layer1Metallic: 0.0,
+//              layer1Metallic: 0.0,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
+                layer0IOR: RefractiveIndex.NOTHING,
+//              layer0IOR: RefractiveIndex.NOTHING,
+                layer1IOR: RefractiveIndex.NOTHING,
+//              layer1IOR: RefractiveIndex.NOTHING,
                 materialType: MaterialType.DIFFUSE,
 //              materialType: MaterialType.DIFFUSE,
                 textureIndex: 2,
 //              textureIndex: 2,
             },
 //          },
+            // DIFFUSE
+//          // DIFFUSE
             {
 //          {
-                layer0IOR: RefractiveIndex.AIR,
-//              layer0IOR: RefractiveIndex.AIR,
-                layer1IOR: RefractiveIndex.MARBLE,
-//              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
+                layer1Roughness: 1.0,
+//              layer1Roughness: 1.0,
+                layer1Metallic: 0.0,
+//              layer1Metallic: 0.0,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
+                layer0IOR: RefractiveIndex.NOTHING,
+//              layer0IOR: RefractiveIndex.NOTHING,
+                layer1IOR: RefractiveIndex.NOTHING,
+//              layer1IOR: RefractiveIndex.NOTHING,
                 materialType: MaterialType.DIFFUSE,
 //              materialType: MaterialType.DIFFUSE,
                 textureIndex: 3,
 //              textureIndex: 3,
             },
 //          },
+            // MARBLE GLOSS (GLOSSY DIELECTRIC)
+//          // MARBLE GLOSS (GLOSSY DIELECTRIC)
             {
 //          {
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                layer1Metallic: 0.01,
+//              layer1Metallic: 0.01,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 4,
 //              textureIndex: 4,
             },
 //          },
+            // LIGHT
+//          // LIGHT
             {
 //          {
+                layer1Roughness: 0.0,
+//              layer1Roughness: 0.0,
+                layer1Metallic: 0.0,
+//              layer1Metallic: 0.0,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
                 layer0IOR: RefractiveIndex.NOTHING,
 //              layer0IOR: RefractiveIndex.NOTHING,
                 layer1IOR: RefractiveIndex.NOTHING,
 //              layer1IOR: RefractiveIndex.NOTHING,
-                layer1Roughness: 0.0,
-//              layer1Roughness: 0.0,
-                materialType: MaterialType.LIGHT,
-//              materialType: MaterialType.LIGHT,
+                materialType: MaterialType.GLOSS,
+//              materialType: MaterialType.GLOSS,
                 textureIndex: 5,
 //              textureIndex: 5,
             },
 //          },
+            // MARBLE GLOSS (GLOSSY DIELECTRIC)
+//          // MARBLE GLOSS (GLOSSY DIELECTRIC)
             {
 //          {
+                layer1Roughness: 0.1,
+//              layer1Roughness: 0.1,
+                layer1Metallic: 0.01,
+//              layer1Metallic: 0.01,
+                layer1Transmission: 0.0,
+//              layer1Transmission: 0.0,
                 layer0IOR: RefractiveIndex.AIR,
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                layer1Roughness: 0.1,
-//              layer1Roughness: 0.1,
                 materialType: MaterialType.GLOSS,
 //              materialType: MaterialType.GLOSS,
                 textureIndex: 6,
@@ -1719,176 +1815,308 @@
 //          {
                 albedo: [ 0.98, 0.97, 0.92 ],
 //              albedo: [ 0.98, 0.97, 0.92 ],
-                imageIndex: 0,
-//              imageIndex: 0,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 0,
+//              albedoImageIndex: 0,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 0,
+//              emissionImageIndex: 0,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.98, 0.97, 0.92 ],
 //              albedo: [ 0.98, 0.97, 0.92 ],
-                imageIndex: 1,
-//              imageIndex: 1,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 1,
+//              albedoImageIndex: 1,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 1,
+//              emissionImageIndex: 1,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.02, 0.74, 0.67 ],
 //              albedo: [ 0.02, 0.74, 0.67 ],
-                imageIndex: 2,
-//              imageIndex: 2,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 2,
+//              albedoImageIndex: 2,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 2,
+//              emissionImageIndex: 2,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.98, 0.33, 0.15 ],
 //              albedo: [ 0.98, 0.33, 0.15 ],
-                imageIndex: 3,
-//              imageIndex: 3,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 3,
+//              albedoImageIndex: 3,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 3,
+//              emissionImageIndex: 3,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.98, 0.97, 0.92 ],
 //              albedo: [ 0.98, 0.97, 0.92 ],
-                imageIndex: 4,
-//              imageIndex: 4,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 4,
+//              albedoImageIndex: 4,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 4,
+//              emissionImageIndex: 4,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
-                albedo: [ 5.00, 5.00, 5.00 ],
-//              albedo: [ 5.00, 5.00, 5.00 ],
-                imageIndex: 5,
-//              imageIndex: 5,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedo: [ 0.00, 0.00, 0.00 ],
+//              albedo: [ 0.00, 0.00, 0.00 ],
+                albedoImageIndex: 5,
+//              albedoImageIndex: 5,
+                emission: [ 5.00, 5.00, 5.00 ],
+//              emission: [ 5.00, 5.00, 5.00 ],
+                emissionImageIndex: 5,
+//              emissionImageIndex: 5,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 1.00, 1.00, 1.00 ],
 //              albedo: [ 1.00, 1.00, 1.00 ],
-                imageIndex: 0,
-//              imageIndex: 0,
-                textureType: TextureType.IMAGE,
-//              textureType: TextureType.IMAGE,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 0,
+//              albedoImageIndex: 0,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 0,
+//              emissionImageIndex: 0,
+                albedoTextureType: TextureType.IMAGE,
+//              albedoTextureType: TextureType.IMAGE,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.10, 0.45, 1.00 ],
 //              albedo: [ 0.10, 0.45, 1.00 ],
-                imageIndex: 7,
-//              imageIndex: 7,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 7,
+//              albedoImageIndex: 7,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 7,
+//              emissionImageIndex: 7,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.80, 0.83, 0.88 ],
 //              albedo: [ 0.80, 0.83, 0.88 ],
-                imageIndex: 8,
-//              imageIndex: 8,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 8,
+//              albedoImageIndex: 8,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 8,
+//              emissionImageIndex: 8,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 1.00, 0.10, 0.20 ],
 //              albedo: [ 1.00, 0.10, 0.20 ],
-                imageIndex: 9,
-//              imageIndex: 9,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 9,
+//              albedoImageIndex: 9,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 9,
+//              emissionImageIndex: 9,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
             {
 //          {
                 albedo: [ 0.80, 0.83, 0.88 ],
 //              albedo: [ 0.80, 0.83, 0.88 ],
-                imageIndex: 10,
-//              imageIndex: 10,
-                textureType: TextureType.COLOR,
-//              textureType: TextureType.COLOR,
-                scale: 1.0,
-//              scale: 1.0,
-                oTileTextureIndex: 0,
-//              oTileTextureIndex: 0,
-                eTileTextureIndex: 0,
-//              eTileTextureIndex: 0,
+                albedoImageIndex: 10,
+//              albedoImageIndex: 10,
+                emission: [ 0.00, 0.00, 0.00 ],
+//              emission: [ 0.00, 0.00, 0.00 ],
+                emissionImageIndex: 10,
+//              emissionImageIndex: 10,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
+                emissionTextureType: TextureType.COLOR,
+//              emissionTextureType: TextureType.COLOR,
+                albedoScale: 1.0,
+//              albedoScale: 1.0,
+                emissionScale: 1.0,
+//              emissionScale: 1.0,
+                albedoOTileTextureIndex: 0,
+//              albedoOTileTextureIndex: 0,
+                albedoETileTextureIndex: 0,
+//              albedoETileTextureIndex: 0,
+                emissionOTileTextureIndex: 0,
+//              emissionOTileTextureIndex: 0,
+                emissionETileTextureIndex: 0,
+//              emissionETileTextureIndex: 0,
             },
 //          },
         );
@@ -1953,296 +2181,296 @@
 //              perVertexFrontFaceNormalAvailable: false,
             },
 //          },
-//             // TOP
-// //          // TOP
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, +20.00 ],
-// //              vertex0: [ -20.00, +20.00, +20.00 ],
-//                 vertex1: [ -20.00, +20.00, -20.00 ],
-// //              vertex1: [ -20.00, +20.00, -20.00 ],
-//                 vertex2: [ +20.00, +20.00, -20.00 ],
-// //              vertex2: [ +20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 1,
-// //              materialIndex: 1,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, +20.00, -20.00 ],
-// //              vertex0: [ +20.00, +20.00, -20.00 ],
-//                 vertex1: [ +20.00, +20.00, +20.00 ],
-// //              vertex1: [ +20.00, +20.00, +20.00 ],
-//                 vertex2: [ -20.00, +20.00, +20.00 ],
-// //              vertex2: [ -20.00, +20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 1,
-// //              materialIndex: 1,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // LEFT
-// //          // LEFT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, +20.00 ],
-// //              vertex0: [ -20.00, +20.00, +20.00 ],
-//                 vertex1: [ -20.00, -20.00, +20.00 ],
-// //              vertex1: [ -20.00, -20.00, +20.00 ],
-//                 vertex2: [ -20.00, -20.00, -20.00 ],
-// //              vertex2: [ -20.00, -20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 2,
-// //              materialIndex: 2,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, -20.00, -20.00 ],
-// //              vertex0: [ -20.00, -20.00, -20.00 ],
-//                 vertex1: [ -20.00, +20.00, -20.00 ],
-// //              vertex1: [ -20.00, +20.00, -20.00 ],
-//                 vertex2: [ -20.00, +20.00, +20.00 ],
-// //              vertex2: [ -20.00, +20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 2,
-// //              materialIndex: 2,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // RIGHT
-// //          // RIGHT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, +20.00, -20.00 ],
-// //              vertex0: [ +20.00, +20.00, -20.00 ],
-//                 vertex1: [ +20.00, -20.00, -20.00 ],
-// //              vertex1: [ +20.00, -20.00, -20.00 ],
-//                 vertex2: [ +20.00, -20.00, +20.00 ],
-// //              vertex2: [ +20.00, -20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 3,
-// //              materialIndex: 3,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, -20.00, +20.00 ],
-// //              vertex0: [ +20.00, -20.00, +20.00 ],
-//                 vertex1: [ +20.00, +20.00, +20.00 ],
-// //              vertex1: [ +20.00, +20.00, +20.00 ],
-//                 vertex2: [ +20.00, +20.00, -20.00 ],
-// //              vertex2: [ +20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 3,
-// //              materialIndex: 3,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // BACK
-// //          // BACK
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, -20.00 ],
-// //              vertex0: [ -20.00, +20.00, -20.00 ],
-//                 vertex1: [ -20.00, -20.00, -20.00 ],
-// //              vertex1: [ -20.00, -20.00, -20.00 ],
-//                 vertex2: [ +20.00, -20.00, -20.00 ],
-// //              vertex2: [ +20.00, -20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 4,
-// //              materialIndex: 4,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, -20.00, -20.00 ],
-// //              vertex0: [ +20.00, -20.00, -20.00 ],
-//                 vertex1: [ +20.00, +20.00, -20.00 ],
-// //              vertex1: [ +20.00, +20.00, -20.00 ],
-//                 vertex2: [ -20.00, +20.00, -20.00 ],
-// //              vertex2: [ -20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 4,
-// //              materialIndex: 4,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // LIGHT
-// //          // LIGHT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -10.00, +19.99, +10.00 ],
-// //              vertex0: [ -10.00, +19.99, +10.00 ],
-//                 vertex1: [ -10.00, +19.99, -10.00 ],
-// //              vertex1: [ -10.00, +19.99, -10.00 ],
-//                 vertex2: [ +10.00, +19.99, -10.00 ],
-// //              vertex2: [ +10.00, +19.99, -10.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 5,
-// //              materialIndex: 5,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +10.00, +19.99, -10.00 ],
-// //              vertex0: [ +10.00, +19.99, -10.00 ],
-//                 vertex1: [ +10.00, +19.99, +10.00 ],
-// //              vertex1: [ +10.00, +19.99, +10.00 ],
-//                 vertex2: [ -10.00, +19.99, +10.00 ],
-// //              vertex2: [ -10.00, +19.99, +10.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 5,
-// //              materialIndex: 5,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
+            // TOP
+//          // TOP
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, +20.00 ],
+//              vertex0: [ -20.00, +20.00, +20.00 ],
+                vertex1: [ -20.00, +20.00, -20.00 ],
+//              vertex1: [ -20.00, +20.00, -20.00 ],
+                vertex2: [ +20.00, +20.00, -20.00 ],
+//              vertex2: [ +20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 1,
+//              materialIndex: 1,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, +20.00, -20.00 ],
+//              vertex0: [ +20.00, +20.00, -20.00 ],
+                vertex1: [ +20.00, +20.00, +20.00 ],
+//              vertex1: [ +20.00, +20.00, +20.00 ],
+                vertex2: [ -20.00, +20.00, +20.00 ],
+//              vertex2: [ -20.00, +20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 1,
+//              materialIndex: 1,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // LEFT
+//          // LEFT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, +20.00 ],
+//              vertex0: [ -20.00, +20.00, +20.00 ],
+                vertex1: [ -20.00, -20.00, +20.00 ],
+//              vertex1: [ -20.00, -20.00, +20.00 ],
+                vertex2: [ -20.00, -20.00, -20.00 ],
+//              vertex2: [ -20.00, -20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 2,
+//              materialIndex: 2,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, -20.00, -20.00 ],
+//              vertex0: [ -20.00, -20.00, -20.00 ],
+                vertex1: [ -20.00, +20.00, -20.00 ],
+//              vertex1: [ -20.00, +20.00, -20.00 ],
+                vertex2: [ -20.00, +20.00, +20.00 ],
+//              vertex2: [ -20.00, +20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 2,
+//              materialIndex: 2,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // RIGHT
+//          // RIGHT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, +20.00, -20.00 ],
+//              vertex0: [ +20.00, +20.00, -20.00 ],
+                vertex1: [ +20.00, -20.00, -20.00 ],
+//              vertex1: [ +20.00, -20.00, -20.00 ],
+                vertex2: [ +20.00, -20.00, +20.00 ],
+//              vertex2: [ +20.00, -20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 3,
+//              materialIndex: 3,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, -20.00, +20.00 ],
+//              vertex0: [ +20.00, -20.00, +20.00 ],
+                vertex1: [ +20.00, +20.00, +20.00 ],
+//              vertex1: [ +20.00, +20.00, +20.00 ],
+                vertex2: [ +20.00, +20.00, -20.00 ],
+//              vertex2: [ +20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 3,
+//              materialIndex: 3,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // BACK
+//          // BACK
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, -20.00 ],
+//              vertex0: [ -20.00, +20.00, -20.00 ],
+                vertex1: [ -20.00, -20.00, -20.00 ],
+//              vertex1: [ -20.00, -20.00, -20.00 ],
+                vertex2: [ +20.00, -20.00, -20.00 ],
+//              vertex2: [ +20.00, -20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 4,
+//              materialIndex: 4,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, -20.00, -20.00 ],
+//              vertex0: [ +20.00, -20.00, -20.00 ],
+                vertex1: [ +20.00, +20.00, -20.00 ],
+//              vertex1: [ +20.00, +20.00, -20.00 ],
+                vertex2: [ -20.00, +20.00, -20.00 ],
+//              vertex2: [ -20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 4,
+//              materialIndex: 4,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // LIGHT
+//          // LIGHT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -10.00, +19.99, +10.00 ],
+//              vertex0: [ -10.00, +19.99, +10.00 ],
+                vertex1: [ -10.00, +19.99, -10.00 ],
+//              vertex1: [ -10.00, +19.99, -10.00 ],
+                vertex2: [ +10.00, +19.99, -10.00 ],
+//              vertex2: [ +10.00, +19.99, -10.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 5,
+//              materialIndex: 5,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +10.00, +19.99, -10.00 ],
+//              vertex0: [ +10.00, +19.99, -10.00 ],
+                vertex1: [ +10.00, +19.99, +10.00 ],
+//              vertex1: [ +10.00, +19.99, +10.00 ],
+                vertex2: [ -10.00, +19.99, +10.00 ],
+//              vertex2: [ -10.00, +19.99, +10.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 5,
+//              materialIndex: 5,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
         );
 //      );
         _isRunningRenderLoop = false;
@@ -3288,9 +3516,9 @@
     <svelte:window on:keydown={OnKeydown} />
 <!--<svelte:window on:keydown={OnKeydown} />-->
 
-<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
-    <canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>
-<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+    <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
 
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
