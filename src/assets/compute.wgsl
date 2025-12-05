@@ -1097,24 +1097,28 @@
 //  @group(0) @binding(3) var<storage, read> materials: array<Material>;
     @group(0) @binding(4) var<storage, read> textures: array<Texture>;
 //  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var columnAtlasSampler: sampler;
-//  @group(0) @binding(5) var columnAtlasSampler: sampler;
-    @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-//  @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-    @group(0) @binding(7) var hdriSampler: sampler;
-//  @group(0) @binding(7) var hdriSampler: sampler;
-    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-    @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
-//  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+    @group(0) @binding(5) var blueNoiseSampler: sampler;
+//  @group(0) @binding(5) var blueNoiseSampler: sampler;
+    @group(0) @binding(6) var blueNoiseTexture: texture_2d<f32>;
+//  @group(0) @binding(6) var blueNoiseTexture: texture_2d<f32>;
+    @group(0) @binding(7) var columnAtlasSampler: sampler;
+//  @group(0) @binding(7) var columnAtlasSampler: sampler;
+    @group(0) @binding(8) var columnAtlasTexture: texture_2d<f32>;
+//  @group(0) @binding(8) var columnAtlasTexture: texture_2d<f32>;
+    @group(0) @binding(9) var hdriSampler: sampler;
+//  @group(0) @binding(9) var hdriSampler: sampler;
+    @group(0) @binding(10) var hdriTexture: texture_2d<f32>;
+//  @group(0) @binding(10) var hdriTexture: texture_2d<f32>;
+    @group(0) @binding(11) var<storage, read> triangles: array<Triangle>;
+//  @group(0) @binding(11) var<storage, read> triangles: array<Triangle>;
 //     const cubes: array<Cube, 1> = array<Cube, 1>(
 // //  const cubes: array<Cube, 1> = array<Cube, 1>(
 //         Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 // //      Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 //     );
 // //  );
-    @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
-//  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
+    @group(0) @binding(12) var<storage, read> bvhNodes: array<BVHNode>;
+//  @group(0) @binding(12) var<storage, read> bvhNodes: array<BVHNode>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
@@ -1127,8 +1131,10 @@
 //      return;
     }
 
-    let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
-//  let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+    let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+//  let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+    let frameIndexForSeed: u32 = u32((frameIndex) * 10000.0);
+//  let frameIndexForSeed: u32 = u32((frameIndex) * 10000.0);
     var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
 //  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
@@ -1147,6 +1153,8 @@
 //      generalData.fromPixelToPixelDeltaU,
         generalData.fromPixelToPixelDeltaV,
 //      generalData.fromPixelToPixelDeltaV,
+        frameIndex,
+//      frameIndex,
         f32(gid.x),
 //      f32(gid.x),
         f32(gid.y),
@@ -1179,6 +1187,8 @@
 //      fromPixelToPixelDeltaU: vec3<f32>,
         fromPixelToPixelDeltaV: vec3<f32>,
 //      fromPixelToPixelDeltaV: vec3<f32>,
+        frameIndex: f32,
+//      frameIndex: f32,
         pixelX: f32,
 //      pixelX: f32,
         pixelY: f32,
@@ -1190,8 +1200,8 @@
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
-//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+        let sampleOffset: vec3<f32> = vec3<f32>(_getBlueNoise(pixelX, pixelY, 0u, frameIndex) - 0.5, _getBlueNoise(pixelX, pixelY, 1u, frameIndex) - 0.5, 0.0);
+//      let sampleOffset: vec3<f32> = vec3<f32>(_getBlueNoise(pixelX, pixelY, 0u, frameIndex) - 0.5, _getBlueNoise(pixelX, pixelY, 1u, frameIndex) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
         let rayOrigin: vec3<f32> = cameraCenter;
@@ -2395,4 +2405,69 @@
         return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 //      return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 
+    }
+
+    fn _getBlueNoise(
+//  fn _getBlueNoise(
+        pixelX: f32,
+//      pixelX: f32,
+        pixelY: f32,
+//      pixelY: f32,
+        dimensionIndex: u32, // Which random number do you need? (0=ray-direction-x, 1=ray-direction-y, 2=bounce, etc.)
+//      dimensionIndex: u32, // Which random number do you need? (0=ray-direction-x, 1=ray-direction-y, 2=bounce, etc.)
+        frameIndex: f32
+//      frameIndex: f32
+    ) -> f32
+//  ) -> f32
+    {
+        let blueNoiseTextureSize: vec2<f32> = vec2<f32>(textureDimensions(blueNoiseTexture));
+//      let blueNoiseTextureSize: vec2<f32> = vec2<f32>(textureDimensions(blueNoiseTexture));
+
+        // apply a Golden-Ratio offset based on the frame index to animate the noise
+//      // apply a Golden-Ratio offset based on the frame index to animate the noise
+        // this creates "Interleaved-Gradient-Noise" like behavior over time
+//      // this creates "Interleaved-Gradient-Noise" like behavior over time
+        // 1.61803398... is Phi.
+//      // 1.61803398... is Phi.
+        let frameOffset: vec2<f32> = vec2<f32>(
+//      let frameOffset: vec2<f32> = vec2<f32>(
+            frameIndex * 0.7548776662 * blueNoiseTextureSize.x,
+//          frameIndex * 0.7548776662 * blueNoiseTextureSize.x,
+            frameIndex * 0.5698402909 * blueNoiseTextureSize.y
+//          frameIndex * 0.5698402909 * blueNoiseTextureSize.y
+        );
+//      );
+
+        // tile the coordinates across the screen
+//      // tile the coordinates across the screen
+        let wrappedCoordinates: vec2<f32> = (vec2<f32>(pixelX, pixelY) + frameOffset) % blueNoiseTextureSize;
+//      let wrappedCoordinates: vec2<f32> = (vec2<f32>(pixelX, pixelY) + frameOffset) % blueNoiseTextureSize;
+
+        // fetch the value
+//      // fetch the value
+        // we use the 'dimensionIndex' to pick which channel (R, G, B, or A) to use
+//      // we use the 'dimensionIndex' to pick which channel (R, G, B, or A) to use
+        // if you need more than 4 dimensions, you can XOR the coordinate, but
+//      // if you need more than 4 dimensions, you can XOR the coordinate, but
+        // usually we only use Blue-Noise for the first few critical decisions
+//      // usually we only use Blue-Noise for the first few critical decisions
+        let noiseVector: vec4<f32> = textureSampleLevel(blueNoiseTexture, blueNoiseSampler, wrappedCoordinates, 0.0);
+//      let noiseVector: vec4<f32> = textureSampleLevel(blueNoiseTexture, blueNoiseSampler, wrappedCoordinates, 0.0);
+
+        // Select channel based on dimension
+//      // Select channel based on dimension
+        // 0 -> R, 1 -> G, 2 -> B, 3 -> A, 4 -> R, etc.
+//      // 0 -> R, 1 -> G, 2 -> B, 3 -> A, 4 -> R, etc.
+        let channel: u32 = dimensionIndex % 4u;
+//      let channel: u32 = dimensionIndex % 4u;
+        var value: f32 = noiseVector[channel];
+//      var value: f32 = noiseVector[channel];
+
+        // OPTIONAL: if you use the same channel for multiple things, apply a scramble helper
+//      // OPTIONAL: if you use the same channel for multiple things, apply a scramble helper
+        // value = fract(value + f32(dimensionIndex) * 0.61803398);
+//      // value = fract(value + f32(dimensionIndex) * 0.61803398);
+
+        return value;
+//      return value;
     }
