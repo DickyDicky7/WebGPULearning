@@ -974,10 +974,10 @@
 //  };
     const prepareTextures = (): void => {
 //  const prepareTextures = (): void => {
-        if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 64) {
-//      if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 64) {
-            _texturesStorageValues = new ArrayBuffer(_textures.length * 64);
-//          _texturesStorageValues = new ArrayBuffer(_textures.length * 64);
+        if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
+//      if (!_texturesStorageValues || _textures.length !== _texturesStorageValues.byteLength / 32) {
+            _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
+//          _texturesStorageValues = new ArrayBuffer(_textures.length * 32);
             _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
 //          _texturesStorageValuesDataView = new DataView(_texturesStorageValues);
             if (_texturesStorageBuffer) {
@@ -1016,8 +1016,8 @@
             }
             : Texture, textureIndex: number): void => {
 //          : Texture, textureIndex: number): void => {
-                const base: number = textureIndex * 64;
-//              const base: number = textureIndex * 64;
+                const base: number = textureIndex * 32;
+//              const base: number = textureIndex * 32;
                 _texturesStorageValuesDataView.setFloat32(base + 0, albedo[0], true);
 //              _texturesStorageValuesDataView.setFloat32(base + 0, albedo[0], true);
                 _texturesStorageValuesDataView.setFloat32(base + 4, albedo[1], true);
