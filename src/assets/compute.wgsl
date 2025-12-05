@@ -8,6 +8,19 @@
     const BACKGROUND_TYPE_SKY_BOX_HDRI: u32 = 2u;
 //  const BACKGROUND_TYPE_SKY_BOX_HDRI: u32 = 2u;
 
+    const MATERIAL_TYPE_DIFFUSE   : u32 = 0u;
+//  const MATERIAL_TYPE_DIFFUSE   : u32 = 0u;
+    const MATERIAL_TYPE_METAL     : u32 = 1u;
+//  const MATERIAL_TYPE_METAL     : u32 = 1u;
+    const MATERIAL_TYPE_GLOSS     : u32 = 2u;
+//  const MATERIAL_TYPE_GLOSS     : u32 = 2u;
+    const MATERIAL_TYPE_DIELECTRIC: u32 = 3u;
+//  const MATERIAL_TYPE_DIELECTRIC: u32 = 3u;
+    const MATERIAL_TYPE_LIGHT     : u32 = 4u;
+//  const MATERIAL_TYPE_LIGHT     : u32 = 4u;
+    const MATERIAL_TYPE_PRINCIPLED: u32 = 5u;
+//  const MATERIAL_TYPE_PRINCIPLED: u32 = 5u;
+
     const TEXTURE_TYPE_COLOR: u32 = 0u;
 //  const TEXTURE_TYPE_COLOR: u32 = 0u;
     const TEXTURE_TYPE_IMAGE: u32 = 1u;
@@ -84,6 +97,8 @@
 //  layer1IOR: f32,
     textureIndex: u32,
 //  textureIndex: u32,
+    materialType: u32,
+//  materialType: u32,
 }
 
     struct Interval
@@ -607,221 +622,340 @@
 //  return finalRayHitResult;
 }
 
-    fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
-//  fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
-    {
-        return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
-//      return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
-    }
-
-    // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
-//  // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
-    fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
-//  fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
-    {
-        let random1: f32 = _pcg32Next(rng);
-//      let random1: f32 = _pcg32Next(rng);
-        let random2: f32 = _pcg32Next(rng);
-//      let random2: f32 = _pcg32Next(rng);
-
-        let term: f32 = roughness * roughness;
-//      let term: f32 = roughness * roughness;
-        let phi: f32 = 2.0 * PI * random1;
-//      let phi: f32 = 2.0 * PI * random1;
-        let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
-//      let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
-        let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
-//      let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
-
-        let x: f32 = sinTheta * cos(phi);
-//      let x: f32 = sinTheta * cos(phi);
-        let y: f32 = sinTheta * sin(phi);
-//      let y: f32 = sinTheta * sin(phi);
-        let z: f32 = cosTheta;
-//      let z: f32 = cosTheta;
-
-        // Tangent space basis construction (orthonormal basis)
-//      // Tangent space basis construction (orthonormal basis)
-        let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
-//      let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
-        let tangent: vec3<f32> = normalize(cross(up, normal));
-//      let tangent: vec3<f32> = normalize(cross(up, normal));
-        let bitangent: vec3<f32> = cross(normal, tangent);
-//      let bitangent: vec3<f32> = cross(normal, tangent);
-
-        // Transform H to world space
-//      // Transform H to world space
-        return normalize(tangent * x + bitangent * y + normal * z);
-//      return normalize(tangent * x + bitangent * y + normal * z);
-    }
-
     fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
 //  fn _rayScatter(incomingRay: Ray, recentRayHitResult: RayHitResult, rng: ptr<function, RNG>) -> MaterialLightScatteringResult
+{
+    var materialLightScatteringResult: MaterialLightScatteringResult;
+//  var materialLightScatteringResult: MaterialLightScatteringResult;
+    let material: Material = materials[recentRayHitResult.materialIndex];
+//  let material: Material = materials[recentRayHitResult.materialIndex];
+    switch (material.materialType)
+//  switch (material.materialType)
     {
-        var materialLightScatteringResult: MaterialLightScatteringResult;
-//      var materialLightScatteringResult: MaterialLightScatteringResult;
-        let material: Material = materials[recentRayHitResult.materialIndex];
-//      let material: Material = materials[recentRayHitResult.materialIndex];
-
-        let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//      let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-        let emission: vec3<f32> = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//      let emission: vec3<f32> = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-
-        if (length(emission) > 0.0)
-//      if (length(emission) > 0.0)
+        case MATERIAL_TYPE_DIFFUSE:
+//      case MATERIAL_TYPE_DIFFUSE:
         {
-            // LIGHT
-//          // LIGHT
-            materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0);
-//          materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0);
-            materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0);
-//          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0);
-            materialLightScatteringResult.attenuation = vec3<f32>(0.0);
-//          materialLightScatteringResult.attenuation = vec3<f32>(0.0);
-            materialLightScatteringResult.emission = emission;
-//          materialLightScatteringResult.emission = emission;
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//          materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+        }
+        case MATERIAL_TYPE_METAL:
+//      case MATERIAL_TYPE_METAL:
+        {
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//          materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+        }
+        case MATERIAL_TYPE_GLOSS:
+//      case MATERIAL_TYPE_GLOSS:
+        {
+            var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+//          var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+
+            let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+
+            if (recentRayHitResult.isFrontFaceHitted)
+//          if (recentRayHitResult.isFrontFaceHitted)
+            {
+                etaRatioOfIncidenceOverTransmission = 1.0 / etaRatioOfIncidenceOverTransmission;
+//              etaRatioOfIncidenceOverTransmission = 1.0 / etaRatioOfIncidenceOverTransmission;
+            }
+
+            let reflectanceProbability: f32 = _reflectance(cosThetaIncident, etaRatioOfIncidenceOverTransmission);
+//          let reflectanceProbability: f32 = _reflectance(cosThetaIncident, etaRatioOfIncidenceOverTransmission);
+
+            var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
+//          var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
+
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+
+            if (_pcg32Next(rng) < reflectanceProbability)
+//          if (_pcg32Next(rng) < reflectanceProbability)
+            {
+                scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//              scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+                if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
+//              if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
+                {
+                    /*
+                    materialLightScatteringResult.isScattered = false;
+//                  materialLightScatteringResult.isScattered = false;
+                    */
+                    // The rough reflection scattered below the surface. Fall back to a diffuse reflection to conserve energy.
+//                  // The rough reflection scattered below the surface. Fall back to a diffuse reflection to conserve energy.
+                    scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//                  scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+                }
+                attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
+//              attenuationColor = vec3<f32>(1.0, 1.0, 1.0);
+            }
+            else
+//          else
+            {
+                scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//              scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+                attenuationColor = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//              attenuationColor = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            }
+
+            if (materialLightScatteringResult.isScattered)
+//          if (materialLightScatteringResult.isScattered)
+            {
+                materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
+//              materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
+                materialLightScatteringResult.attenuation = attenuationColor;
+//              materialLightScatteringResult.attenuation = attenuationColor;
+            }
+            else
+//          else
+            {
+                materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+//              materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
+            }
+            materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+        }
+        case MATERIAL_TYPE_DIELECTRIC:
+//      case MATERIAL_TYPE_DIELECTRIC:
+        {
+            let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//          let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+
+            var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+//          var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+            if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
+//          if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
+
+            let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+            let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+//          let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+            let notAbleToRefract: bool = sinTheta * etaRatioOfIncidenceOverTransmission > 1.0 || _reflectance(cosTheta, etaRatioOfIncidenceOverTransmission) > _pcg32Next(rng);
+//          let notAbleToRefract: bool = sinTheta * etaRatioOfIncidenceOverTransmission > 1.0 || _reflectance(cosTheta, etaRatioOfIncidenceOverTransmission) > _pcg32Next(rng);
+            var scatteredRayDirection: vec3<f32>;
+//          var scatteredRayDirection: vec3<f32>;
+
+            if (notAbleToRefract)
+//          if (notAbleToRefract)
+            {
+                 scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+//               scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+            }
+            else
+//          else
+            {
+                 scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
+//               scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
+            }
+
+            materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+            materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
+//          materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.isScattered = true;
+//          materialLightScatteringResult.isScattered = true;
+
+/*
+            // Absorption
+            // Absorption
+            if (!recentRayHitResult.isFrontFaceHitted)
+//          if (!recentRayHitResult.isFrontFaceHitted)
+            {
+                materialLightScatteringResult.attenuation *= vec3<f32>
+//              materialLightScatteringResult.attenuation *= vec3<f32>
+                (
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                    exp(-recentRayHitResult.minDistance * 1.0),
+                );
+            }
+*/
+        }
+        case MATERIAL_TYPE_LIGHT:
+//      case MATERIAL_TYPE_LIGHT:
+        {
+            materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.isScattered = false;
 //          materialLightScatteringResult.isScattered = false;
-            return materialLightScatteringResult;
-//          return materialLightScatteringResult;
         }
-
-        materialLightScatteringResult.emission = emission;
-//      materialLightScatteringResult.emission = emission;
-
-        // Principled Logic
-//      // Principled Logic
-
-        // F0 calculation: 0.04 for dielectrics, albedo for metals
-//      // F0 calculation: 0.04 for dielectrics, albedo for metals
-        let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
-//      let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
-
-        // Schlick's fresnel approximation at incident angle
-//      // Schlick's fresnel approximation at incident angle
-        let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
-//      let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
-        let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
-//      let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
-        // Use average fresnel for importance sampling probability
-//      // Use average fresnel for importance sampling probability
-        let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
-//      let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
-
-        let randomChoice: f32 = _pcg32Next(rng);
-//      let randomChoice: f32 = _pcg32Next(rng);
-
-        // --- PATH A: METALLIC REFLECTION ---
-//      // --- PATH A: METALLIC REFLECTION ---
-        // Metals always reflect. They have no diffuse and no transmission.
-//      // Metals always reflect. They have no diffuse and no transmission.
-        // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
-//      // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
-        // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
-//      // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
-
-        let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
-//      let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
-
-        if (randomChoice < specularProbability)
-//      if (randomChoice < specularProbability)
+        case MATERIAL_TYPE_PRINCIPLED:
+//      case MATERIAL_TYPE_PRINCIPLED:
         {
-            // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
-//          // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
-            let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
-//          let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
-            let specularReflectedDirection: vec3<f32> = _reflect(incomingRay.direction, microfacetNormal);
-//          let specularReflectedDirection: vec3<f32> = _reflect(incomingRay.direction, microfacetNormal);
+            let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            let emission: vec3<f32> = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          let emission: vec3<f32> = _textureSampleEmission(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
 
-            if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
-//          if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
+            materialLightScatteringResult.emission = emission;
+//          materialLightScatteringResult.emission = emission;
+
+            // Principled Logic
+//          // Principled Logic
+
+            // F0 calculation: 0.04 for dielectrics, albedo for metals
+//          // F0 calculation: 0.04 for dielectrics, albedo for metals
+            let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
+//          let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
+
+            // Schlick's fresnel approximation at incident angle
+//          // Schlick's fresnel approximation at incident angle
+            let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+            let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
+//          let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
+            // Use average fresnel for importance sampling probability
+//          // Use average fresnel for importance sampling probability
+            let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
+//          let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
+
+            let randomChoice: f32 = _pcg32Next(rng);
+//          let randomChoice: f32 = _pcg32Next(rng);
+
+            // --- PATH A: METALLIC REFLECTION ---
+//          // --- PATH A: METALLIC REFLECTION ---
+            // Metals always reflect. They have no diffuse and no transmission.
+//          // Metals always reflect. They have no diffuse and no transmission.
+            // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
+//          // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
+            // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
+//          // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
+
+            let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
+//          let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
+
+            if (randomChoice < specularProbability)
+//          if (randomChoice < specularProbability)
             {
-                materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-//              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-                materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
-//              materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
-                materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
-//              materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
-                materialLightScatteringResult.isScattered = true;
-//              materialLightScatteringResult.isScattered = true;
-            }
-            else
-//          else
-            {
-                // Current/Recent ray is/was absorbed (next ray is scattering into surface)
-//              // Current/Recent ray is/was absorbed (next ray is scattering into surface)
-                materialLightScatteringResult.isScattered = false;
-//              materialLightScatteringResult.isScattered = false;
-            }
-        }
-        else
-//      else
-        {
-            // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
-//          // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
-
-            // Re-normalize random variable for the next choice
-//          // Re-normalize random variable for the next choice
-            let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
-//          let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
-
-            if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
-//          if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
-            {
-                // TRANSMISSION (REFRACTION)
-//              // TRANSMISSION (REFRACTION)
-
-                var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
-//              var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
-
+                // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
+//              // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
                 let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
 //              let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+                let specularReflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+//              let specularReflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
 
-                let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
-//              let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
-                let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
-//              let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
-
-                let refractedDirection: vec3<f32> = _refract(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
-//              let refractedDirection: vec3<f32> = _refract(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
-                let reflectedDirection: vec3<f32> = _reflect(incomingRay.direction, microfacetNormal);
-//              let reflectedDirection: vec3<f32> = _reflect(incomingRay.direction, microfacetNormal);
-
-                // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
-//              // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
-                materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-//              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-                materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
-//              materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
-                materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
-//              materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
-                materialLightScatteringResult.isScattered = true;
-//              materialLightScatteringResult.isScattered = true;
+                if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
+//              if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
+                {
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
+//                  materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
+                    materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
+//                  materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
+                else
+//              else
+                {
+                    // Current/Recent ray is/was absorbed (next ray is scattering into surface)
+//                  // Current/Recent ray is/was absorbed (next ray is scattering into surface)
+                    materialLightScatteringResult.isScattered = false;
+//                  materialLightScatteringResult.isScattered = false;
+                }
             }
             else
 //          else
             {
-                // DIFFUSE (LAMBERTIAN)
-//              // DIFFUSE (LAMBERTIAN)
+                // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
+//              // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
 
-                let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
-//              let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+                // Re-normalize random variable for the next choice
+//              // Re-normalize random variable for the next choice
+                let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
+//              let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
 
-                materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-//              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-                materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
-//              materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
-                materialLightScatteringResult.attenuation = albedo;
-//              materialLightScatteringResult.attenuation = albedo;
-                materialLightScatteringResult.isScattered = true;
-//              materialLightScatteringResult.isScattered = true;
+                if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
+//              if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
+                {
+                    // TRANSMISSION (REFRACTION)
+//                  // TRANSMISSION (REFRACTION)
+
+                    var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
+//                  var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
+
+                    let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+//                  let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+
+                    let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
+//                  let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
+                    let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
+//                  let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
+
+                    let refractedDirection: vec3<f32> = _refractPrincipled(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
+//                  let refractedDirection: vec3<f32> = _refractPrincipled(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
+                    let reflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+//                  let reflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+
+                    // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
+//                  // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
+//                  materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
+                    materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
+//                  materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
+                else
+//              else
+                {
+                    // DIFFUSE (LAMBERTIAN)
+//                  // DIFFUSE (LAMBERTIAN)
+
+                    let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//                  let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
+//                  materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
+                    materialLightScatteringResult.attenuation = albedo;
+//                  materialLightScatteringResult.attenuation = albedo;
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
             }
         }
+        default:
+//      default:
+        {
 
-        return materialLightScatteringResult;
-//      return materialLightScatteringResult;
+        }
     }
+    return materialLightScatteringResult;
+//  return materialLightScatteringResult;
+}
 
     fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
 //  fn _rayMarch(ray: Ray, distance: f32) -> vec3<f32>
@@ -1316,11 +1450,59 @@
 //  return RNG(state);
 }
 
-    fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
-//  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+    fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
+//  fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
+    {
+        return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+//      return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+    }
 
-    fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
-//  fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
+    // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
+//  // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
+    fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        let random1: f32 = _pcg32Next(rng);
+//      let random1: f32 = _pcg32Next(rng);
+        let random2: f32 = _pcg32Next(rng);
+//      let random2: f32 = _pcg32Next(rng);
+
+        let term: f32 = roughness * roughness;
+//      let term: f32 = roughness * roughness;
+        let phi: f32 = 2.0 * PI * random1;
+//      let phi: f32 = 2.0 * PI * random1;
+        let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
+//      let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
+        let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+//      let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+
+        let x: f32 = sinTheta * cos(phi);
+//      let x: f32 = sinTheta * cos(phi);
+        let y: f32 = sinTheta * sin(phi);
+//      let y: f32 = sinTheta * sin(phi);
+        let z: f32 = cosTheta;
+//      let z: f32 = cosTheta;
+
+        // Tangent space basis construction (orthonormal basis)
+//      // Tangent space basis construction (orthonormal basis)
+        let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
+//      let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
+        let tangent: vec3<f32> = normalize(cross(up, normal));
+//      let tangent: vec3<f32> = normalize(cross(up, normal));
+        let bitangent: vec3<f32> = cross(normal, tangent);
+//      let bitangent: vec3<f32> = cross(normal, tangent);
+
+        // Transform H to world space
+//      // Transform H to world space
+        return normalize(tangent * x + bitangent * y + normal * z);
+//      return normalize(tangent * x + bitangent * y + normal * z);
+    }
+
+    fn _reflectPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+//  fn _reflectPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+
+    fn _refractPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
+//  fn _refractPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
     {
         let cosThetaTransmission: f32 = sqrt(1.0 - sinThetaTransmission);
 //      let cosThetaTransmission: f32 = sqrt(1.0 - sinThetaTransmission);
@@ -1328,6 +1510,22 @@
 //      let refractedDirection: vec3<f32> = normalize(etaRatioOfIncidenceOverTransmission * incomingVector + (etaRatioOfIncidenceOverTransmission * cosThetaIncidence - cosThetaTransmission) * normal);
         return refractedDirection;
 //      return refractedDirection;
+    }
+
+    fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+//  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+
+    fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32) -> vec3<f32>
+//  fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32) -> vec3<f32>
+    {
+        let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
+//      let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
+        let refractedRayPerpendicular: vec3<f32> = etaRatioOfIncidenceOverTransmission * (incomingVector + cosTheta * normal);
+//      let refractedRayPerpendicular: vec3<f32> = etaRatioOfIncidenceOverTransmission * (incomingVector + cosTheta * normal);
+        let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
+//      let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
+        return refractedRayPerpendicular + refractedRayParallel;
+//      return refractedRayPerpendicular + refractedRayParallel;
     }
 
     fn _reflectance(cosine: f32, etaRatioOfIncidenceOverTransmission: f32) -> f32
