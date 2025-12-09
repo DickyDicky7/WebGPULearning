@@ -973,45 +973,45 @@
             */
 
 
-            // Soft Shadow (Area Light) Solution
-            // Soft Shadow (Area Light) Solution
+//             // Soft Shadow (Area Light) Solution
+//             // Soft Shadow (Area Light) Solution
 
-            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-            let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
-//          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
-            let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
-//          let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
+//             let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+// //          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+//             let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+// //          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+//             let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
+// //          let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
 
-            // Jitter the sun direction to simulate an area light and get soft shadows.
-            // Jitter the sun direction to simulate an area light and get soft shadows.
-            let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
-//          let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+//             // Jitter the sun direction to simulate an area light and get soft shadows.
+//             // Jitter the sun direction to simulate an area light and get soft shadows.
+//             let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
+// //          let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
 
-            let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-//          let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-            let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
-//          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+//             let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+// //          let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
+//             let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+// //          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
 
-            if (!shadowHit.isHitted)
-//          if (!shadowHit.isHitted)
-            {
-                // The path to the sun is clear. Add direct light.
-                // The path to the sun is clear. Add direct light.
-                let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
-//              let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+//             if (!shadowHit.isHitted)
+// //          if (!shadowHit.isHitted)
+//             {
+//                 // The path to the sun is clear. Add direct light.
+//                 // The path to the sun is clear. Add direct light.
+//                 let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
+// //              let cosTheta: f32 = max(0.0, dot(rayHitResult.hittedSideNormal, jitteredSunDirection));
 
-                // Attenuation in scatter result is the albedo/color.
-                // Attenuation in scatter result is the albedo/color.
-                let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
-//              let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+//                 // Attenuation in scatter result is the albedo/color.
+//                 // Attenuation in scatter result is the albedo/color.
+//                 let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
+// //              let albedo: vec3<f32> = materialLightScatteringResult.attenuation;
 
-                let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
-//              let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
+//                 let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
+// //              let directLight: vec3<f32> = albedo * sunColor * cosTheta / PI;
 
-                accumulatedColor += attenuation * directLight;
-//              accumulatedColor += attenuation * directLight;
-            }
+//                 accumulatedColor += attenuation * directLight;
+// //              accumulatedColor += attenuation * directLight;
+//             }
 
 
 
@@ -1027,25 +1027,25 @@
 //          attenuation *= materialLightScatteringResult.attenuation;
 
 
-            // Russian Roulette Solution
-            // Russian Roulette Solution
+//             // Russian Roulette Solution
+//             // Russian Roulette Solution
 
-            let minBouncesForRR: u32 = 4u;
-//          let minBouncesForRR: u32 = 4u;
-            if (depth >= minBouncesForRR)
-//          if (depth >= minBouncesForRR)
-            {
-                let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
-//              let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
-                if (_pcg32Next(rng) > p)
-//              if (_pcg32Next(rng) > p)
-                {
-                    break; // Terminate the ray
-//                  break; // Terminate the ray
-                }
-                attenuation *= 1.0 / p; // Boost the survivor
-//              attenuation *= 1.0 / p; // Boost the survivor
-            }
+//             let minBouncesForRR: u32 = 4u;
+// //          let minBouncesForRR: u32 = 4u;
+//             if (depth >= minBouncesForRR)
+// //          if (depth >= minBouncesForRR)
+//             {
+//                 let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
+// //              let p: f32 = max(attenuation.r, max(attenuation.g, attenuation.b));
+//                 if (_pcg32Next(rng) > p)
+// //              if (_pcg32Next(rng) > p)
+//                 {
+//                     break; // Terminate the ray
+// //                  break; // Terminate the ray
+//                 }
+//                 attenuation *= 1.0 / p; // Boost the survivor
+// //              attenuation *= 1.0 / p; // Boost the survivor
+//             }
 
 
 
@@ -1085,6 +1085,8 @@
 //  backgroundType: u32,
     numberOfImages: u32,
 //  numberOfImages: u32,
+    time: f32,
+//  time: f32,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;
@@ -1115,6 +1117,8 @@
 // //  );
     @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
 //  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
+    @group(0) @binding(11) var<storage, read_write> accum: array<vec4<f32>>;
+//  @group(0) @binding(11) var<storage, read_write> accum: array<vec4<f32>>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
@@ -1127,12 +1131,38 @@
 //      return;
     }
 
-    let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
-//  let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+    let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+//  let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+    let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
+//  let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
     var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
 //  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
 //  _ = _pcg32Next(&rng);
+
+
+    let uv: vec2<i32> = vec2<i32>(gid.xy);
+//  let uv: vec2<i32> = vec2<i32>(gid.xy);
+//     var jitter: vec2<i32> = _map_vec2_to_signed_range(_hash2(generalData.time) * 2.0 - 1.0, 10);
+// //  var jitter: vec2<i32> = _map_vec2_to_signed_range(_hash2(generalData.time) * 2.0 - 1.0, 10);
+    var jitter: vec2<i32> = _map_vec2_to_signed_range(vec2<f32>(((generalData.stratifiedSampleX + _pcg32Next(&rng)) * generalData.inverseStratifiedSamplesPerPixel) - 0.5, ((generalData.stratifiedSampleY + _pcg32Next(&rng)) * generalData.inverseStratifiedSamplesPerPixel) - 0.5) * 2.0, 1);
+//  var jitter: vec2<i32> = _map_vec2_to_signed_range(vec2<f32>(((generalData.stratifiedSampleX + _pcg32Next(&rng)) * generalData.inverseStratifiedSamplesPerPixel) - 0.5, ((generalData.stratifiedSampleY + _pcg32Next(&rng)) * generalData.inverseStratifiedSamplesPerPixel) - 0.5) * 2.0, 1);
+    jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+//  jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+    let uvjitter: vec2<i32> = clamp(uv + jitter, vec2<i32>(0, 0), vec2<i32>(generalData.canvasSize.xy));
+//  let uvjitter: vec2<i32> = clamp(uv + jitter, vec2<i32>(0, 0), vec2<i32>(generalData.canvasSize.xy));
+
+    let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+//  let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+    var previousPixelColor: vec4<f32> = accum[pixelIndex];
+//  var previousPixelColor: vec4<f32> = accum[pixelIndex];
+    let jitterPixelIndex: u32 = u32(uvjitter.y) * generalData.canvasSize.x + u32(uvjitter.x);
+//  let jitterPixelIndex: u32 = u32(uvjitter.y) * generalData.canvasSize.x + u32(uvjitter.x);
+
+
+
+
+
     let ray: Ray = _generatePrimaryRay(
 //  let ray: Ray = _generatePrimaryRay(
         generalData.stratifiedSampleX,
@@ -1147,23 +1177,69 @@
 //      generalData.fromPixelToPixelDeltaU,
         generalData.fromPixelToPixelDeltaV,
 //      generalData.fromPixelToPixelDeltaV,
-        f32(gid.x),
-//      f32(gid.x),
-        f32(gid.y),
-//      f32(gid.y),
+        f32(uvjitter.x),
+//      f32(uvjitter.x),
+        f32(uvjitter.y),
+//      f32(uvjitter.y),
         generalData.cameraCenter,
 //      generalData.cameraCenter,
         &rng,
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
+    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 4, generalData.backgroundType, &rng), 1.0);
+//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 4, generalData.backgroundType, &rng), 1.0);
 
-    outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
-//  outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
+    previousPixelColor = mix(previousPixelColor, pixelColor, 0.01);
+//  previousPixelColor = mix(previousPixelColor, pixelColor, 0.01);
+
+
+
+    accum[pixelIndex] = previousPixelColor;
+//  accum[pixelIndex] = previousPixelColor;
+
+    outputStorage[pixelIndex] = previousPixelColor;
+//  outputStorage[pixelIndex] = previousPixelColor;
 
 }
+
+    fn _hash2(seed: f32) -> vec2<f32>
+//  fn _hash2(seed: f32) -> vec2<f32>
+    {
+        var s = seed;
+//      var s = seed;
+        let x = s + 0.1;
+//      let x = s + 0.1;
+        let y = s + 0.2;
+//      let y = s + 0.2;
+        let v = vec2<f32>(x, y);
+//      let v = vec2<f32>(x, y);
+        return fract(sin(v) * vec2<f32>(43758.5453123, 22578.1459123));
+//      return fract(sin(v) * vec2<f32>(43758.5453123, 22578.1459123));
+    }
+    fn _map_vec2_to_signed_9(v: vec2<f32>) -> vec2<i32>
+//  fn _map_vec2_to_signed_9(v: vec2<f32>) -> vec2<i32>
+    {
+        let clamped = clamp(v, vec2<f32>(-1.0), vec2<f32>(1.0));
+//      let clamped = clamp(v, vec2<f32>(-1.0), vec2<f32>(1.0));
+        let mapped  = round(clamped * 9.0);
+//      let mapped  = round(clamped * 9.0);
+        return vec2<i32>(mapped);
+//      return vec2<i32>(mapped);
+    }
+    fn _map_vec2_to_signed_range(v: vec2<f32>, step: i32) -> vec2<i32>
+//  fn _map_vec2_to_signed_range(v: vec2<f32>, step: i32) -> vec2<i32>
+    {
+        let clamped = clamp(v, vec2<f32>(-1.0), vec2<f32>(1.0));
+//      let clamped = clamp(v, vec2<f32>(-1.0), vec2<f32>(1.0));
+        let base = round(clamped * 9.0);
+//      let base = round(clamped * 9.0);
+        return vec2<i32>(base) * step;
+//      return vec2<i32>(base) * step;
+    }
+
+// https://www.shadertoy.com/view/4tVGWR
+// https://www.shadertoy.com/view/4tVGWR
 
     fn _generatePrimaryRay(
 //  fn _generatePrimaryRay(
@@ -1190,8 +1266,8 @@
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
-//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0) * 2.0;
+//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0) * 2.0;
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
         let rayOrigin: vec3<f32> = cameraCenter;

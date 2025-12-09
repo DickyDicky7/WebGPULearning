@@ -25,6 +25,8 @@
 //  backgroundType: u32,
     numberOfImages: u32,
 //  numberOfImages: u32,
+    time: f32,
+//  time: f32,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;
@@ -37,8 +39,6 @@
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 {
-    let progressivePixelSamplesScale: f32 = 1.0 / (generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX + 1.0); // 1.0 / frameCount
-//  let progressivePixelSamplesScale: f32 = 1.0 / (generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX + 1.0); // 1.0 / frameCount
-    textureStore(outputTexture, vec2<u32>(gid.xy), outputStorage[gid.y * generalData.canvasSize.x + gid.x] * progressivePixelSamplesScale);
-//  textureStore(outputTexture, vec2<u32>(gid.xy), outputStorage[gid.y * generalData.canvasSize.x + gid.x] * progressivePixelSamplesScale);
+    textureStore(outputTexture, vec2<u32>(gid.xy), outputStorage[gid.y * generalData.canvasSize.x + gid.x]);
+//  textureStore(outputTexture, vec2<u32>(gid.xy), outputStorage[gid.y * generalData.canvasSize.x + gid.x]);
 }

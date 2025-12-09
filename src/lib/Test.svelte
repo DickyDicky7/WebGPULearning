@@ -214,6 +214,8 @@
 
 
 
+    let _time: number;
+//  let _time: number;
     let _adapter: GPUAdapter;
 //  let _adapter: GPUAdapter;
     let _device: GPUDevice;
@@ -328,14 +330,16 @@
 //  let _gatherBindGroup0: GPUBindGroup;
     let _renderBindGroup0: GPUBindGroup;
 //  let _renderBindGroup0: GPUBindGroup;
+    let _accumStorage: GPUBuffer;
+//  let _accumStorage: GPUBuffer;
     let _outputStorage: GPUBuffer;
 //  let _outputStorage: GPUBuffer;
     let _outputTexture: GPUTexture;
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(64.0);
-//  let _samplesPerPixel: number = $state(64.0);
+    let _samplesPerPixel: number = $state(3600.0);
+//  let _samplesPerPixel: number = $state(3600.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -396,8 +400,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
     let _numberOfImages: number;
 //  let _numberOfImages: number;
     let _isRunningRenderLoop: boolean;
@@ -1261,6 +1265,8 @@
 //              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
                 { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
 //              { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
+//              { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
             ],
 //          ],
         });
@@ -1427,8 +1433,8 @@
 */
         const publicURLs: string[] = [
 //      const publicURLs: string[] = [
-            "/ChinaVase.png",
-//          "/ChinaVase.png",
+            "/ChinaVase.jpg",
+//          "/ChinaVase.jpg",
         ];
 //      ];
         const cellImageWidth: number = 8192;
@@ -1953,296 +1959,296 @@
 //              perVertexFrontFaceNormalAvailable: false,
             },
 //          },
-//             // TOP
-// //          // TOP
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, +20.00 ],
-// //              vertex0: [ -20.00, +20.00, +20.00 ],
-//                 vertex1: [ -20.00, +20.00, -20.00 ],
-// //              vertex1: [ -20.00, +20.00, -20.00 ],
-//                 vertex2: [ +20.00, +20.00, -20.00 ],
-// //              vertex2: [ +20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 1,
-// //              materialIndex: 1,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, +20.00, -20.00 ],
-// //              vertex0: [ +20.00, +20.00, -20.00 ],
-//                 vertex1: [ +20.00, +20.00, +20.00 ],
-// //              vertex1: [ +20.00, +20.00, +20.00 ],
-//                 vertex2: [ -20.00, +20.00, +20.00 ],
-// //              vertex2: [ -20.00, +20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 1,
-// //              materialIndex: 1,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // LEFT
-// //          // LEFT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, +20.00 ],
-// //              vertex0: [ -20.00, +20.00, +20.00 ],
-//                 vertex1: [ -20.00, -20.00, +20.00 ],
-// //              vertex1: [ -20.00, -20.00, +20.00 ],
-//                 vertex2: [ -20.00, -20.00, -20.00 ],
-// //              vertex2: [ -20.00, -20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 2,
-// //              materialIndex: 2,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, -20.00, -20.00 ],
-// //              vertex0: [ -20.00, -20.00, -20.00 ],
-//                 vertex1: [ -20.00, +20.00, -20.00 ],
-// //              vertex1: [ -20.00, +20.00, -20.00 ],
-//                 vertex2: [ -20.00, +20.00, +20.00 ],
-// //              vertex2: [ -20.00, +20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 2,
-// //              materialIndex: 2,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // RIGHT
-// //          // RIGHT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, +20.00, -20.00 ],
-// //              vertex0: [ +20.00, +20.00, -20.00 ],
-//                 vertex1: [ +20.00, -20.00, -20.00 ],
-// //              vertex1: [ +20.00, -20.00, -20.00 ],
-//                 vertex2: [ +20.00, -20.00, +20.00 ],
-// //              vertex2: [ +20.00, -20.00, +20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 3,
-// //              materialIndex: 3,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, -20.00, +20.00 ],
-// //              vertex0: [ +20.00, -20.00, +20.00 ],
-//                 vertex1: [ +20.00, +20.00, +20.00 ],
-// //              vertex1: [ +20.00, +20.00, +20.00 ],
-//                 vertex2: [ +20.00, +20.00, -20.00 ],
-// //              vertex2: [ +20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 3,
-// //              materialIndex: 3,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // BACK
-// //          // BACK
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -20.00, +20.00, -20.00 ],
-// //              vertex0: [ -20.00, +20.00, -20.00 ],
-//                 vertex1: [ -20.00, -20.00, -20.00 ],
-// //              vertex1: [ -20.00, -20.00, -20.00 ],
-//                 vertex2: [ +20.00, -20.00, -20.00 ],
-// //              vertex2: [ +20.00, -20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 4,
-// //              materialIndex: 4,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +20.00, -20.00, -20.00 ],
-// //              vertex0: [ +20.00, -20.00, -20.00 ],
-//                 vertex1: [ +20.00, +20.00, -20.00 ],
-// //              vertex1: [ +20.00, +20.00, -20.00 ],
-//                 vertex2: [ -20.00, +20.00, -20.00 ],
-// //              vertex2: [ -20.00, +20.00, -20.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 4,
-// //              materialIndex: 4,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             // LIGHT
-// //          // LIGHT
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ -10.00, +19.99, +10.00 ],
-// //              vertex0: [ -10.00, +19.99, +10.00 ],
-//                 vertex1: [ -10.00, +19.99, -10.00 ],
-// //              vertex1: [ -10.00, +19.99, -10.00 ],
-//                 vertex2: [ +10.00, +19.99, -10.00 ],
-// //              vertex2: [ +10.00, +19.99, -10.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 0.0, 0.0 ],
-// //              vertex0UV: [ 0.0, 0.0 ],
-//                 vertex1UV: [ 0.0, 1.0 ],
-// //              vertex1UV: [ 0.0, 1.0 ],
-//                 vertex2UV: [ 1.0, 1.0 ],
-// //              vertex2UV: [ 1.0, 1.0 ],
-//                 materialIndex: 5,
-// //              materialIndex: 5,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
-//             {
-// //          {
-//                 aabb3d: undefined!,
-// //              aabb3d: undefined!,
-//                 vertex0: [ +10.00, +19.99, -10.00 ],
-// //              vertex0: [ +10.00, +19.99, -10.00 ],
-//                 vertex1: [ +10.00, +19.99, +10.00 ],
-// //              vertex1: [ +10.00, +19.99, +10.00 ],
-//                 vertex2: [ -10.00, +19.99, +10.00 ],
-// //              vertex2: [ -10.00, +19.99, +10.00 ],
-//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//                 vertex0UV: [ 1.0, 1.0 ],
-// //              vertex0UV: [ 1.0, 1.0 ],
-//                 vertex1UV: [ 1.0, 0.0 ],
-// //              vertex1UV: [ 1.0, 0.0 ],
-//                 vertex2UV: [ 0.0, 0.0 ],
-// //              vertex2UV: [ 0.0, 0.0 ],
-//                 materialIndex: 5,
-// //              materialIndex: 5,
-//                 perVertexFrontFaceNormalAvailable: false,
-// //              perVertexFrontFaceNormalAvailable: false,
-//             },
-// //          },
+            // TOP
+//          // TOP
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, +20.00 ],
+//              vertex0: [ -20.00, +20.00, +20.00 ],
+                vertex1: [ -20.00, +20.00, -20.00 ],
+//              vertex1: [ -20.00, +20.00, -20.00 ],
+                vertex2: [ +20.00, +20.00, -20.00 ],
+//              vertex2: [ +20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 1,
+//              materialIndex: 1,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, +20.00, -20.00 ],
+//              vertex0: [ +20.00, +20.00, -20.00 ],
+                vertex1: [ +20.00, +20.00, +20.00 ],
+//              vertex1: [ +20.00, +20.00, +20.00 ],
+                vertex2: [ -20.00, +20.00, +20.00 ],
+//              vertex2: [ -20.00, +20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 1,
+//              materialIndex: 1,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // LEFT
+//          // LEFT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, +20.00 ],
+//              vertex0: [ -20.00, +20.00, +20.00 ],
+                vertex1: [ -20.00, -20.00, +20.00 ],
+//              vertex1: [ -20.00, -20.00, +20.00 ],
+                vertex2: [ -20.00, -20.00, -20.00 ],
+//              vertex2: [ -20.00, -20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 2,
+//              materialIndex: 2,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, -20.00, -20.00 ],
+//              vertex0: [ -20.00, -20.00, -20.00 ],
+                vertex1: [ -20.00, +20.00, -20.00 ],
+//              vertex1: [ -20.00, +20.00, -20.00 ],
+                vertex2: [ -20.00, +20.00, +20.00 ],
+//              vertex2: [ -20.00, +20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 2,
+//              materialIndex: 2,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // RIGHT
+//          // RIGHT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, +20.00, -20.00 ],
+//              vertex0: [ +20.00, +20.00, -20.00 ],
+                vertex1: [ +20.00, -20.00, -20.00 ],
+//              vertex1: [ +20.00, -20.00, -20.00 ],
+                vertex2: [ +20.00, -20.00, +20.00 ],
+//              vertex2: [ +20.00, -20.00, +20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 3,
+//              materialIndex: 3,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, -20.00, +20.00 ],
+//              vertex0: [ +20.00, -20.00, +20.00 ],
+                vertex1: [ +20.00, +20.00, +20.00 ],
+//              vertex1: [ +20.00, +20.00, +20.00 ],
+                vertex2: [ +20.00, +20.00, -20.00 ],
+//              vertex2: [ +20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 3,
+//              materialIndex: 3,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // BACK
+//          // BACK
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -20.00, +20.00, -20.00 ],
+//              vertex0: [ -20.00, +20.00, -20.00 ],
+                vertex1: [ -20.00, -20.00, -20.00 ],
+//              vertex1: [ -20.00, -20.00, -20.00 ],
+                vertex2: [ +20.00, -20.00, -20.00 ],
+//              vertex2: [ +20.00, -20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 4,
+//              materialIndex: 4,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +20.00, -20.00, -20.00 ],
+//              vertex0: [ +20.00, -20.00, -20.00 ],
+                vertex1: [ +20.00, +20.00, -20.00 ],
+//              vertex1: [ +20.00, +20.00, -20.00 ],
+                vertex2: [ -20.00, +20.00, -20.00 ],
+//              vertex2: [ -20.00, +20.00, -20.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 4,
+//              materialIndex: 4,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            // LIGHT
+//          // LIGHT
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ -10.00, +19.99, +10.00 ],
+//              vertex0: [ -10.00, +19.99, +10.00 ],
+                vertex1: [ -10.00, +19.99, -10.00 ],
+//              vertex1: [ -10.00, +19.99, -10.00 ],
+                vertex2: [ +10.00, +19.99, -10.00 ],
+//              vertex2: [ +10.00, +19.99, -10.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 0.0, 0.0 ],
+//              vertex0UV: [ 0.0, 0.0 ],
+                vertex1UV: [ 0.0, 1.0 ],
+//              vertex1UV: [ 0.0, 1.0 ],
+                vertex2UV: [ 1.0, 1.0 ],
+//              vertex2UV: [ 1.0, 1.0 ],
+                materialIndex: 5,
+//              materialIndex: 5,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
+            {
+//          {
+                aabb3d: undefined!,
+//              aabb3d: undefined!,
+                vertex0: [ +10.00, +19.99, -10.00 ],
+//              vertex0: [ +10.00, +19.99, -10.00 ],
+                vertex1: [ +10.00, +19.99, +10.00 ],
+//              vertex1: [ +10.00, +19.99, +10.00 ],
+                vertex2: [ -10.00, +19.99, +10.00 ],
+//              vertex2: [ -10.00, +19.99, +10.00 ],
+                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+                vertex0UV: [ 1.0, 1.0 ],
+//              vertex0UV: [ 1.0, 1.0 ],
+                vertex1UV: [ 1.0, 0.0 ],
+//              vertex1UV: [ 1.0, 0.0 ],
+                vertex2UV: [ 0.0, 0.0 ],
+//              vertex2UV: [ 0.0, 0.0 ],
+                materialIndex: 5,
+//              materialIndex: 5,
+                perVertexFrontFaceNormalAvailable: false,
+//              perVertexFrontFaceNormalAvailable: false,
+            },
+//          },
         );
 //      );
         _isRunningRenderLoop = false;
@@ -2256,6 +2262,8 @@
 
     const renderLoop = (cpuTimeInMilliseconds: number): void => {
 //  const renderLoop = (cpuTimeInMilliseconds: number): void => {
+        _time = cpuTimeInMilliseconds;
+//      _time = cpuTimeInMilliseconds;
         if (!_isRunningRenderLoop) {
 //      if (!_isRunningRenderLoop) {
             return;
@@ -2270,8 +2278,6 @@
 //      render();
         ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
 //      ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
-        if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
-//      if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
             _stratifiedSampleX++;
 //          _stratifiedSampleX++;
             if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
@@ -2284,22 +2290,14 @@
 //          }
             if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
 //          if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
-                stopRenderLoop();
-//              stopRenderLoop();
+                _stratifiedSampleX = 0;
+//              _stratifiedSampleX = 0;
+                _stratifiedSampleY = 0;
+//              _stratifiedSampleY = 0;
                 console.log("done");
 //              console.log("done");
-                return;
-//              return;
             }
 //          }
-        } else {
-//      } else {
-            stopRenderLoop();
-//          stopRenderLoop();
-            return;
-//          return;
-        }
-//      }
         _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
 //      _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
     };
@@ -2584,14 +2582,28 @@
 //                      Math.min(height, _device.limits.maxTextureDimension2D),
                     );
 //                  );
-//                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
-//                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
                     _viewportW = _viewportH * _canvas.width / _canvas.height;
 //                  _viewportW = _viewportH * _canvas.width / _canvas.height;
                     _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
 //                  _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
                     _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
 //                  _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
+                    if (_accumStorage) {
+//                  if (_accumStorage) {
+                        _accumStorage.destroy();
+//                      _accumStorage.destroy();
+                    }
+//                  }
+                    _accumStorage = _device.createBuffer({
+//                  _accumStorage = _device.createBuffer({
+                        label: "GPU_STORAGE_ACCUM",
+//                      label: "GPU_STORAGE_ACCUM",
+                        size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+//                      size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+                        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+//                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+                    });
+//                  });
                     if (_outputStorage) {
 //                  if (_outputStorage) {
                         _outputStorage.destroy();
@@ -2608,8 +2620,6 @@
 //                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
                     });
 //                  });
-                    _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-//                  _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
                     if (_outputTexture) {
 //                  if (_outputTexture) {
                         _outputTexture.destroy();
@@ -2628,12 +2638,6 @@
 //                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
                     });
 //                  });
-//                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
-//                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
-//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
-//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
-//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
-//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
                     _computeBindGroup0 = _device.createBindGroup({
 //                  _computeBindGroup0 = _device.createBindGroup({
                         label: "GPU_BIND_GROUP_0_COMPUTE",
@@ -2696,8 +2700,6 @@
 //                              binding: 6,
                                 resource: _columnAtlasTexture,
 //                              resource: _columnAtlasTexture,
-//                              resource:  columnAtlasTextureView,
-//                              resource:  columnAtlasTextureView,
                             },
 //                          },
                             {
@@ -2714,8 +2716,6 @@
 //                              binding: 8,
                                 resource: _hdriTexture,
 //                              resource: _hdriTexture,
-//                              resource:  hdriTextureView,
-//                              resource:  hdriTextureView,
                             },
 //                          },
                             {
@@ -2732,6 +2732,14 @@
 //                              binding: 10,
                                 resource: _bvhNodesStorageBuffer,
 //                              resource: _bvhNodesStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 11,
+//                              binding: 11,
+                                resource: _accumStorage,
+//                              resource: _accumStorage,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -2768,8 +2776,6 @@
 //                              binding: 2,
                                 resource: _outputTexture,
 //                              resource: _outputTexture,
-//                              resource:  outputTextureView,
-//                              resource:  outputTextureView,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -2798,8 +2804,6 @@
 //                              binding: 1,
                                 resource: _outputTexture,
 //                              resource: _outputTexture,
-//                              resource:  outputTextureView,
-//                              resource:  outputTextureView,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -2808,10 +2812,6 @@
 //                  });
                 }
 //              }
-                // prepare();
-                // prepare();
-                // render();
-                // render();
                 startRenderLoop();
 //              startRenderLoop();
             },
@@ -2997,6 +2997,8 @@
 //      _generalDataUniformValuesDataView.setUint32(76, _backgroundType, true);
         _generalDataUniformValuesDataView.setUint32(80, _numberOfImages, true);
 //      _generalDataUniformValuesDataView.setUint32(80, _numberOfImages, true);
+        _generalDataUniformValuesDataView.setFloat32(84, _time, true);
+//      _generalDataUniformValuesDataView.setFloat32(84, _time, true);
 
         _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
@@ -3008,8 +3010,6 @@
 
     function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
 //  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
-        stopRenderLoop();
-//      stopRenderLoop();
         _lookFrom = newLookFrom;
 //      _lookFrom = newLookFrom;
         _lookAt = newLookAt;
@@ -3022,10 +3022,6 @@
 //      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
         _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
 //      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
-        _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-//      _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-        startRenderLoop();
-//      startRenderLoop();
     };
 //  };
 
@@ -3035,44 +3031,44 @@
 //  const OnKeydown = async (keyboardEvent: KeyboardEvent): Promise<void> => {
         if (keyboardEvent.key === "0") {
 //      if (keyboardEvent.key === "0") {
-            tweenCamera([0.0, 0.0, +46.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([0.0, 0.0, +46.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([0.0, 0.0, +46.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([0.0, 0.0, +46.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "1") {
 //      } else if (keyboardEvent.key === "1") {
-            tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([0.0, 0.0, +40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "2") {
 //      } else if (keyboardEvent.key === "2") {
-            tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "3") {
 //      } else if (keyboardEvent.key === "3") {
-            tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "4") {
 //      } else if (keyboardEvent.key === "4") {
-            tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([+28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "5") {
 //      } else if (keyboardEvent.key === "5") {
-            tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([0.0, 0.0, -40.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "6") {
 //      } else if (keyboardEvent.key === "6") {
-            tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, -28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "7") {
 //      } else if (keyboardEvent.key === "7") {
-            tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-40.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "8") {
 //      } else if (keyboardEvent.key === "8") {
-            tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera([-28.284, 0.0, +28.284], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "9") {
 //      } else if (keyboardEvent.key === "9") {
-            tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
-//          tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
+            tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
+//          tweenCamera([0.0, +40.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Sinusoidal.Out);
         }
 //      }
 
@@ -3099,28 +3095,28 @@
 
         if (keyboardEvent.key === "w") {
 //      if (keyboardEvent.key === "w") {
-            tweenCamera(m.add(_lookFrom, f), m.add(_lookAt, f), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, f), m.add(_lookAt, f), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, f), m.add(_lookAt, f), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, f), m.add(_lookAt, f), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "a") {
 //      } else if (keyboardEvent.key === "a") {
-            tweenCamera(m.add(_lookFrom, l), m.add(_lookAt, l), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, l), m.add(_lookAt, l), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, l), m.add(_lookAt, l), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, l), m.add(_lookAt, l), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "s") {
 //      } else if (keyboardEvent.key === "s") {
-            tweenCamera(m.add(_lookFrom, b), m.add(_lookAt, b), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, b), m.add(_lookAt, b), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, b), m.add(_lookAt, b), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, b), m.add(_lookAt, b), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "d") {
 //      } else if (keyboardEvent.key === "d") {
-            tweenCamera(m.add(_lookFrom, r), m.add(_lookAt, r), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, r), m.add(_lookAt, r), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, r), m.add(_lookAt, r), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, r), m.add(_lookAt, r), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "q") {
 //      } else if (keyboardEvent.key === "q") {
-            tweenCamera(m.add(_lookFrom, [ 0, +10, 0 ]), m.add(_lookAt, [ 0, +10, 0 ]), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, [ 0, +10, 0 ]), m.add(_lookAt, [ 0, +10, 0 ]), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, [ 0, +10, 0 ]), m.add(_lookAt, [ 0, +10, 0 ]), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, [ 0, +10, 0 ]), m.add(_lookAt, [ 0, +10, 0 ]), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         } else if (keyboardEvent.key === "e") {
 //      } else if (keyboardEvent.key === "e") {
-            tweenCamera(m.add(_lookFrom, [ 0, -10, 0 ]), m.add(_lookAt, [ 0, -10, 0 ]), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
-//          tweenCamera(m.add(_lookFrom, [ 0, -10, 0 ]), m.add(_lookAt, [ 0, -10, 0 ]), _viewUp, 1000, 1000, 1000, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+            tweenCamera(m.add(_lookFrom, [ 0, -10, 0 ]), m.add(_lookAt, [ 0, -10, 0 ]), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
+//          tweenCamera(m.add(_lookFrom, [ 0, -10, 0 ]), m.add(_lookAt, [ 0, -10, 0 ]), _viewUp, 100, 100, 100, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut, t.Easing.Quartic.InOut);
         }
 //      }
     };
@@ -3288,9 +3284,9 @@
     <svelte:window on:keydown={OnKeydown} />
 <!--<svelte:window on:keydown={OnKeydown} />-->
 
-<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
-    <canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>
-<!--<canvas class="large-elevate" bind:this={_canvas} width="860px" height="440px" style:width="860px" style:height="440px" style:display="block"></canvas>-->
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
+    <canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>
+<!--<canvas class="large-elevate" bind:this={_canvas} width="960px" height="540px" style:width="960px" style:height="540px" style:display="block"></canvas>-->
 
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
 <!--<span>{_cpuTimeMeasurementRenderLoop.fps}</span>-->
