@@ -1,3 +1,10 @@
+    struct VertexShaderInput
+//  struct VertexShaderInput
+{
+    @builtin(vertex_index) vertexIndex: u32,
+//  @builtin(vertex_index) vertexIndex: u32,
+}
+
     struct VertexShaderOutput
 //  struct VertexShaderOutput
 {
@@ -5,7 +12,7 @@
 //  @builtin(position) vertexPosition: vec4<f32>,
     @location(0) uv: vec2<f32>,
 //  @location(0) uv: vec2<f32>,
-};
+}
 
     struct FragmentShaderInput
 //  struct FragmentShaderInput
@@ -14,7 +21,14 @@
 //  @builtin(position) fragmentPosition: vec4<f32>,
     @location(0) uv: vec2<f32>,
 //  @location(0) uv: vec2<f32>,
-};
+}
+
+    struct FragmentShaderOutput
+//  struct FragmentShaderOutput
+{
+    @location(0) fragmentColor: vec4<f32>,
+//  @location(0) fragmentColor: vec4<f32>,
+}
 
     const vertexPosition: array<vec4<f32>, 6> = array<vec4<f32>, 6>(
 //  const vertexPosition: array<vec4<f32>, 6> = array<vec4<f32>, 6>(
@@ -31,6 +45,7 @@
         vec4<f32>( 1.0,  1.0,  0.0,  1.0),
 //      vec4<f32>( 1.0,  1.0,  0.0,  1.0),
     );
+//  );
 
     const uv: array<vec2<f32>, 6> = array<vec2<f32>, 6>(
 //  const uv: array<vec2<f32>, 6> = array<vec2<f32>, 6>(
@@ -47,28 +62,32 @@
         vec2<f32>(1.0, 0.0),
 //      vec2<f32>(1.0, 0.0),
     );
+//  );
 
     @group(0) @binding(0) var outputSampler: sampler;
 //  @group(0) @binding(0) var outputSampler: sampler;
     @group(0) @binding(1) var outputTexture: texture_2d<f32>;
 //  @group(0) @binding(1) var outputTexture: texture_2d<f32>;
 
-    @vertex fn vertexShader(@builtin(vertex_index) vertexIndex : u32) -> VertexShaderOutput
-//  @vertex fn vertexShader(@builtin(vertex_index) vertexIndex : u32) -> VertexShaderOutput
+    @vertex fn vertexShader(vertexShaderInput: VertexShaderInput) -> VertexShaderOutput
+//  @vertex fn vertexShader(vertexShaderInput: VertexShaderInput) -> VertexShaderOutput
 {
     var vertexShaderOutput: VertexShaderOutput;
 //  var vertexShaderOutput: VertexShaderOutput;
-    vertexShaderOutput.vertexPosition = vertexPosition[vertexIndex];
-//  vertexShaderOutput.vertexPosition = vertexPosition[vertexIndex];
-    vertexShaderOutput.uv = uv[vertexIndex];
-//  vertexShaderOutput.uv = uv[vertexIndex];
+    vertexShaderOutput.vertexPosition = vertexPosition[vertexShaderInput.vertexIndex];
+//  vertexShaderOutput.vertexPosition = vertexPosition[vertexShaderInput.vertexIndex];
+    vertexShaderOutput.uv = uv[vertexShaderInput.vertexIndex];
+//  vertexShaderOutput.uv = uv[vertexShaderInput.vertexIndex];
     return vertexShaderOutput;
 //  return vertexShaderOutput;
-};
+}
 
-    @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
-//  @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> @location(0) vec4<f32>
+    @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> FragmentShaderOutput
+//  @fragment fn fragmentShader(fragmentShaderInput: FragmentShaderInput) -> FragmentShaderOutput
 {
+    var fragmentShaderOutput: FragmentShaderOutput;
+//  var fragmentShaderOutput: FragmentShaderOutput;
+
     // center-based offset so effect radiates from center
 //  // center-based offset so effect radiates from center
     let center: vec2<f32> = vec2<f32>(0.5, 0.5);
@@ -131,8 +150,8 @@
     // outputColor = pow(outputColor, vec3<f32>(1.0 / 2.2));
 //  // outputColor = pow(outputColor, vec3<f32>(1.0 / 2.2));
 
-    return vec4<f32>(outputColor, 1.0);
-//  return vec4<f32>(outputColor, 1.0);
+    fragmentShaderOutput.fragmentColor = vec4<f32>(outputColor, 1.0);
+//  fragmentShaderOutput.fragmentColor = vec4<f32>(outputColor, 1.0);
 
 
 
@@ -140,8 +159,8 @@
 
 
 /*
-    return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
-//  return textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
+    fragmentShaderOutput.fragmentColor = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
+//  fragmentShaderOutput.fragmentColor = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv);
 */
 
 
@@ -152,27 +171,35 @@
 /*
     let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
 //  let rgb: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
-    return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
-//  return vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
+    fragmentShaderOutput.fragmentColor = vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
+//  fragmentShaderOutput.fragmentColor = vec4<f32>(_vec3LinearToGamma(_tonemapACES(rgb)), 1.0);
 */
-};
 
-    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); };
-    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
-//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; };
-    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); };
-    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
-//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; };
-    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); };
-    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
-//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; };
-    fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
-//  fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); };
-    fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
-//  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
+
+
+
+
+
+    return fragmentShaderOutput;
+//  return fragmentShaderOutput;
+}
+
+    fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); }
+//  fn _vec4LinearToGamma(value: vec4<f32>) -> vec4<f32> { return sqrt(value); }
+    fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; }
+//  fn _vec4GammaToLinear(value: vec4<f32>) -> vec4<f32> { return value * value; }
+    fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); }
+//  fn _vec3LinearToGamma(value: vec3<f32>) -> vec3<f32> { return sqrt(value); }
+    fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; }
+//  fn _vec3GammaToLinear(value: vec3<f32>) -> vec3<f32> { return value * value; }
+    fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); }
+//  fn _vec2LinearToGamma(value: vec2<f32>) -> vec2<f32> { return sqrt(value); }
+    fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; }
+//  fn _vec2GammaToLinear(value: vec2<f32>) -> vec2<f32> { return value * value; }
+    fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); }
+//  fn _f32LinearToGamma(value: f32) -> f32 { return sqrt(value); }
+    fn _f32GammaToLinear(value: f32) -> f32 { return value * value; }
+//  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; }
 
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
 //  fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }

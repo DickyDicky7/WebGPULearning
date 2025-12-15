@@ -220,6 +220,8 @@
 
 
 
+    let _timeInSeconds: number;
+//  let _timeInSeconds: number;
     let _adapter: GPUAdapter;
 //  let _adapter: GPUAdapter;
     let _device: GPUDevice;
@@ -336,12 +338,14 @@
 //  let _renderBindGroup0: GPUBindGroup;
     let _outputStorage: GPUBuffer;
 //  let _outputStorage: GPUBuffer;
+    let _accumulatedOutputStorage: GPUBuffer;
+//  let _accumulatedOutputStorage: GPUBuffer;
     let _outputTexture: GPUTexture;
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(64.0);
-//  let _samplesPerPixel: number = $state(64.0);
+    let _samplesPerPixel: number = $state(3600.0);
+//  let _samplesPerPixel: number = $state(3600.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -406,14 +410,8 @@
 //  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
     let _numberOfImages: number;
 //  let _numberOfImages: number;
-    let _isRunningRenderLoop: boolean;
-//  let _isRunningRenderLoop: boolean;
     let _frameHandleRenderLoop: number;
 //  let _frameHandleRenderLoop: number;
-//     let _isRunningGeneralLoop: boolean;
-// //  let _isRunningGeneralLoop: boolean;
-//     let _frameHandleGeneralLoop: number;
-// //  let _frameHandleGeneralLoop: number;
     let _tweenCameraLookFrom: t.Tween<Vec3> = null!;
 //  let _tweenCameraLookFrom: t.Tween<Vec3> = null!;
     let _tweenCameraLookAt: t.Tween<Vec3> = null!;
@@ -1257,24 +1255,26 @@
 //              { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform", }, },
                 { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
 //              { binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
-                { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-//              { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
+//              { binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage", }, },
                 { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
 //              { binding: 3, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
                 { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
 //              { binding: 4, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-                { binding: 5, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
-//              { binding: 5, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
-                { binding: 6, visibility: GPUShaderStage.COMPUTE, texture: {}, },
-//              { binding: 6, visibility: GPUShaderStage.COMPUTE, texture: {}, },
-                { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
-//              { binding: 7, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
-                { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
-//              { binding: 8, visibility: GPUShaderStage.COMPUTE, texture: {}, },
-                { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
-//              { binding: 9, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 5, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 5, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 6, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+//              { binding: 6, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+                { binding: 7, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+//              { binding: 7, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+                { binding: 8, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+//              { binding: 8, visibility: GPUShaderStage.COMPUTE, sampler: {}, },
+                { binding: 9, visibility: GPUShaderStage.COMPUTE, texture: {}, },
+//              { binding: 9, visibility: GPUShaderStage.COMPUTE, texture: {}, },
                 { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
 //              { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+                { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
+//              { binding: 11, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage", }, },
             ],
 //          ],
         });
@@ -1441,8 +1441,8 @@
 */
         const publicURLs: string[] = [
 //      const publicURLs: string[] = [
-            "/ChinaVase.png",
-//          "/ChinaVase.png",
+            "/test/copper-tea-pot/source/model/model/textures/teapot_MAT_albedo.jpg",
+//          "/test/copper-tea-pot/source/model/model/textures/teapot_MAT_albedo.jpg",
         ];
 //      ];
         const cellImageWidth: number = 8192;
@@ -2301,8 +2301,6 @@
 //          },
         );
 //      );
-        _isRunningRenderLoop = false;
-//      _isRunningRenderLoop = false;
         _frameHandleRenderLoop = null!;
 //      _frameHandleRenderLoop = null!;
     };
@@ -2312,12 +2310,8 @@
 
     const renderLoop = (cpuTimeInMilliseconds: number): void => {
 //  const renderLoop = (cpuTimeInMilliseconds: number): void => {
-        if (!_isRunningRenderLoop) {
-//      if (!_isRunningRenderLoop) {
-            return;
-//          return;
-        }
-//      }
+        _timeInSeconds = cpuTimeInMilliseconds / 1000.0;
+//      _timeInSeconds = cpuTimeInMilliseconds / 1000.0;
         startCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop, cpuTimeInMilliseconds);
 //      startCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop, cpuTimeInMilliseconds);
         prepare();
@@ -2326,34 +2320,22 @@
 //      render();
         ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
 //      ceaseCPUTimeMeasurement(_cpuTimeMeasurementRenderLoop);
-        if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
-//      if (_stratifiedSampleY < _stratifiedSamplesPerPixel) {
-            _stratifiedSampleX++;
-//          _stratifiedSampleX++;
-            if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
-//          if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
-                _stratifiedSampleX = 0;
-//              _stratifiedSampleX = 0;
-                _stratifiedSampleY++;
-//              _stratifiedSampleY++;
-            }
-//          }
-            if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
-//          if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
-                stopRenderLoop();
-//              stopRenderLoop();
-                console.log("done");
-//              console.log("done");
-                return;
-//              return;
-            }
-//          }
-        } else {
-//      } else {
-            stopRenderLoop();
-//          stopRenderLoop();
-            return;
-//          return;
+        _stratifiedSampleX++;
+//      _stratifiedSampleX++;
+        if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
+//      if (_stratifiedSampleX === _stratifiedSamplesPerPixel) {
+            _stratifiedSampleX = 0;
+//          _stratifiedSampleX = 0;
+            _stratifiedSampleY++;
+//          _stratifiedSampleY++;
+        }
+//      }
+        if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
+//      if (_stratifiedSampleY === _stratifiedSamplesPerPixel) {
+            _stratifiedSampleX = 0;
+//          _stratifiedSampleX = 0;
+            _stratifiedSampleY = 0;
+//          _stratifiedSampleY = 0;
         }
 //      }
         _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
@@ -2362,16 +2344,12 @@
 //  };
     const startRenderLoop = (): void => {
 //  const startRenderLoop = (): void => {
-        if (!_isRunningRenderLoop) {
-//      if (!_isRunningRenderLoop) {
-            _isRunningRenderLoop = true;
-//          _isRunningRenderLoop = true;
-//          console.info("start loop");
-//          console.info("start loop");
-            _stratifiedSampleX = 0.0;
-//          _stratifiedSampleX = 0.0;
-            _stratifiedSampleY = 0.0;
-//          _stratifiedSampleY = 0.0;
+        _stratifiedSampleX = 0;
+//      _stratifiedSampleX = 0;
+        _stratifiedSampleY = 0;
+//      _stratifiedSampleY = 0;
+        if (!_frameHandleRenderLoop) {
+//      if (!_frameHandleRenderLoop) {
             _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
 //          _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
         }
@@ -2380,12 +2358,8 @@
 //  };
     const stopRenderLoop = (): void => {
 //  const stopRenderLoop = (): void => {
-        _isRunningRenderLoop = false;
-//      _isRunningRenderLoop = false;
         if (_frameHandleRenderLoop) {
 //      if (_frameHandleRenderLoop) {
-//          console.info("stop loop");
-//          console.info("stop loop");
             cancelAnimationFrame(_frameHandleRenderLoop);
 //          cancelAnimationFrame(_frameHandleRenderLoop);
             _frameHandleRenderLoop = null!;
@@ -2405,10 +2379,10 @@
 //          [
                 {
 //              {
-                    name: "ChinaVase.obj",
-//                  name: "ChinaVase.obj",
-                    publicURL: "/ChinaVase.obj",
-//                  publicURL: "/ChinaVase.obj",
+                    name: "model.dae",
+//                  name: "model.dae",
+                    publicURL: "/test/copper-tea-pot/source/model/model/model.dae",
+//                  publicURL: "/test/copper-tea-pot/source/model/model/model.dae",
                 },
 //              },
             ]
@@ -2425,12 +2399,12 @@
 //          const floorY: number = -20.0;
             let minModelY: number = Infinity;
 //          let minModelY: number = Infinity;
-            const scaleX: number = 1.0;
-//          const scaleX: number = 1.0;
-            const scaleY: number = 1.0;
-//          const scaleY: number = 1.0;
-            const scaleZ: number = 1.0;
-//          const scaleZ: number = 1.0;
+            const scaleX: number = 200.0;
+//          const scaleX: number = 200.0;
+            const scaleY: number = 200.0;
+//          const scaleY: number = 200.0;
+            const scaleZ: number = 200.0;
+//          const scaleZ: number = 200.0;
             for (let mesh of model["meshes"]) {
 //          for (let mesh of model["meshes"]) {
                 const l: number = (mesh["vertices"] as number[]).length;
@@ -2580,12 +2554,6 @@
 
     onMount(async (): Promise<void> => {
 //  onMount(async (): Promise<void> => {
-        // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
-        // console.log(mathjs.chain([2, 4, 6]).divide(2).done());
-        // return;
-        // return;
-
-
         await loadModels();
 //      await loadModels();
 
@@ -2604,12 +2572,14 @@
 //      prepareTriangles();
 
 
+        let firstTimeDispatch: (() => void) | undefined = (): void => { startRenderLoop(); };
+//      let firstTimeDispatch: (() => void) | undefined = (): void => { startRenderLoop(); };
+
+
         _resizeObserver = new ResizeObserver(
 //      _resizeObserver = new ResizeObserver(
             (entries: ResizeObserverEntry[]) => {
 //          (entries: ResizeObserverEntry[]) => {
-                stopRenderLoop();
-//              stopRenderLoop();
                 for (const entry of entries) {
 //              for (const entry of entries) {
                     const entryAsCanvas: HTMLCanvasElement = entry.target as HTMLCanvasElement;
@@ -2640,8 +2610,6 @@
 //                      Math.min(height, _device.limits.maxTextureDimension2D),
                     );
 //                  );
-//                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
-//                  console.log(entryAsCanvas.width, entryAsCanvas.height, _canvas.width, _canvas.height,);
                     _viewportW = _viewportH * _canvas.width / _canvas.height;
 //                  _viewportW = _viewportH * _canvas.width / _canvas.height;
                     _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
@@ -2664,8 +2632,22 @@
 //                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
                     });
 //                  });
-                    _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-//                  _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
+                    if (_accumulatedOutputStorage) {
+//                  if (_accumulatedOutputStorage) {
+                        _accumulatedOutputStorage.destroy();
+//                      _accumulatedOutputStorage.destroy();
+                    }
+//                  }
+                    _accumulatedOutputStorage = _device.createBuffer({
+//                  _accumulatedOutputStorage = _device.createBuffer({
+                        label: "GPU_STORAGE_ACCUMULATED_OUTPUT",
+//                      label: "GPU_STORAGE_ACCUMULATED_OUTPUT",
+                        size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+//                      size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+                        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+//                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+                    });
+//                  });
                     if (_outputTexture) {
 //                  if (_outputTexture) {
                         _outputTexture.destroy();
@@ -2680,16 +2662,10 @@
 //                      size: [ _canvas.width, _canvas.height, ],
                         format: "rgba32float",
 //                      format: "rgba32float",
-                        usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
-//                      usage: GPUTextureUsage.STORAGE_BINDING /* compute shader writes */ | GPUTextureUsage.TEXTURE_BINDING /* fragment shader samples */ ,
+                        usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
+//                      usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
                     });
 //                  });
-//                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
-//                  const columnAtlasTextureView: GPUTextureView = _columnAtlasTexture.createView();
-//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
-//                  const hdriTextureView: GPUTextureView = _hdriTexture.createView();
-//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
-//                  const outputTextureView: GPUTextureView = _outputTexture.createView();
                     _computeBindGroup0 = _device.createBindGroup({
 //                  _computeBindGroup0 = _device.createBindGroup({
                         label: "GPU_BIND_GROUP_0_COMPUTE",
@@ -2718,74 +2694,78 @@
 //                          {
                                 binding: 2,
 //                              binding: 2,
-                                resource: _spheresStorageBuffer,
-//                              resource: _spheresStorageBuffer,
+                                resource: _accumulatedOutputStorage,
+//                              resource: _accumulatedOutputStorage,
                             },
 //                          },
                             {
 //                          {
                                 binding: 3,
 //                              binding: 3,
-                                resource: _materialsStorageBuffer,
-//                              resource: _materialsStorageBuffer,
+                                resource: _spheresStorageBuffer,
+//                              resource: _spheresStorageBuffer,
                             },
 //                          },
                             {
 //                          {
                                 binding: 4,
 //                              binding: 4,
-                                resource: _texturesStorageBuffer,
-//                              resource: _texturesStorageBuffer,
+                                resource: _materialsStorageBuffer,
+//                              resource: _materialsStorageBuffer,
                             },
 //                          },
                             {
 //                          {
                                 binding: 5,
 //                              binding: 5,
-                                resource: _columnAtlasSampler,
-//                              resource: _columnAtlasSampler,
+                                resource: _texturesStorageBuffer,
+//                              resource: _texturesStorageBuffer,
                             },
 //                          },
                             {
 //                          {
                                 binding: 6,
 //                              binding: 6,
-                                resource: _columnAtlasTexture,
-//                              resource: _columnAtlasTexture,
-//                              resource:  columnAtlasTextureView,
-//                              resource:  columnAtlasTextureView,
+                                resource: _columnAtlasSampler,
+//                              resource: _columnAtlasSampler,
                             },
 //                          },
                             {
 //                          {
                                 binding: 7,
 //                              binding: 7,
-                                resource: _hdriSampler,
-//                              resource: _hdriSampler,
+                                resource: _columnAtlasTexture,
+//                              resource: _columnAtlasTexture,
                             },
 //                          },
                             {
 //                          {
                                 binding: 8,
 //                              binding: 8,
-                                resource: _hdriTexture,
-//                              resource: _hdriTexture,
-//                              resource:  hdriTextureView,
-//                              resource:  hdriTextureView,
+                                resource: _hdriSampler,
+//                              resource: _hdriSampler,
                             },
 //                          },
                             {
 //                          {
                                 binding: 9,
 //                              binding: 9,
-                                resource: _trianglesStorageBuffer,
-//                              resource: _trianglesStorageBuffer,
+                                resource: _hdriTexture,
+//                              resource: _hdriTexture,
                             },
 //                          },
                             {
 //                          {
                                 binding: 10,
 //                              binding: 10,
+                                resource: _trianglesStorageBuffer,
+//                              resource: _trianglesStorageBuffer,
+                            },
+//                          },
+                            {
+//                          {
+                                binding: 11,
+//                              binding: 11,
                                 resource: _bvhNodesStorageBuffer,
 //                              resource: _bvhNodesStorageBuffer,
                             },
@@ -2824,8 +2804,6 @@
 //                              binding: 2,
                                 resource: _outputTexture,
 //                              resource: _outputTexture,
-//                              resource:  outputTextureView,
-//                              resource:  outputTextureView,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -2854,8 +2832,6 @@
 //                              binding: 1,
                                 resource: _outputTexture,
 //                              resource: _outputTexture,
-//                              resource:  outputTextureView,
-//                              resource:  outputTextureView,
                             },
 //                          },
                         ] as Iterable<GPUBindGroupEntry>,
@@ -2864,12 +2840,14 @@
 //                  });
                 }
 //              }
-                // prepare();
-                // prepare();
-                // render();
-                // render();
-                startRenderLoop();
-//              startRenderLoop();
+                if (firstTimeDispatch) {
+//              if (firstTimeDispatch) {
+                    firstTimeDispatch();
+//                  firstTimeDispatch();
+                    firstTimeDispatch = undefined;
+//                  firstTimeDispatch = undefined;
+                }
+//              }
             },
 //          },
         );
@@ -2885,10 +2863,18 @@
 
     onDestroy(async (): Promise<void> => {
 //  onDestroy(async (): Promise<void> => {
+        stopRenderLoop();
+//      stopRenderLoop();
         if (_outputTexture) {
 //      if (_outputTexture) {
             _outputTexture.destroy();
 //          _outputTexture.destroy();
+        }
+//      }
+        if (_accumulatedOutputStorage) {
+//      if (_accumulatedOutputStorage) {
+            _accumulatedOutputStorage.destroy();
+//          _accumulatedOutputStorage.destroy();
         }
 //      }
         if (_outputStorage) {
@@ -2950,12 +2936,10 @@
 
     const render = (): void => {
 //  const render = (): void => {
-//      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
-//      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture().createView();
         (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture();
 //      (_renderPassDescriptor.colorAttachments as GPURenderPassColorAttachment[])[0].view = _canvasContext.getCurrentTexture();
-        _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
-//      _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor,);
+        _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor);
+//      _commandEncoder = _device.createCommandEncoder(_commandEncoderDescriptor);
 
 
         _computePass = _commandEncoder.beginComputePass(_computePassDescriptor);
@@ -3053,6 +3037,8 @@
 //      _generalDataUniformValuesDataView.setUint32(76, _backgroundType, true);
         _generalDataUniformValuesDataView.setUint32(80, _numberOfImages, true);
 //      _generalDataUniformValuesDataView.setUint32(80, _numberOfImages, true);
+        _generalDataUniformValuesDataView.setFloat32(84, _timeInSeconds, true);
+//      _generalDataUniformValuesDataView.setFloat32(84, _timeInSeconds, true);
 
         _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
@@ -3064,8 +3050,6 @@
 
     function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
 //  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
-        stopRenderLoop();
-//      stopRenderLoop();
         _lookFrom = newLookFrom;
 //      _lookFrom = newLookFrom;
         _lookAt = newLookAt;
@@ -3078,10 +3062,6 @@
 //      _fromPixelToPixelDeltaU = m.divide(_viewportU, _canvas.width ) as Vec3;
         _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
 //      _fromPixelToPixelDeltaV = m.divide(_viewportV, _canvas.height) as Vec3;
-        _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-//      _device.queue.writeBuffer(_outputStorage, 0, new Float32Array(_canvas.width * _canvas.height * 4)); // image width * image height * 4 channels
-        startRenderLoop();
-//      startRenderLoop();
     };
 //  };
 
