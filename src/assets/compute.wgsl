@@ -1243,6 +1243,8 @@
 //  numberOfImages: u32,
     timeInSeconds: f32,
 //  timeInSeconds: f32,
+    accumulatedSampleCount: u32,
+//  accumulatedSampleCount: u32,
 }
 
     struct TracingResult
@@ -1304,6 +1306,18 @@
 //  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
 //  _ = _pcg32Next(&rng);
+
+    var uv: vec2<i32> = vec2<i32>(gid.xy);
+//  var uv: vec2<i32> = vec2<i32>(gid.xy);
+    var jitter: vec2<i32> = _hash2ToVec2I32(_hash2(generalData.timeInSeconds), 1, 10) * 2 - 1;
+//  var jitter: vec2<i32> = _hash2ToVec2I32(_hash2(generalData.timeInSeconds), 1, 10) * 2 - 1;
+    jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+//  jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+    var uvJitter: vec2<i32> = uv + jitter;
+//  var uvJitter: vec2<i32> = uv + jitter;
+    uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
+//  uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
+
     let ray: Ray = _generatePrimaryRay(
 //  let ray: Ray = _generatePrimaryRay(
         generalData.stratifiedSampleX,
@@ -1318,24 +1332,53 @@
 //      generalData.fromPixelToPixelDeltaU,
         generalData.fromPixelToPixelDeltaV,
 //      generalData.fromPixelToPixelDeltaV,
-        f32(gid.x),
-//      f32(gid.x),
-        f32(gid.y),
-//      f32(gid.y),
+        f32(uvJitter.x),
+//      f32(uvJitter.x),
+        f32(uvJitter.y),
+//      f32(uvJitter.y),
         generalData.cameraCenter,
 //      generalData.cameraCenter,
         &rng,
 //      &rng,
     );
 //  );
+
     let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
 //  let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
 
+    var imageJit: vec4<f32> = tracingResult.pixelOutput;
+//  var imageJit: vec4<f32> = tracingResult.pixelOutput;
+
     let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
 //  let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
-    outputStorage[pixelIndex] = tracingResult.pixelOutput;
-//  outputStorage[pixelIndex] = tracingResult.pixelOutput;
 
+    var imageAcc: vec4<f32> = accumulatedOutputStorage[pixelIndex];
+//  var imageAcc: vec4<f32> = accumulatedOutputStorage[pixelIndex];
+
+    //  Exponential Moving Average (EMA) -> Cumulative Moving Average (CMA)
+//  //  Exponential Moving Average (EMA) -> Cumulative Moving Average (CMA)
+    //  If it's the first frame (count = 0 ), mix factor is 1.0 (replace old data).
+//  //  If it's the first frame (count = 0 ), mix factor is 1.0 (replace old data).
+    //  If it's the 100th frame (count = 99), mix factor is 1/100.
+//  //  If it's the 100th frame (count = 99), mix factor is 1/100.
+    /*
+    let weight: f32 = 0.01;
+//  let weight: f32 = 0.01;
+    */
+    /*
+    let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
+//  let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
+    */
+    let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
+//  let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
+    imageAcc = mix(imageAcc, imageJit, weight);
+//  imageAcc = mix(imageAcc, imageJit, weight);
+
+    outputStorage[pixelIndex] = imageAcc;
+//  outputStorage[pixelIndex] = imageAcc;
+
+    accumulatedOutputStorage[pixelIndex] = imageAcc;
+//  accumulatedOutputStorage[pixelIndex] = imageAcc;
 }
 
     fn _generatePrimaryRay(
@@ -1363,8 +1406,10 @@
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
-//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+        let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
+//      let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
+//         let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+// //      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
         let rayOrigin: vec3<f32> = cameraCenter;
@@ -2630,4 +2675,97 @@
         return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 //      return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 
+    }
+
+    fn _hash2(seed: f32) -> vec2<f32>
+//  fn _hash2(seed: f32) -> vec2<f32>
+    {
+        return fract(sin(vec2(seed + 0.1, seed + 0.2)) * vec2(43758.5453123, 22578.1459123));
+//      return fract(sin(vec2(seed + 0.1, seed + 0.2)) * vec2(43758.5453123, 22578.1459123));
+    }
+
+    fn _hash2ToVec2I32(hash2Value: vec2<f32>, step: i32, base: i32) -> vec2<i32>
+//  fn _hash2ToVec2I32(hash2Value: vec2<f32>, step: i32, base: i32) -> vec2<i32>
+    {
+        return vec2<i32>(
+//      return vec2<i32>(
+            i32(hash2Value.x * f32(base * step)),
+            i32(hash2Value.y * f32(base * step))
+        );
+//      );
+    }
+
+    //  Screen Space Volumetric Lighting as Post Pross, by Ridge/winlandiano
+//  //  Screen Space Volumetric Lighting as Post Pross, by Ridge/winlandiano
+    //  Originally presented in GPU Gem3 Chap. 13, by Kenny Mitchell.
+//  //  Originally presented in GPU Gem3 Chap. 13, by Kenny Mitchell.
+    //  License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+//  //  License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+
+    const SSVL_NUM_SAMPLES: u32 = 100;
+//  const SSVL_NUM_SAMPLES: u32 = 100;
+    const SSVL_DENSITY: f32 = 2.0;
+//  const SSVL_DENSITY: f32 = 2.0;
+    const SSVL_WEIGHT: f32 = 0.1;
+//  const SSVL_WEIGHT: f32 = 0.1;
+    const SSVL_DECAY: f32 = 0.92;
+//  const SSVL_DECAY: f32 = 0.92;
+    const SSVL_EXPOSURE: f32 = 0.4;
+//  const SSVL_EXPOSURE: f32 = 0.4;
+
+    fn _screenSpaceVolumetricLighting(tex: texture_2d<f32>, sam: sampler, fragmentShaderInputUV: vec2<f32>, lightPosition: vec2<f32>) -> vec3<f32>
+//  fn _screenSpaceVolumetricLighting(tex: texture_2d<f32>, sam: sampler, fragmentShaderInputUV: vec2<f32>, lightPosition: vec2<f32>) -> vec3<f32>
+    {
+        var uv: vec2<f32> = fragmentShaderInputUV;
+//      var uv: vec2<f32> = fragmentShaderInputUV;
+        var color: vec3<f32> = textureSample(tex, sam, uv).rgb;
+//      var color: vec3<f32> = textureSample(tex, sam, uv).rgb;
+        var sampleStep: vec2<f32> = uv - lightPosition;
+//      var sampleStep: vec2<f32> = uv - lightPosition;
+        sampleStep *= SSVL_DENSITY / f32(SSVL_NUM_SAMPLES);
+//      sampleStep *= SSVL_DENSITY / f32(SSVL_NUM_SAMPLES);
+        var illuminationDecay: f32 = 1.0;
+//      var illuminationDecay: f32 = 1.0;
+        for (var i: u32 = 0; i < SSVL_NUM_SAMPLES; i++)
+//      for (var i: u32 = 0; i < SSVL_NUM_SAMPLES; i++)
+        {
+            uv -= sampleStep;
+//          uv -= sampleStep;
+            let sampleColor: vec3<f32> = textureSample(tex, sam, uv).rgb;
+//          let sampleColor: vec3<f32> = textureSample(tex, sam, uv).rgb;
+            var brightness: f32 = (sampleColor.r + sampleColor.g + sampleColor.b) / 3.0;
+//          var brightness: f32 = (sampleColor.r + sampleColor.g + sampleColor.b) / 3.0;
+            brightness *= illuminationDecay * SSVL_WEIGHT;
+//          brightness *= illuminationDecay * SSVL_WEIGHT;
+            color += vec3<f32>(brightness);
+//          color += vec3<f32>(brightness);
+            illuminationDecay *= SSVL_DECAY;
+//          illuminationDecay *= SSVL_DECAY;
+        }
+        return color * SSVL_EXPOSURE;
+//      return color * SSVL_EXPOSURE;
+    }
+
+    fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
+//  fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
+    {
+        const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
+//      const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
+        let sampleIndexF: f32 = f32(sampleIndex);
+//      let sampleIndexF: f32 = f32(sampleIndex);
+        let sampleCountF: f32 = f32(sampleCount);
+//      let sampleCountF: f32 = f32(sampleCount);
+
+        let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
+//      let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
+        let theta: f32 = sampleIndexF * goldenAngle + phi;
+//      let theta: f32 = sampleIndexF * goldenAngle + phi;
+
+        let   sine: f32 = sin(theta);
+//      let   sine: f32 = sin(theta);
+        let cosine: f32 = cos(theta);
+//      let cosine: f32 = cos(theta);
+
+        return vec2(cosine, sine) * r;
+//      return vec2(cosine, sine) * r;
     }
