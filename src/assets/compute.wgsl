@@ -950,26 +950,30 @@
 //  return ray.origin + ray.direction * distance;
 }
 
-    fn _rayColor(ray: Ray) -> vec3<f32>
-//  fn _rayColor(ray: Ray) -> vec3<f32>
+    fn _rayTrace(ray: Ray) -> vec4<f32>
+//  fn _rayTrace(ray: Ray) -> vec4<f32>
 {
     let unitDirection: vec3<f32> = normalize(ray.direction);
 //  let unitDirection: vec3<f32> = normalize(ray.direction);
     let ratio: f32 = 0.5 * (unitDirection.y + 1.0);
 //  let ratio: f32 = 0.5 * (unitDirection.y + 1.0);
-    return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
-//  return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
+    return (1.0 - ratio) * vec4<f32>(1.0, 0.5, 0.0, 1.0) + ratio * vec4<f32>(0.0, 0.5, 1.0, 1.0);
+//  return (1.0 - ratio) * vec4<f32>(1.0, 0.5, 0.0, 1.0) + ratio * vec4<f32>(0.0, 0.5, 1.0, 1.0);
 }
 
-    fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
-//  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+    fn _rayTraceMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> TracingResult
+//  fn _rayTraceMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> TracingResult
 {
+        var tracingResult: TracingResult;
+//      var tracingResult: TracingResult;
         var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
 //      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
         var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
 //      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
         var currentRay: Ray = initialRay;
 //      var currentRay: Ray = initialRay;
+        var pixelNormal: vec3<f32>;
+//      var pixelNormal: vec3<f32>;
 
 
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
@@ -977,6 +981,10 @@
         {
             let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
 //          let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
+
+
+            pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
+//          pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
 
 
             if (!rayHitResult.isHitted)
@@ -1197,9 +1205,13 @@
 //          currentRay   = materialLightScatteringResult.scatteredRay;
         }
 
-        return accumulatedColor;
-//      return accumulatedColor;
+        tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
+//      tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
+        tracingResult.pixelNormal = vec4<f32>((pixelNormal + 1.0) * 0.5, 1.0);
+//      tracingResult.pixelNormal = vec4<f32>((pixelNormal + 1.0) * 0.5, 1.0);
 
+        return tracingResult;
+//      return tracingResult;
 }
 
     struct GeneralData
@@ -1229,36 +1241,49 @@
 //  backgroundType: u32,
     numberOfImages: u32,
 //  numberOfImages: u32,
+    timeInSeconds: f32,
+//  timeInSeconds: f32,
+}
+
+    struct TracingResult
+//  struct TracingResult
+{
+    pixelOutput: vec4<f32>,
+//  pixelOutput: vec4<f32>,
+    pixelNormal: vec4<f32>,
+//  pixelNormal: vec4<f32>,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;
 //  @group(0) @binding(0) var<uniform> generalData: GeneralData;
     @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
 //  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
-    @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-//  @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-    @group(0) @binding(3) var<storage, read> materials: array<Material>;
-//  @group(0) @binding(3) var<storage, read> materials: array<Material>;
-    @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-//  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var columnAtlasSampler: sampler;
-//  @group(0) @binding(5) var columnAtlasSampler: sampler;
-    @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-//  @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-    @group(0) @binding(7) var hdriSampler: sampler;
-//  @group(0) @binding(7) var hdriSampler: sampler;
-    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-    @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
-//  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+    @group(0) @binding(2) var<storage, read_write> accumulatedOutputStorage: array<vec4<f32>>;
+//  @group(0) @binding(2) var<storage, read_write> accumulatedOutputStorage: array<vec4<f32>>;
+    @group(0) @binding(3) var<storage, read> spheres: array<Sphere>;
+//  @group(0) @binding(3) var<storage, read> spheres: array<Sphere>;
+    @group(0) @binding(4) var<storage, read> materials: array<Material>;
+//  @group(0) @binding(4) var<storage, read> materials: array<Material>;
+    @group(0) @binding(5) var<storage, read> textures: array<Texture>;
+//  @group(0) @binding(5) var<storage, read> textures: array<Texture>;
+    @group(0) @binding(6) var columnAtlasSampler: sampler;
+//  @group(0) @binding(6) var columnAtlasSampler: sampler;
+    @group(0) @binding(7) var columnAtlasTexture: texture_2d<f32>;
+//  @group(0) @binding(7) var columnAtlasTexture: texture_2d<f32>;
+    @group(0) @binding(8) var hdriSampler: sampler;
+//  @group(0) @binding(8) var hdriSampler: sampler;
+    @group(0) @binding(9) var hdriTexture: texture_2d<f32>;
+//  @group(0) @binding(9) var hdriTexture: texture_2d<f32>;
+    @group(0) @binding(10) var<storage, read> triangles: array<Triangle>;
+//  @group(0) @binding(10) var<storage, read> triangles: array<Triangle>;
 //     const cubes: array<Cube, 1> = array<Cube, 1>(
 // //  const cubes: array<Cube, 1> = array<Cube, 1>(
 //         Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 // //      Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 //     );
 // //  );
-    @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
-//  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
+    @group(0) @binding(11) var<storage, read> bvhNodes: array<BVHNode>;
+//  @group(0) @binding(11) var<storage, read> bvhNodes: array<BVHNode>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
@@ -1271,8 +1296,10 @@
 //      return;
     }
 
-    let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
-//  let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+    let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+//  let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+    let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
+//  let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
     var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
 //  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
@@ -1301,11 +1328,13 @@
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 8, generalData.backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 8, generalData.backgroundType, &rng), 1.0);
+    let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
+//  let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
 
-    outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
-//  outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
+    let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+//  let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+    outputStorage[pixelIndex] = tracingResult.pixelOutput;
+//  outputStorage[pixelIndex] = tracingResult.pixelOutput;
 
 }
 
