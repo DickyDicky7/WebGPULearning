@@ -27,6 +27,8 @@
 //  numberOfImages: u32,
     timeInSeconds: f32,
 //  timeInSeconds: f32,
+    accumulatedSampleCount: u32,
+//  accumulatedSampleCount: u32,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;

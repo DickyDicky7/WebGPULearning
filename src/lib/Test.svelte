@@ -222,6 +222,8 @@
 
     let _timeInSeconds: number;
 //  let _timeInSeconds: number;
+    let _accumulatedSampleCount: number = 0;
+//  let _accumulatedSampleCount: number = 0;
     let _adapter: GPUAdapter;
 //  let _adapter: GPUAdapter;
     let _device: GPUDevice;
@@ -344,8 +346,8 @@
 //  let _outputTexture: GPUTexture;
     let _outputSampler: GPUSampler;
 //  let _outputSampler: GPUSampler;
-    let _samplesPerPixel: number = $state(3600.0);
-//  let _samplesPerPixel: number = $state(3600.0);
+    let _samplesPerPixel: number = $state(10000.0);
+//  let _samplesPerPixel: number = $state(10000.0);
     let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
 //  let _pixelSamplesScale: number = $derived(1.0 / _samplesPerPixel);
     let _stratifiedSamplesPerPixel: number = $derived(Math.sqrt(_samplesPerPixel));
@@ -1441,8 +1443,8 @@
 */
         const publicURLs: string[] = [
 //      const publicURLs: string[] = [
-            "/test/copper-tea-pot/source/model/model/textures/teapot_MAT_albedo.jpg",
-//          "/test/copper-tea-pot/source/model/model/textures/teapot_MAT_albedo.jpg",
+            "/ChinaVase.jpg",
+//          "/ChinaVase.jpg",
         ];
 //      ];
         const cellImageWidth: number = 8192;
@@ -1773,8 +1775,8 @@
 //      _textures.push(
             {
 //          {
-                albedo: [ 0.98, 0.97, 0.92 ],
-//              albedo: [ 0.98, 0.97, 0.92 ],
+                albedo: [ 0.98, 0.96, 0.90 ],
+//              albedo: [ 0.98, 0.96, 0.90 ],
                 albedoImageIndex: 0,
 //              albedoImageIndex: 0,
                 albedoTextureType: TextureType.COLOR,
@@ -1789,8 +1791,8 @@
 //          },
             {
 //          {
-                albedo: [ 0.98, 0.97, 0.92 ],
-//              albedo: [ 0.98, 0.97, 0.92 ],
+                albedo: [ 0.98, 0.96, 0.90 ],
+//              albedo: [ 0.98, 0.96, 0.90 ],
                 albedoImageIndex: 1,
 //              albedoImageIndex: 1,
                 albedoTextureType: TextureType.COLOR,
@@ -1805,8 +1807,8 @@
 //          },
             {
 //          {
-                albedo: [ 0.02, 0.74, 0.67 ],
-//              albedo: [ 0.02, 0.74, 0.67 ],
+                albedo: [ 0.18, 0.16, 0.68 ],
+//              albedo: [ 0.18, 0.16, 0.68 ],
                 albedoImageIndex: 2,
 //              albedoImageIndex: 2,
                 albedoTextureType: TextureType.COLOR,
@@ -1821,8 +1823,8 @@
 //          },
             {
 //          {
-                albedo: [ 0.98, 0.33, 0.15 ],
-//              albedo: [ 0.98, 0.33, 0.15 ],
+                albedo: [ 0.06, 0.42, 0.40 ],
+//              albedo: [ 0.06, 0.42, 0.40 ],
                 albedoImageIndex: 3,
 //              albedoImageIndex: 3,
                 albedoTextureType: TextureType.COLOR,
@@ -1837,8 +1839,8 @@
 //          },
             {
 //          {
-                albedo: [ 0.98, 0.97, 0.92 ],
-//              albedo: [ 0.98, 0.97, 0.92 ],
+                albedo: [ 0.98, 0.96, 0.90 ],
+//              albedo: [ 0.98, 0.96, 0.90 ],
                 albedoImageIndex: 4,
 //              albedoImageIndex: 4,
                 albedoTextureType: TextureType.COLOR,
@@ -2338,6 +2340,8 @@
 //          _stratifiedSampleY = 0;
         }
 //      }
+        _accumulatedSampleCount++;
+//      _accumulatedSampleCount++;
         _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
 //      _frameHandleRenderLoop = requestAnimationFrame(renderLoop);
     };
@@ -2379,10 +2383,10 @@
 //          [
                 {
 //              {
-                    name: "model.dae",
-//                  name: "model.dae",
-                    publicURL: "/test/copper-tea-pot/source/model/model/model.dae",
-//                  publicURL: "/test/copper-tea-pot/source/model/model/model.dae",
+                    name: "ChinaVase.obj",
+//                  name: "ChinaVase.obj",
+                    publicURL: "/ChinaVase.obj",
+//                  publicURL: "/ChinaVase.obj",
                 },
 //              },
             ]
@@ -2399,12 +2403,12 @@
 //          const floorY: number = -20.0;
             let minModelY: number = Infinity;
 //          let minModelY: number = Infinity;
-            const scaleX: number = 200.0;
-//          const scaleX: number = 200.0;
-            const scaleY: number = 200.0;
-//          const scaleY: number = 200.0;
-            const scaleZ: number = 200.0;
-//          const scaleZ: number = 200.0;
+            const scaleX: number = 1.0;
+//          const scaleX: number = 1.0;
+            const scaleY: number = 1.0;
+//          const scaleY: number = 1.0;
+            const scaleZ: number = 1.0;
+//          const scaleZ: number = 1.0;
             for (let mesh of model["meshes"]) {
 //          for (let mesh of model["meshes"]) {
                 const l: number = (mesh["vertices"] as number[]).length;
@@ -2834,6 +2838,14 @@
 //                              resource: _outputTexture,
                             },
 //                          },
+                            {
+//                          {
+                                binding: 2,
+//                              binding: 2,
+                                resource: _generalDataUniformBuffer,
+//                              resource: _generalDataUniformBuffer,
+                            },
+//                          },
                         ] as Iterable<GPUBindGroupEntry>,
 //                      ] as Iterable<GPUBindGroupEntry>,
                     });
@@ -3039,6 +3051,8 @@
 //      _generalDataUniformValuesDataView.setUint32(80, _numberOfImages, true);
         _generalDataUniformValuesDataView.setFloat32(84, _timeInSeconds, true);
 //      _generalDataUniformValuesDataView.setFloat32(84, _timeInSeconds, true);
+        _generalDataUniformValuesDataView.setUint32(88, _accumulatedSampleCount, true);
+//      _generalDataUniformValuesDataView.setUint32(88, _accumulatedSampleCount, true);
 
         _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
@@ -3050,6 +3064,8 @@
 
     function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
 //  function moveCamera(newLookFrom: Vec3, newLookAt: Vec3, newViewUp: Vec3): void {
+        _accumulatedSampleCount = 0;
+//      _accumulatedSampleCount = 0;
         _lookFrom = newLookFrom;
 //      _lookFrom = newLookFrom;
         _lookAt = newLookAt;
