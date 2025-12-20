@@ -108,6 +108,10 @@
 //  @group(0) @binding(1) var outputTexture: texture_2d<f32>;
     @group(0) @binding(2) var<uniform> generalData: GeneralData;
 //  @group(0) @binding(2) var<uniform> generalData: GeneralData;
+    @group(0) @binding(3) var blurSampler: sampler;
+//  @group(0) @binding(3) var blurSampler: sampler;
+    @group(0) @binding(4) var blurTexture: texture_2d<f32>;
+//  @group(0) @binding(4) var blurTexture: texture_2d<f32>;
 
     @vertex fn vertexShader(vertexShaderInput: VertexShaderInput) -> VertexShaderOutput
 //  @vertex fn vertexShader(vertexShaderInput: VertexShaderInput) -> VertexShaderOutput
@@ -165,12 +169,21 @@
 //     let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
 // //  let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
 
+    var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
+//  var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
+    let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
+//  let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
+    let bloom: vec3<f32> = blur.rgb / blur.w;
+//  let bloom: vec3<f32> = blur.rgb / blur.w;
+    baseColor += 0.5 * bloom;
+//  baseColor += 0.5 * bloom;
+
 //     // Compose RGB from separate samples; keep alpha from green
 // //  // Compose RGB from separate samples; keep alpha from green
 //     var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b)));
 // //  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b)));
-    var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb));
-//  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb));
+    var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(baseColor));
+//  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(baseColor));
 
     // ---- Correct VIGNETTE ----
 //  // ---- Correct VIGNETTE ----
