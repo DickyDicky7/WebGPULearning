@@ -18,6 +18,8 @@
 //  const MATERIAL_TYPE_DIELECTRIC: u32 = 3u;
     const MATERIAL_TYPE_LIGHT     : u32 = 4u;
 //  const MATERIAL_TYPE_LIGHT     : u32 = 4u;
+    const MATERIAL_TYPE_PRINCIPLED: u32 = 5u;
+//  const MATERIAL_TYPE_PRINCIPLED: u32 = 5u;
 
     const TEXTURE_TYPE_COLOR: u32 = 0u;
 //  const TEXTURE_TYPE_COLOR: u32 = 0u;
@@ -83,8 +85,12 @@
     struct Material
 //  struct Material
 {
-    layer1Roughness: f32,
-//  layer1Roughness: f32,
+    layer1Roughness: f32,    // 0.0=smooth     1.0=rough
+//  layer1Roughness: f32,    // 0.0=smooth     1.0=rough
+    layer1Metallic: f32,     // 0.0=dielectric 1.0=metal
+//  layer1Metallic: f32,     // 0.0=dielectric 1.0=metal
+    layer1Transmission: f32, // 0.0=opaque     1.0=glass
+//  layer1Transmission: f32, // 0.0=opaque     1.0=glass
     layer0IOR: f32,
 //  layer0IOR: f32,
     layer1IOR: f32,
@@ -114,16 +120,16 @@
 {
     albedo: vec3<f32>,
 //  albedo: vec3<f32>,
-    imageIndex: u32,
-//  imageIndex: u32,
-    textureType: u32,
-//  textureType: u32,
-    scale: f32,
-//  scale: f32,
-    oTileTextureIndex: u32,
-//  oTileTextureIndex: u32,
-    eTileTextureIndex: u32,
-//  eTileTextureIndex: u32,
+    albedoImageIndex: u32,
+//  albedoImageIndex: u32,
+    albedoTextureType: u32,
+//  albedoTextureType: u32,
+    albedoScale: f32,
+//  albedoScale: f32,
+    albedoOTileTextureIndex: u32,
+//  albedoOTileTextureIndex: u32,
+    albedoETileTextureIndex: u32,
+//  albedoETileTextureIndex: u32,
 }
 
     struct Triangle
@@ -621,8 +627,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //          materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -635,8 +641,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
 //          materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -645,8 +651,8 @@
         case MATERIAL_TYPE_GLOSS:
 //      case MATERIAL_TYPE_GLOSS:
         {
-            var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
-//          var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
+            var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+//          var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
 
             let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
 //          let cosThetaIncident: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
@@ -654,12 +660,12 @@
             if (recentRayHitResult.isFrontFaceHitted)
 //          if (recentRayHitResult.isFrontFaceHitted)
             {
-                ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
-//              ratioOfEtaiOverEtat = 1.0 / ratioOfEtaiOverEtat;
+                etaRatioOfIncidenceOverTransmission = 1.0 / etaRatioOfIncidenceOverTransmission;
+//              etaRatioOfIncidenceOverTransmission = 1.0 / etaRatioOfIncidenceOverTransmission;
             }
 
-            let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
-//          let reflectanceProbability: f32 = _reflectance(cosThetaIncident, ratioOfEtaiOverEtat);
+            let reflectanceProbability: f32 = _reflectance(cosThetaIncident, etaRatioOfIncidenceOverTransmission);
+//          let reflectanceProbability: f32 = _reflectance(cosThetaIncident, etaRatioOfIncidenceOverTransmission);
 
             var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
 //          var scatteredDirection: vec3<f32>; var attenuationColor: vec3<f32>;
@@ -692,8 +698,8 @@
             {
                 scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //              scatteredDirection = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
-                attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//              attenuationColor = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+                attenuationColor = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//              attenuationColor = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             }
 
             if (materialLightScatteringResult.isScattered)
@@ -721,17 +727,17 @@
             let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //          let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 
-            var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
-//          var ratioOfEtaiOverEtat: f32 = material.layer1IOR / material.layer0IOR;
-            if (recentRayHitResult.isFrontFaceHitted) { ratioOfEtaiOverEtat = material.layer0IOR / material.layer1IOR; }
-//          if (recentRayHitResult.isFrontFaceHitted) { ratioOfEtaiOverEtat = material.layer0IOR / material.layer1IOR; }
+            var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+//          var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
+            if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
+//          if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
 
             let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
 //          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
             let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
 //          let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
-            let notAbleToRefract: bool = sinTheta * ratioOfEtaiOverEtat > 1.0 || _reflectance(cosTheta, ratioOfEtaiOverEtat) > _pcg32Next(rng);
-//          let notAbleToRefract: bool = sinTheta * ratioOfEtaiOverEtat > 1.0 || _reflectance(cosTheta, ratioOfEtaiOverEtat) > _pcg32Next(rng);
+            let notAbleToRefract: bool = sinTheta * etaRatioOfIncidenceOverTransmission > 1.0 || _reflectance(cosTheta, etaRatioOfIncidenceOverTransmission) > _pcg32Next(rng);
+//          let notAbleToRefract: bool = sinTheta * etaRatioOfIncidenceOverTransmission > 1.0 || _reflectance(cosTheta, etaRatioOfIncidenceOverTransmission) > _pcg32Next(rng);
             var scatteredRayDirection: vec3<f32>;
 //          var scatteredRayDirection: vec3<f32>;
 
@@ -744,16 +750,16 @@
             else
 //          else
             {
-                 scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, ratioOfEtaiOverEtat), -diffuseRayDirection, material.layer1Roughness);
-//               scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, ratioOfEtaiOverEtat), -diffuseRayDirection, material.layer1Roughness);
+                 scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
+//               scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
             }
 
             materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
 //          materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
-            materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//          materialLightScatteringResult.attenuation = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.isScattered = true;
@@ -784,10 +790,148 @@
 //          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
-            materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
-//          materialLightScatteringResult.emission = _textureSample(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+            materialLightScatteringResult.emission = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          materialLightScatteringResult.emission = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.isScattered = false;
 //          materialLightScatteringResult.isScattered = false;
+        }
+        case MATERIAL_TYPE_PRINCIPLED:
+//      case MATERIAL_TYPE_PRINCIPLED:
+        {
+            let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+//          let albedo: vec3<f32> = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
+
+            materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
+
+            // Principled Logic
+//          // Principled Logic
+
+            // F0 calculation: 0.04 for dielectrics, albedo for metals
+//          // F0 calculation: 0.04 for dielectrics, albedo for metals
+            let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
+//          let f0: vec3<f32> = mix(vec3<f32>(0.04), albedo, material.layer1Metallic);
+
+            // Schlick's fresnel approximation at incident angle
+//          // Schlick's fresnel approximation at incident angle
+            let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+//          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
+            let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
+//          let fresnel: vec3<f32> = _schlickFresnel(cosTheta, f0);
+            // Use average fresnel for importance sampling probability
+//          // Use average fresnel for importance sampling probability
+            let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
+//          let fresnelProbability: f32 = (fresnel.r + fresnel.g + fresnel.b) / 3.0;
+
+            let randomChoice: f32 = _pcg32Next(rng);
+//          let randomChoice: f32 = _pcg32Next(rng);
+
+            // --- PATH A: METALLIC REFLECTION ---
+//          // --- PATH A: METALLIC REFLECTION ---
+            // Metals always reflect. They have no diffuse and no transmission.
+//          // Metals always reflect. They have no diffuse and no transmission.
+            // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
+//          // We also use fresnelProbability to decide between Specular Reflection and Diffuse/Transmission for Dielectrics.
+            // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
+//          // [ Probability to Reflect = Metallic + (1.0 - Metallic) * Fresnel ]
+
+            let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
+//          let specularProbability: f32 = mix(fresnelProbability, 1.0, material.layer1Metallic);
+
+            if (randomChoice < specularProbability)
+//          if (randomChoice < specularProbability)
+            {
+                // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
+//              // SPECULAR REFLECTION (METAL OR DIELECTRIC COAT)
+                let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+//              let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+                let specularReflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+//              let specularReflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+
+                if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
+//              if (dot(specularReflectedDirection, recentRayHitResult.hittedSideNormal) > 0.0)
+                {
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
+//                  materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
+                    materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
+//                  materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
+                else
+//              else
+                {
+                    // Current/Recent ray is/was absorbed (next ray is scattering into surface)
+//                  // Current/Recent ray is/was absorbed (next ray is scattering into surface)
+                    materialLightScatteringResult.isScattered = false;
+//                  materialLightScatteringResult.isScattered = false;
+                }
+            }
+            else
+//          else
+            {
+                // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
+//              // --- PATH B: DIELECTRIC (DIFFUSE OR TRANSMISSION) ---
+
+                // Re-normalize random variable for the next choice
+//              // Re-normalize random variable for the next choice
+                let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
+//              let randomNextChoice: f32 = (randomChoice - specularProbability) / (1.0 - specularProbability);
+
+                if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
+//              if (material.layer1Transmission > 0.0 && randomNextChoice < material.layer1Transmission)
+                {
+                    // TRANSMISSION (REFRACTION)
+//                  // TRANSMISSION (REFRACTION)
+
+                    var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
+//                  var etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
+
+                    let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+//                  let microfacetNormal: vec3<f32> = _sampleGGX(recentRayHitResult.hittedSideNormal, material.layer1Roughness, rng);
+
+                    let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
+//                  let cosThetaIncidence: f32 = min(dot(-incomingRay.direction, microfacetNormal), 1.0);
+                    let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
+//                  let sinThetaTransmission: f32 = (1.0 - cosThetaIncidence * cosThetaIncidence) * (etaRatioOfIncidenceOverTransmission * etaRatioOfIncidenceOverTransmission);
+
+                    let refractedDirection: vec3<f32> = _refractPrincipled(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
+//                  let refractedDirection: vec3<f32> = _refractPrincipled(incomingRay.direction, microfacetNormal, etaRatioOfIncidenceOverTransmission, cosThetaIncidence, sinThetaTransmission);
+                    let reflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+//                  let reflectedDirection: vec3<f32> = _reflectPrincipled(incomingRay.direction, microfacetNormal);
+
+                    // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
+//                  // When [ sinThetaTransmission <= 1.0 ] then Refraction happened else Total Internal Reflection happened
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
+//                  materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
+                    materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
+//                  materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
+                else
+//              else
+                {
+                    // DIFFUSE (LAMBERTIAN)
+//                  // DIFFUSE (LAMBERTIAN)
+
+                    let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+//                  let diffuseDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+
+                    materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+//                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
+                    materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
+//                  materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
+                    materialLightScatteringResult.attenuation = albedo;
+//                  materialLightScatteringResult.attenuation = albedo;
+                    materialLightScatteringResult.isScattered = true;
+//                  materialLightScatteringResult.isScattered = true;
+                }
+            }
         }
         default:
 //      default:
@@ -806,26 +950,30 @@
 //  return ray.origin + ray.direction * distance;
 }
 
-    fn _rayColor(ray: Ray) -> vec3<f32>
-//  fn _rayColor(ray: Ray) -> vec3<f32>
+    fn _rayTrace(ray: Ray) -> vec4<f32>
+//  fn _rayTrace(ray: Ray) -> vec4<f32>
 {
     let unitDirection: vec3<f32> = normalize(ray.direction);
 //  let unitDirection: vec3<f32> = normalize(ray.direction);
     let ratio: f32 = 0.5 * (unitDirection.y + 1.0);
 //  let ratio: f32 = 0.5 * (unitDirection.y + 1.0);
-    return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
-//  return (1.0 - ratio) * vec3<f32>(1.0, 0.5, 0.0) + ratio * vec3<f32>(0.0, 0.5, 1.0);
+    return (1.0 - ratio) * vec4<f32>(1.0, 0.5, 0.0, 1.0) + ratio * vec4<f32>(0.0, 0.5, 1.0, 1.0);
+//  return (1.0 - ratio) * vec4<f32>(1.0, 0.5, 0.0, 1.0) + ratio * vec4<f32>(0.0, 0.5, 1.0, 1.0);
 }
 
-    fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
-//  fn _rayColorMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> vec3<f32>
+    fn _rayTraceMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> TracingResult
+//  fn _rayTraceMain(initialRay: Ray, maxDepth: u32, backgroundType: u32, rng: ptr<function, RNG>) -> TracingResult
 {
+        var tracingResult: TracingResult;
+//      var tracingResult: TracingResult;
         var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
 //      var accumulatedColor: vec3<f32> = vec3<f32>(0.00, 0.00, 0.00); // @radiance@
         var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
 //      var attenuation     : vec3<f32> = vec3<f32>(1.00, 1.00, 1.00); // throughput
         var currentRay: Ray = initialRay;
 //      var currentRay: Ray = initialRay;
+        var pixelNormal: vec3<f32>;
+//      var pixelNormal: vec3<f32>;
 
 
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
@@ -833,6 +981,10 @@
         {
             let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
 //          let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
+
+
+            pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
+//          pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
 
 
             if (!rayHitResult.isHitted)
@@ -1053,9 +1205,13 @@
 //          currentRay   = materialLightScatteringResult.scatteredRay;
         }
 
-        return accumulatedColor;
-//      return accumulatedColor;
+        tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
+//      tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
+        tracingResult.pixelNormal = vec4<f32>((pixelNormal + 1.0) * 0.5, 1.0);
+//      tracingResult.pixelNormal = vec4<f32>((pixelNormal + 1.0) * 0.5, 1.0);
 
+        return tracingResult;
+//      return tracingResult;
 }
 
     struct GeneralData
@@ -1085,36 +1241,51 @@
 //  backgroundType: u32,
     numberOfImages: u32,
 //  numberOfImages: u32,
+    timeInSeconds: f32,
+//  timeInSeconds: f32,
+    accumulatedSampleCount: u32,
+//  accumulatedSampleCount: u32,
+}
+
+    struct TracingResult
+//  struct TracingResult
+{
+    pixelOutput: vec4<f32>,
+//  pixelOutput: vec4<f32>,
+    pixelNormal: vec4<f32>,
+//  pixelNormal: vec4<f32>,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;
 //  @group(0) @binding(0) var<uniform> generalData: GeneralData;
     @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
 //  @group(0) @binding(1) var<storage, read_write> outputStorage: array<vec4<f32>>;
-    @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-//  @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-    @group(0) @binding(3) var<storage, read> materials: array<Material>;
-//  @group(0) @binding(3) var<storage, read> materials: array<Material>;
-    @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-//  @group(0) @binding(4) var<storage, read> textures: array<Texture>;
-    @group(0) @binding(5) var columnAtlasSampler: sampler;
-//  @group(0) @binding(5) var columnAtlasSampler: sampler;
-    @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-//  @group(0) @binding(6) var columnAtlasTexture: texture_2d<f32>;
-    @group(0) @binding(7) var hdriSampler: sampler;
-//  @group(0) @binding(7) var hdriSampler: sampler;
-    @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-//  @group(0) @binding(8) var hdriTexture: texture_2d<f32>;
-    @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
-//  @group(0) @binding(9) var<storage, read> triangles: array<Triangle>;
+    @group(0) @binding(2) var<storage, read_write> accumulatedOutputStorage: array<vec4<f32>>;
+//  @group(0) @binding(2) var<storage, read_write> accumulatedOutputStorage: array<vec4<f32>>;
+    @group(0) @binding(3) var<storage, read> spheres: array<Sphere>;
+//  @group(0) @binding(3) var<storage, read> spheres: array<Sphere>;
+    @group(0) @binding(4) var<storage, read> materials: array<Material>;
+//  @group(0) @binding(4) var<storage, read> materials: array<Material>;
+    @group(0) @binding(5) var<storage, read> textures: array<Texture>;
+//  @group(0) @binding(5) var<storage, read> textures: array<Texture>;
+    @group(0) @binding(6) var columnAtlasSampler: sampler;
+//  @group(0) @binding(6) var columnAtlasSampler: sampler;
+    @group(0) @binding(7) var columnAtlasTexture: texture_2d<f32>;
+//  @group(0) @binding(7) var columnAtlasTexture: texture_2d<f32>;
+    @group(0) @binding(8) var hdriSampler: sampler;
+//  @group(0) @binding(8) var hdriSampler: sampler;
+    @group(0) @binding(9) var hdriTexture: texture_2d<f32>;
+//  @group(0) @binding(9) var hdriTexture: texture_2d<f32>;
+    @group(0) @binding(10) var<storage, read> triangles: array<Triangle>;
+//  @group(0) @binding(10) var<storage, read> triangles: array<Triangle>;
 //     const cubes: array<Cube, 1> = array<Cube, 1>(
 // //  const cubes: array<Cube, 1> = array<Cube, 1>(
 //         Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 // //      Cube(vec3<f32>(0.0, -10.0, 0.0), vec3<f32>(5.0, 5.0, 5.0)),
 //     );
 // //  );
-    @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
-//  @group(0) @binding(10) var<storage, read> bvhNodes: array<BVHNode>;
+    @group(0) @binding(11) var<storage, read> bvhNodes: array<BVHNode>;
+//  @group(0) @binding(11) var<storage, read> bvhNodes: array<BVHNode>;
 
     @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
 //  @compute @workgroup_size(32, 32) fn main(@builtin(global_invocation_id) gid: vec3<u32>)
@@ -1127,12 +1298,26 @@
 //      return;
     }
 
-    let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
-//  let frameIndexForSeed: u32 = u32((generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX) * 10000.0);
+    let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+//  let frameIndex: f32 = generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX;
+    let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
+//  let frameIndexForSeed: u32 = u32(frameIndex * 10000.0);
     var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
 //  var rng: RNG = _rngInit(gid.x, gid.y, generalData.canvasSize.x, frameIndexForSeed);
     _ = _pcg32Next(&rng);
 //  _ = _pcg32Next(&rng);
+
+    var uv: vec2<i32> = vec2<i32>(gid.xy);
+//  var uv: vec2<i32> = vec2<i32>(gid.xy);
+    var jitter: vec2<i32> = _hash2ToVec2I32(_hash2(generalData.timeInSeconds), 1, 10) * 2 - 1;
+//  var jitter: vec2<i32> = _hash2ToVec2I32(_hash2(generalData.timeInSeconds), 1, 10) * 2 - 1;
+    jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+//  jitter = jitter / vec2<i32>(generalData.canvasSize.xy);
+    var uvJitter: vec2<i32> = uv + jitter;
+//  var uvJitter: vec2<i32> = uv + jitter;
+    uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
+//  uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
+
     let ray: Ray = _generatePrimaryRay(
 //  let ray: Ray = _generatePrimaryRay(
         generalData.stratifiedSampleX,
@@ -1147,22 +1332,53 @@
 //      generalData.fromPixelToPixelDeltaU,
         generalData.fromPixelToPixelDeltaV,
 //      generalData.fromPixelToPixelDeltaV,
-        f32(gid.x),
-//      f32(gid.x),
-        f32(gid.y),
-//      f32(gid.y),
+        f32(uvJitter.x),
+//      f32(uvJitter.x),
+        f32(uvJitter.y),
+//      f32(uvJitter.y),
         generalData.cameraCenter,
 //      generalData.cameraCenter,
         &rng,
 //      &rng,
     );
 //  );
-    let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
-//  let pixelColor: vec4<f32> = vec4<f32>(_rayColorMain(ray, 10, generalData.backgroundType, &rng), 1.0);
 
-    outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
-//  outputStorage[gid.y * generalData.canvasSize.x + gid.x] += pixelColor;
+    let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
+//  let tracingResult: TracingResult = _rayTraceMain(ray, 4, generalData.backgroundType, &rng);
 
+    var imageJit: vec4<f32> = tracingResult.pixelOutput;
+//  var imageJit: vec4<f32> = tracingResult.pixelOutput;
+
+    let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+//  let pixelIndex: u32 = gid.y * generalData.canvasSize.x + gid.x;
+
+    var imageAcc: vec4<f32> = accumulatedOutputStorage[pixelIndex];
+//  var imageAcc: vec4<f32> = accumulatedOutputStorage[pixelIndex];
+
+    //  Exponential Moving Average (EMA) -> Cumulative Moving Average (CMA)
+//  //  Exponential Moving Average (EMA) -> Cumulative Moving Average (CMA)
+    //  If it's the first frame (count = 0 ), mix factor is 1.0 (replace old data).
+//  //  If it's the first frame (count = 0 ), mix factor is 1.0 (replace old data).
+    //  If it's the 100th frame (count = 99), mix factor is 1/100.
+//  //  If it's the 100th frame (count = 99), mix factor is 1/100.
+    /*
+    let weight: f32 = 0.01;
+//  let weight: f32 = 0.01;
+    */
+    /*
+    let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
+//  let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
+    */
+    let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
+//  let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
+    imageAcc = mix(imageAcc, imageJit, weight);
+//  imageAcc = mix(imageAcc, imageJit, weight);
+
+    outputStorage[pixelIndex] = imageAcc;
+//  outputStorage[pixelIndex] = imageAcc;
+
+    accumulatedOutputStorage[pixelIndex] = imageAcc;
+//  accumulatedOutputStorage[pixelIndex] = imageAcc;
 }
 
     fn _generatePrimaryRay(
@@ -1190,8 +1406,10 @@
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
-//      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+        let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
+//      let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
+//         let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
+// //      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
         let rayOrigin: vec3<f32> = cameraCenter;
@@ -1292,29 +1510,91 @@
 //  return RNG(state);
 }
 
+    fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
+//  fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
+    {
+        return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+//      return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+    }
+
+    // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
+//  // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
+    fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _sampleGGX(normal: vec3<f32>, roughness: f32, rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        let random1: f32 = _pcg32Next(rng);
+//      let random1: f32 = _pcg32Next(rng);
+        let random2: f32 = _pcg32Next(rng);
+//      let random2: f32 = _pcg32Next(rng);
+
+        let term: f32 = roughness * roughness;
+//      let term: f32 = roughness * roughness;
+        let phi: f32 = 2.0 * PI * random1;
+//      let phi: f32 = 2.0 * PI * random1;
+        let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
+//      let cosTheta: f32 = sqrt((1.0 - random2) / (1.0 + (term * term - 1.0) * random2));
+        let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+//      let sinTheta: f32 = sqrt(1.0 - cosTheta * cosTheta);
+
+        let x: f32 = sinTheta * cos(phi);
+//      let x: f32 = sinTheta * cos(phi);
+        let y: f32 = sinTheta * sin(phi);
+//      let y: f32 = sinTheta * sin(phi);
+        let z: f32 = cosTheta;
+//      let z: f32 = cosTheta;
+
+        // Tangent space basis construction (orthonormal basis)
+//      // Tangent space basis construction (orthonormal basis)
+        let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
+//      let up: vec3<f32> = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), abs(normal.z) < 0.999);
+        let tangent: vec3<f32> = normalize(cross(up, normal));
+//      let tangent: vec3<f32> = normalize(cross(up, normal));
+        let bitangent: vec3<f32> = cross(normal, tangent);
+//      let bitangent: vec3<f32> = cross(normal, tangent);
+
+        // Transform H to world space
+//      // Transform H to world space
+        return normalize(tangent * x + bitangent * y + normal * z);
+//      return normalize(tangent * x + bitangent * y + normal * z);
+    }
+
+    fn _reflectPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+//  fn _reflectPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
+
+    fn _refractPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
+//  fn _refractPrincipled(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32, cosThetaIncidence: f32, sinThetaTransmission: f32) -> vec3<f32>
+    {
+        let cosThetaTransmission: f32 = sqrt(1.0 - sinThetaTransmission);
+//      let cosThetaTransmission: f32 = sqrt(1.0 - sinThetaTransmission);
+        let refractedDirection: vec3<f32> = normalize(etaRatioOfIncidenceOverTransmission * incomingVector + (etaRatioOfIncidenceOverTransmission * cosThetaIncidence - cosThetaTransmission) * normal);
+//      let refractedDirection: vec3<f32> = normalize(etaRatioOfIncidenceOverTransmission * incomingVector + (etaRatioOfIncidenceOverTransmission * cosThetaIncidence - cosThetaTransmission) * normal);
+        return refractedDirection;
+//      return refractedDirection;
+    }
+
     fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 //  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 
-    fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, ratioOfEtaiOverEtat: f32) -> vec3<f32>
-//  fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, ratioOfEtaiOverEtat: f32) -> vec3<f32>
+    fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32) -> vec3<f32>
+//  fn _refract(incomingVector: vec3<f32>, normal: vec3<f32>, etaRatioOfIncidenceOverTransmission: f32) -> vec3<f32>
     {
         let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
 //      let cosTheta: f32 = min(dot(-incomingVector, normal), 1.0);
-        let refractedRayPerpendicular: vec3<f32> = ratioOfEtaiOverEtat * (incomingVector + cosTheta * normal);
-//      let refractedRayPerpendicular: vec3<f32> = ratioOfEtaiOverEtat * (incomingVector + cosTheta * normal);
+        let refractedRayPerpendicular: vec3<f32> = etaRatioOfIncidenceOverTransmission * (incomingVector + cosTheta * normal);
+//      let refractedRayPerpendicular: vec3<f32> = etaRatioOfIncidenceOverTransmission * (incomingVector + cosTheta * normal);
         let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
 //      let refractedRayParallel: vec3<f32> = -sqrt(abs(1.0 - _lengthSquared(refractedRayPerpendicular))) * normal;
         return refractedRayPerpendicular + refractedRayParallel;
 //      return refractedRayPerpendicular + refractedRayParallel;
     }
 
-    fn _reflectance(cosine: f32, ratioOfEtaiOverEtat: f32) -> f32
-//  fn _reflectance(cosine: f32, ratioOfEtaiOverEtat: f32) -> f32
+    fn _reflectance(cosine: f32, etaRatioOfIncidenceOverTransmission: f32) -> f32
+//  fn _reflectance(cosine: f32, etaRatioOfIncidenceOverTransmission: f32) -> f32
     {
         // Use Schlick's approximation for reflectance.
         // Use Schlick's approximation for reflectance.
-        var r0: f32 = (1.0 - ratioOfEtaiOverEtat) / (1.0 + ratioOfEtaiOverEtat);
-//      var r0: f32 = (1.0 - ratioOfEtaiOverEtat) / (1.0 + ratioOfEtaiOverEtat);
+        var r0: f32 = (1.0 - etaRatioOfIncidenceOverTransmission) / (1.0 + etaRatioOfIncidenceOverTransmission);
+//      var r0: f32 = (1.0 - etaRatioOfIncidenceOverTransmission) / (1.0 + etaRatioOfIncidenceOverTransmission);
         r0 = r0 * r0;
 //      r0 = r0 * r0;
         let temp: f32 = 1.0 - cosine;
@@ -1364,15 +1644,15 @@
     fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
 //  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; };
 
-    fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
-//  fn _textureSample(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
+    fn _textureSampleAlbedo(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
+//  fn _textureSampleAlbedo(textureIndex: u32, uvSurfaceCoordinate: vec2<f32>, surfaceCoordinate: vec3<f32>) -> vec3<f32>
 {
     var textureSampleValue: vec3<f32>;
 //  var textureSampleValue: vec3<f32>;
     let texture: Texture = textures[textureIndex];
 //  let texture: Texture = textures[textureIndex];
-    switch (texture.textureType)
-//  switch (texture.textureType)
+    switch (texture.albedoTextureType)
+//  switch (texture.albedoTextureType)
     {
         case TEXTURE_TYPE_COLOR:
 //      case TEXTURE_TYPE_COLOR:
@@ -1387,30 +1667,30 @@
 //          var uvTextureCoordinate: vec2<f32> = clamp(uvSurfaceCoordinate, vec2<f32>(0.0), vec2<f32>(1.0));
             uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
 //          uvTextureCoordinate.y = 1.0 - uvTextureCoordinate.y;
-            textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.imageIndex);
-//          textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.imageIndex);
+            textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.albedoImageIndex);
+//          textureSampleValue = _sampleColumnAtlas(uvTextureCoordinate, texture.albedoImageIndex);
         }
         case TEXTURE_TYPE_CHECKER_STYLE_A:
 //      case TEXTURE_TYPE_CHECKER_STYLE_A:
         {
-            let oTileTexture: Texture = textures[texture.oTileTextureIndex];
-//          let oTileTexture: Texture = textures[texture.oTileTextureIndex];
-            let eTileTexture: Texture = textures[texture.eTileTextureIndex];
-//          let eTileTexture: Texture = textures[texture.eTileTextureIndex];
-            let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.scale * surfaceCoordinate));
-//          let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.scale * surfaceCoordinate));
+            let oTileTexture: Texture = textures[texture.albedoOTileTextureIndex];
+//          let oTileTexture: Texture = textures[texture.albedoOTileTextureIndex];
+            let eTileTexture: Texture = textures[texture.albedoETileTextureIndex];
+//          let eTileTexture: Texture = textures[texture.albedoETileTextureIndex];
+            let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.albedoScale * surfaceCoordinate));
+//          let textureCoordinate: vec3<i32> = vec3<i32>(floor(texture.albedoScale * surfaceCoordinate));
             textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
 //          textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((textureCoordinate.x + textureCoordinate.y + textureCoordinate.z) & 1) == 0);
         }
         case TEXTURE_TYPE_CHECKER_STYLE_B:
 //      case TEXTURE_TYPE_CHECKER_STYLE_B:
         {
-            let oTileTexture: Texture = textures[texture.oTileTextureIndex];
-//          let oTileTexture: Texture = textures[texture.oTileTextureIndex];
-            let eTileTexture: Texture = textures[texture.eTileTextureIndex];
-//          let eTileTexture: Texture = textures[texture.eTileTextureIndex];
-            let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.scale * uvSurfaceCoordinate));
-//          let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.scale * uvSurfaceCoordinate));
+            let oTileTexture: Texture = textures[texture.albedoOTileTextureIndex];
+//          let oTileTexture: Texture = textures[texture.albedoOTileTextureIndex];
+            let eTileTexture: Texture = textures[texture.albedoETileTextureIndex];
+//          let eTileTexture: Texture = textures[texture.albedoETileTextureIndex];
+            let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.albedoScale * uvSurfaceCoordinate));
+//          let uvTextureCoordinate: vec2<i32> = vec2<i32>(floor(texture.albedoScale * uvSurfaceCoordinate));
             textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
 //          textureSampleValue = select(oTileTexture.albedo, eTileTexture.albedo, ((uvTextureCoordinate.x + uvTextureCoordinate.y) & 1) == 0);
         }
@@ -2395,4 +2675,97 @@
         return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 //      return select(9999999.0 /* Miss */, distanceToBoxMin, distanceToBoxMax >= distanceToBoxMin && distanceToBoxMin < rayTravelDistanceLimit.max);
 
+    }
+
+    fn _hash2(seed: f32) -> vec2<f32>
+//  fn _hash2(seed: f32) -> vec2<f32>
+    {
+        return fract(sin(vec2(seed + 0.1, seed + 0.2)) * vec2(43758.5453123, 22578.1459123));
+//      return fract(sin(vec2(seed + 0.1, seed + 0.2)) * vec2(43758.5453123, 22578.1459123));
+    }
+
+    fn _hash2ToVec2I32(hash2Value: vec2<f32>, step: i32, base: i32) -> vec2<i32>
+//  fn _hash2ToVec2I32(hash2Value: vec2<f32>, step: i32, base: i32) -> vec2<i32>
+    {
+        return vec2<i32>(
+//      return vec2<i32>(
+            i32(hash2Value.x * f32(base * step)),
+            i32(hash2Value.y * f32(base * step))
+        );
+//      );
+    }
+
+    //  Screen Space Volumetric Lighting as Post Pross, by Ridge/winlandiano
+//  //  Screen Space Volumetric Lighting as Post Pross, by Ridge/winlandiano
+    //  Originally presented in GPU Gem3 Chap. 13, by Kenny Mitchell.
+//  //  Originally presented in GPU Gem3 Chap. 13, by Kenny Mitchell.
+    //  License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+//  //  License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+
+    const SSVL_NUM_SAMPLES: u32 = 100;
+//  const SSVL_NUM_SAMPLES: u32 = 100;
+    const SSVL_DENSITY: f32 = 2.0;
+//  const SSVL_DENSITY: f32 = 2.0;
+    const SSVL_WEIGHT: f32 = 0.1;
+//  const SSVL_WEIGHT: f32 = 0.1;
+    const SSVL_DECAY: f32 = 0.92;
+//  const SSVL_DECAY: f32 = 0.92;
+    const SSVL_EXPOSURE: f32 = 0.4;
+//  const SSVL_EXPOSURE: f32 = 0.4;
+
+    fn _screenSpaceVolumetricLighting(tex: texture_2d<f32>, sam: sampler, fragmentShaderInputUV: vec2<f32>, lightPosition: vec2<f32>) -> vec3<f32>
+//  fn _screenSpaceVolumetricLighting(tex: texture_2d<f32>, sam: sampler, fragmentShaderInputUV: vec2<f32>, lightPosition: vec2<f32>) -> vec3<f32>
+    {
+        var uv: vec2<f32> = fragmentShaderInputUV;
+//      var uv: vec2<f32> = fragmentShaderInputUV;
+        var color: vec3<f32> = textureSample(tex, sam, uv).rgb;
+//      var color: vec3<f32> = textureSample(tex, sam, uv).rgb;
+        var sampleStep: vec2<f32> = uv - lightPosition;
+//      var sampleStep: vec2<f32> = uv - lightPosition;
+        sampleStep *= SSVL_DENSITY / f32(SSVL_NUM_SAMPLES);
+//      sampleStep *= SSVL_DENSITY / f32(SSVL_NUM_SAMPLES);
+        var illuminationDecay: f32 = 1.0;
+//      var illuminationDecay: f32 = 1.0;
+        for (var i: u32 = 0; i < SSVL_NUM_SAMPLES; i++)
+//      for (var i: u32 = 0; i < SSVL_NUM_SAMPLES; i++)
+        {
+            uv -= sampleStep;
+//          uv -= sampleStep;
+            let sampleColor: vec3<f32> = textureSample(tex, sam, uv).rgb;
+//          let sampleColor: vec3<f32> = textureSample(tex, sam, uv).rgb;
+            var brightness: f32 = (sampleColor.r + sampleColor.g + sampleColor.b) / 3.0;
+//          var brightness: f32 = (sampleColor.r + sampleColor.g + sampleColor.b) / 3.0;
+            brightness *= illuminationDecay * SSVL_WEIGHT;
+//          brightness *= illuminationDecay * SSVL_WEIGHT;
+            color += vec3<f32>(brightness);
+//          color += vec3<f32>(brightness);
+            illuminationDecay *= SSVL_DECAY;
+//          illuminationDecay *= SSVL_DECAY;
+        }
+        return color * SSVL_EXPOSURE;
+//      return color * SSVL_EXPOSURE;
+    }
+
+    fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
+//  fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
+    {
+        const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
+//      const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
+        let sampleIndexF: f32 = f32(sampleIndex);
+//      let sampleIndexF: f32 = f32(sampleIndex);
+        let sampleCountF: f32 = f32(sampleCount);
+//      let sampleCountF: f32 = f32(sampleCount);
+
+        let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
+//      let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
+        let theta: f32 = sampleIndexF * goldenAngle + phi;
+//      let theta: f32 = sampleIndexF * goldenAngle + phi;
+
+        let   sine: f32 = sin(theta);
+//      let   sine: f32 = sin(theta);
+        let cosine: f32 = cos(theta);
+//      let cosine: f32 = cos(theta);
+
+        return vec2(cosine, sine) * r;
+//      return vec2(cosine, sine) * r;
     }
