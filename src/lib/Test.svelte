@@ -462,8 +462,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
     let _numberOfImages: number;
 //  let _numberOfImages: number;
     let _frameHandleRenderLoop: number;
@@ -1757,8 +1757,8 @@
 //          },
         );
 //      );
-        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_03_puresky_4k.exr")).arrayBuffer();
-//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_03_puresky_4k.exr")).arrayBuffer();
+        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/pool_4k.exr")).arrayBuffer();
+//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/pool_4k.exr")).arrayBuffer();
         const skyboxImageParsed = await parseEXRWithWorker(skyboxImage, 1015);
 //      const skyboxImageParsed = await parseEXRWithWorker(skyboxImage, 1015);
         _hdriTexture = _device.createTexture({
@@ -1999,14 +1999,14 @@
 //              layer0IOR: RefractiveIndex.AIR,
                 layer1IOR: RefractiveIndex.MARBLE,
 //              layer1IOR: RefractiveIndex.MARBLE,
-                materialType: MaterialType.GLOSS,
-//              materialType: MaterialType.GLOSS,
+                materialType: MaterialType.DIFFUSE,
+//              materialType: MaterialType.DIFFUSE,
                 textureIndex: 6,
 //              textureIndex: 6,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT A
+//          // LIGHT A
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2025,8 +2025,8 @@
 //              textureIndex: 11,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT B
+//          // LIGHT B
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2045,8 +2045,8 @@
 //              textureIndex: 12,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT C
+//          // LIGHT C
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2065,8 +2065,8 @@
 //              textureIndex: 13,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT D
+//          // LIGHT D
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2169,6 +2169,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT
+            // LIGHT
             {
 //          {
                 albedo: [ 5.00, 5.00, 5.00 ],
@@ -2187,12 +2189,12 @@
 //          },
             {
 //          {
-                albedo: [ 1.00, 1.00, 1.00 ],
-//              albedo: [ 1.00, 1.00, 1.00 ],
+                albedo: [ 0.50, 0.50, 0.50 ],
+//              albedo: [ 0.50, 0.50, 0.50 ],
                 albedoImageIndex: 0,
 //              albedoImageIndex: 0,
-                albedoTextureType: TextureType.IMAGE,
-//              albedoTextureType: TextureType.IMAGE,
+                albedoTextureType: TextureType.COLOR,
+//              albedoTextureType: TextureType.COLOR,
                 albedoScale: 1.0,
 //              albedoScale: 1.0,
                 albedoOTileTextureIndex: 0,
@@ -2265,6 +2267,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT A
+            // LIGHT A
             {
 //          {
                 albedo: [ 3.00, 0.60, 0.50 ],
@@ -2281,6 +2285,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT B
+            // LIGHT B
             {
 //          {
                 albedo: [ 0.60, 1.20, 3.20 ],
@@ -2297,6 +2303,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT C
+            // LIGHT C
             {
 //          {
                 albedo: [ 0.50, 3.10, 1.00 ],
@@ -2313,6 +2321,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT D
+            // LIGHT D
             {
 //          {
                 albedo: [ 2.40, 2.20, 1.90 ],
@@ -2391,470 +2401,470 @@
 //              perVertexFrontFaceNormalAvailable: false,
             },
 //          },
-            // TOP
-//          // TOP
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -20.00, +20.00, +20.00 ],
-//              vertex0: [ -20.00, +20.00, +20.00 ],
-                vertex1: [ -20.00, +20.00, -20.00 ],
-//              vertex1: [ -20.00, +20.00, -20.00 ],
-                vertex2: [ +20.00, +20.00, -20.00 ],
-//              vertex2: [ +20.00, +20.00, -20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 1,
-//              materialIndex: 1,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +20.00, +20.00, -20.00 ],
-//              vertex0: [ +20.00, +20.00, -20.00 ],
-                vertex1: [ +20.00, +20.00, +20.00 ],
-//              vertex1: [ +20.00, +20.00, +20.00 ],
-                vertex2: [ -20.00, +20.00, +20.00 ],
-//              vertex2: [ -20.00, +20.00, +20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 1,
-//              materialIndex: 1,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // LEFT
-//          // LEFT
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -20.00, +20.00, +20.00 ],
-//              vertex0: [ -20.00, +20.00, +20.00 ],
-                vertex1: [ -20.00, -20.00, +20.00 ],
-//              vertex1: [ -20.00, -20.00, +20.00 ],
-                vertex2: [ -20.00, -20.00, -20.00 ],
-//              vertex2: [ -20.00, -20.00, -20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 2,
-//              materialIndex: 2,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -20.00, -20.00, -20.00 ],
-//              vertex0: [ -20.00, -20.00, -20.00 ],
-                vertex1: [ -20.00, +20.00, -20.00 ],
-//              vertex1: [ -20.00, +20.00, -20.00 ],
-                vertex2: [ -20.00, +20.00, +20.00 ],
-//              vertex2: [ -20.00, +20.00, +20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 2,
-//              materialIndex: 2,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // RIGHT
-//          // RIGHT
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +20.00, +20.00, -20.00 ],
-//              vertex0: [ +20.00, +20.00, -20.00 ],
-                vertex1: [ +20.00, -20.00, -20.00 ],
-//              vertex1: [ +20.00, -20.00, -20.00 ],
-                vertex2: [ +20.00, -20.00, +20.00 ],
-//              vertex2: [ +20.00, -20.00, +20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 3,
-//              materialIndex: 3,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +20.00, -20.00, +20.00 ],
-//              vertex0: [ +20.00, -20.00, +20.00 ],
-                vertex1: [ +20.00, +20.00, +20.00 ],
-//              vertex1: [ +20.00, +20.00, +20.00 ],
-                vertex2: [ +20.00, +20.00, -20.00 ],
-//              vertex2: [ +20.00, +20.00, -20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 3,
-//              materialIndex: 3,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // BACK
-//          // BACK
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -20.00, +20.00, -20.00 ],
-//              vertex0: [ -20.00, +20.00, -20.00 ],
-                vertex1: [ -20.00, -20.00, -20.00 ],
-//              vertex1: [ -20.00, -20.00, -20.00 ],
-                vertex2: [ +20.00, -20.00, -20.00 ],
-//              vertex2: [ +20.00, -20.00, -20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 4,
-//              materialIndex: 4,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +20.00, -20.00, -20.00 ],
-//              vertex0: [ +20.00, -20.00, -20.00 ],
-                vertex1: [ +20.00, +20.00, -20.00 ],
-//              vertex1: [ +20.00, +20.00, -20.00 ],
-                vertex2: [ -20.00, +20.00, -20.00 ],
-//              vertex2: [ -20.00, +20.00, -20.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 4,
-//              materialIndex: 4,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // LIGHT A (Corner -X, -Z, Size 10x10, Offset 3)
-//          // LIGHT A (Corner -X, -Z, Size 10x10, Offset 3)
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ - 7.00, +19.99, - 7.00 ],
-//              vertex0: [ - 7.00, +19.99, - 7.00 ],
-                vertex1: [ - 7.00, +19.99, -17.00 ],
-//              vertex1: [ - 7.00, +19.99, -17.00 ],
-                vertex2: [ -17.00, +19.99, -17.00 ],
-//              vertex2: [ -17.00, +19.99, -17.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 7,
-//              materialIndex: 7,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -17.00, +19.99, -17.00 ],
-//              vertex0: [ -17.00, +19.99, -17.00 ],
-                vertex1: [ -17.00, +19.99, - 7.00 ],
-//              vertex1: [ -17.00, +19.99, - 7.00 ],
-                vertex2: [ - 7.00, +19.99, - 7.00 ],
-//              vertex2: [ - 7.00, +19.99, - 7.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 7,
-//              materialIndex: 7,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // LIGHT B (Corner +X, +Z, Size 10x10, Offset 3)
-//          // LIGHT B (Corner +X, +Z, Size 10x10, Offset 3)
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ + 7.00, +19.99, +17.00 ],
-//              vertex0: [ + 7.00, +19.99, +17.00 ],
-                vertex1: [ + 7.00, +19.99, + 7.00 ],
-//              vertex1: [ + 7.00, +19.99, + 7.00 ],
-                vertex2: [ +17.00, +19.99, + 7.00 ],
-//              vertex2: [ +17.00, +19.99, + 7.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 8,
-//              materialIndex: 8,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +17.00, +19.99, + 7.00 ],
-//              vertex0: [ +17.00, +19.99, + 7.00 ],
-                vertex1: [ +17.00, +19.99, +17.00 ],
-//              vertex1: [ +17.00, +19.99, +17.00 ],
-                vertex2: [ + 7.00, +19.99, +17.00 ],
-//              vertex2: [ + 7.00, +19.99, +17.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 8,
-//              materialIndex: 8,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // LIGHT C (Corner -X, +Z, Size 10x10, Offset 3)
-//          // LIGHT C (Corner -X, +Z, Size 10x10, Offset 3)
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ - 7.00, +19.99, +17.00 ],
-//              vertex0: [ - 7.00, +19.99, +17.00 ],
-                vertex1: [ - 7.00, +19.99, + 7.00 ],
-//              vertex1: [ - 7.00, +19.99, + 7.00 ],
-                vertex2: [ -17.00, +19.99, + 7.00 ],
-//              vertex2: [ -17.00, +19.99, + 7.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 9,
-//              materialIndex: 9,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ -17.00, +19.99, + 7.00 ],
-//              vertex0: [ -17.00, +19.99, + 7.00 ],
-                vertex1: [ -17.00, +19.99, +17.00 ],
-//              vertex1: [ -17.00, +19.99, +17.00 ],
-                vertex2: [ - 7.00, +19.99, +17.00 ],
-//              vertex2: [ - 7.00, +19.99, +17.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 9,
-//              materialIndex: 9,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            // LIGHT D (Corner +X, -Z, Size 10x10, Offset 3)
-//          // LIGHT D (Corner +X, -Z, Size 10x10, Offset 3)
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ + 7.00, +19.99, - 7.00 ],
-//              vertex0: [ + 7.00, +19.99, - 7.00 ],
-                vertex1: [ + 7.00, +19.99, -17.00 ],
-//              vertex1: [ + 7.00, +19.99, -17.00 ],
-                vertex2: [ +17.00, +19.99, -17.00 ],
-//              vertex2: [ +17.00, +19.99, -17.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 0.0, 0.0 ],
-//              vertex0UV: [ 0.0, 0.0 ],
-                vertex1UV: [ 0.0, 1.0 ],
-//              vertex1UV: [ 0.0, 1.0 ],
-                vertex2UV: [ 1.0, 1.0 ],
-//              vertex2UV: [ 1.0, 1.0 ],
-                materialIndex: 10,
-//              materialIndex: 10,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
-            {
-//          {
-                aabb3d: undefined!,
-//              aabb3d: undefined!,
-                vertex0: [ +17.00, +19.99, -17.00 ],
-//              vertex0: [ +17.00, +19.99, -17.00 ],
-                vertex1: [ +17.00, +19.99, - 7.00 ],
-//              vertex1: [ +17.00, +19.99, - 7.00 ],
-                vertex2: [ + 7.00, +19.99, - 7.00 ],
-//              vertex2: [ + 7.00, +19.99, - 7.00 ],
-                vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-//              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
-                vertex0UV: [ 1.0, 1.0 ],
-//              vertex0UV: [ 1.0, 1.0 ],
-                vertex1UV: [ 1.0, 0.0 ],
-//              vertex1UV: [ 1.0, 0.0 ],
-                vertex2UV: [ 0.0, 0.0 ],
-//              vertex2UV: [ 0.0, 0.0 ],
-                materialIndex: 10,
-//              materialIndex: 10,
-                perVertexFrontFaceNormalAvailable: false,
-//              perVertexFrontFaceNormalAvailable: false,
-            },
-//          },
+//             // TOP
+// //          // TOP
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -20.00, +20.00, +20.00 ],
+// //              vertex0: [ -20.00, +20.00, +20.00 ],
+//                 vertex1: [ -20.00, +20.00, -20.00 ],
+// //              vertex1: [ -20.00, +20.00, -20.00 ],
+//                 vertex2: [ +20.00, +20.00, -20.00 ],
+// //              vertex2: [ +20.00, +20.00, -20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 1,
+// //              materialIndex: 1,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +20.00, +20.00, -20.00 ],
+// //              vertex0: [ +20.00, +20.00, -20.00 ],
+//                 vertex1: [ +20.00, +20.00, +20.00 ],
+// //              vertex1: [ +20.00, +20.00, +20.00 ],
+//                 vertex2: [ -20.00, +20.00, +20.00 ],
+// //              vertex2: [ -20.00, +20.00, +20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 1,
+// //              materialIndex: 1,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // LEFT
+// //          // LEFT
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -20.00, +20.00, +20.00 ],
+// //              vertex0: [ -20.00, +20.00, +20.00 ],
+//                 vertex1: [ -20.00, -20.00, +20.00 ],
+// //              vertex1: [ -20.00, -20.00, +20.00 ],
+//                 vertex2: [ -20.00, -20.00, -20.00 ],
+// //              vertex2: [ -20.00, -20.00, -20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 2,
+// //              materialIndex: 2,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -20.00, -20.00, -20.00 ],
+// //              vertex0: [ -20.00, -20.00, -20.00 ],
+//                 vertex1: [ -20.00, +20.00, -20.00 ],
+// //              vertex1: [ -20.00, +20.00, -20.00 ],
+//                 vertex2: [ -20.00, +20.00, +20.00 ],
+// //              vertex2: [ -20.00, +20.00, +20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 2,
+// //              materialIndex: 2,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // RIGHT
+// //          // RIGHT
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +20.00, +20.00, -20.00 ],
+// //              vertex0: [ +20.00, +20.00, -20.00 ],
+//                 vertex1: [ +20.00, -20.00, -20.00 ],
+// //              vertex1: [ +20.00, -20.00, -20.00 ],
+//                 vertex2: [ +20.00, -20.00, +20.00 ],
+// //              vertex2: [ +20.00, -20.00, +20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 3,
+// //              materialIndex: 3,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +20.00, -20.00, +20.00 ],
+// //              vertex0: [ +20.00, -20.00, +20.00 ],
+//                 vertex1: [ +20.00, +20.00, +20.00 ],
+// //              vertex1: [ +20.00, +20.00, +20.00 ],
+//                 vertex2: [ +20.00, +20.00, -20.00 ],
+// //              vertex2: [ +20.00, +20.00, -20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 3,
+// //              materialIndex: 3,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // BACK
+// //          // BACK
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -20.00, +20.00, -20.00 ],
+// //              vertex0: [ -20.00, +20.00, -20.00 ],
+//                 vertex1: [ -20.00, -20.00, -20.00 ],
+// //              vertex1: [ -20.00, -20.00, -20.00 ],
+//                 vertex2: [ +20.00, -20.00, -20.00 ],
+// //              vertex2: [ +20.00, -20.00, -20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 4,
+// //              materialIndex: 4,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +20.00, -20.00, -20.00 ],
+// //              vertex0: [ +20.00, -20.00, -20.00 ],
+//                 vertex1: [ +20.00, +20.00, -20.00 ],
+// //              vertex1: [ +20.00, +20.00, -20.00 ],
+//                 vertex2: [ -20.00, +20.00, -20.00 ],
+// //              vertex2: [ -20.00, +20.00, -20.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 4,
+// //              materialIndex: 4,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // LIGHT A (Corner -X, -Z, Size 10x10, Offset 3)
+// //          // LIGHT A (Corner -X, -Z, Size 10x10, Offset 3)
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ - 7.00, +19.99, - 7.00 ],
+// //              vertex0: [ - 7.00, +19.99, - 7.00 ],
+//                 vertex1: [ - 7.00, +19.99, -17.00 ],
+// //              vertex1: [ - 7.00, +19.99, -17.00 ],
+//                 vertex2: [ -17.00, +19.99, -17.00 ],
+// //              vertex2: [ -17.00, +19.99, -17.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 7,
+// //              materialIndex: 7,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -17.00, +19.99, -17.00 ],
+// //              vertex0: [ -17.00, +19.99, -17.00 ],
+//                 vertex1: [ -17.00, +19.99, - 7.00 ],
+// //              vertex1: [ -17.00, +19.99, - 7.00 ],
+//                 vertex2: [ - 7.00, +19.99, - 7.00 ],
+// //              vertex2: [ - 7.00, +19.99, - 7.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 7,
+// //              materialIndex: 7,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // LIGHT B (Corner +X, +Z, Size 10x10, Offset 3)
+// //          // LIGHT B (Corner +X, +Z, Size 10x10, Offset 3)
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ + 7.00, +19.99, +17.00 ],
+// //              vertex0: [ + 7.00, +19.99, +17.00 ],
+//                 vertex1: [ + 7.00, +19.99, + 7.00 ],
+// //              vertex1: [ + 7.00, +19.99, + 7.00 ],
+//                 vertex2: [ +17.00, +19.99, + 7.00 ],
+// //              vertex2: [ +17.00, +19.99, + 7.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 8,
+// //              materialIndex: 8,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +17.00, +19.99, + 7.00 ],
+// //              vertex0: [ +17.00, +19.99, + 7.00 ],
+//                 vertex1: [ +17.00, +19.99, +17.00 ],
+// //              vertex1: [ +17.00, +19.99, +17.00 ],
+//                 vertex2: [ + 7.00, +19.99, +17.00 ],
+// //              vertex2: [ + 7.00, +19.99, +17.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 8,
+// //              materialIndex: 8,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // LIGHT C (Corner -X, +Z, Size 10x10, Offset 3)
+// //          // LIGHT C (Corner -X, +Z, Size 10x10, Offset 3)
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ - 7.00, +19.99, +17.00 ],
+// //              vertex0: [ - 7.00, +19.99, +17.00 ],
+//                 vertex1: [ - 7.00, +19.99, + 7.00 ],
+// //              vertex1: [ - 7.00, +19.99, + 7.00 ],
+//                 vertex2: [ -17.00, +19.99, + 7.00 ],
+// //              vertex2: [ -17.00, +19.99, + 7.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 9,
+// //              materialIndex: 9,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ -17.00, +19.99, + 7.00 ],
+// //              vertex0: [ -17.00, +19.99, + 7.00 ],
+//                 vertex1: [ -17.00, +19.99, +17.00 ],
+// //              vertex1: [ -17.00, +19.99, +17.00 ],
+//                 vertex2: [ - 7.00, +19.99, +17.00 ],
+// //              vertex2: [ - 7.00, +19.99, +17.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 9,
+// //              materialIndex: 9,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             // LIGHT D (Corner +X, -Z, Size 10x10, Offset 3)
+// //          // LIGHT D (Corner +X, -Z, Size 10x10, Offset 3)
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ + 7.00, +19.99, - 7.00 ],
+// //              vertex0: [ + 7.00, +19.99, - 7.00 ],
+//                 vertex1: [ + 7.00, +19.99, -17.00 ],
+// //              vertex1: [ + 7.00, +19.99, -17.00 ],
+//                 vertex2: [ +17.00, +19.99, -17.00 ],
+// //              vertex2: [ +17.00, +19.99, -17.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 0.0, 0.0 ],
+// //              vertex0UV: [ 0.0, 0.0 ],
+//                 vertex1UV: [ 0.0, 1.0 ],
+// //              vertex1UV: [ 0.0, 1.0 ],
+//                 vertex2UV: [ 1.0, 1.0 ],
+// //              vertex2UV: [ 1.0, 1.0 ],
+//                 materialIndex: 10,
+// //              materialIndex: 10,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
+//             {
+// //          {
+//                 aabb3d: undefined!,
+// //              aabb3d: undefined!,
+//                 vertex0: [ +17.00, +19.99, -17.00 ],
+// //              vertex0: [ +17.00, +19.99, -17.00 ],
+//                 vertex1: [ +17.00, +19.99, - 7.00 ],
+// //              vertex1: [ +17.00, +19.99, - 7.00 ],
+//                 vertex2: [ + 7.00, +19.99, - 7.00 ],
+// //              vertex2: [ + 7.00, +19.99, - 7.00 ],
+//                 vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex0FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex1FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+// //              vertex2FrontFaceNormal: [ 0.0, 0.0, 0.0 ],
+//                 vertex0UV: [ 1.0, 1.0 ],
+// //              vertex0UV: [ 1.0, 1.0 ],
+//                 vertex1UV: [ 1.0, 0.0 ],
+// //              vertex1UV: [ 1.0, 0.0 ],
+//                 vertex2UV: [ 0.0, 0.0 ],
+// //              vertex2UV: [ 0.0, 0.0 ],
+//                 materialIndex: 10,
+// //              materialIndex: 10,
+//                 perVertexFrontFaceNormalAvailable: false,
+// //              perVertexFrontFaceNormalAvailable: false,
+//             },
+// //          },
         );
 //      );
         _frameHandleRenderLoop = null!;
@@ -2937,10 +2947,10 @@
 //          [
                 {
 //              {
-                    name: "ChinaVase.obj",
-//                  name: "ChinaVase.obj",
-                    publicURL: "/ChinaVase.obj",
-//                  publicURL: "/ChinaVase.obj",
+                    name: "BikiniGirl_101.obj",
+//                  name: "BikiniGirl_101.obj",
+                    publicURL: "/test/BikiniGirl_101.obj",
+//                  publicURL: "/test/BikiniGirl_101.obj",
                 },
 //              },
             ]
@@ -2957,12 +2967,12 @@
 //          const floorY: number = -20.0;
             let minModelY: number = Infinity;
 //          let minModelY: number = Infinity;
-            const scaleX: number = 1.0;
-//          const scaleX: number = 1.0;
-            const scaleY: number = 1.0;
-//          const scaleY: number = 1.0;
-            const scaleZ: number = 1.0;
-//          const scaleZ: number = 1.0;
+            const scaleX: number = 24.0;
+//          const scaleX: number = 24.0;
+            const scaleY: number = 24.0;
+//          const scaleY: number = 24.0;
+            const scaleZ: number = 24.0;
+//          const scaleZ: number = 24.0;
             for (let mesh of model["meshes"]) {
 //          for (let mesh of model["meshes"]) {
                 const l: number = (mesh["vertices"] as number[]).length;
@@ -3001,8 +3011,8 @@
 //              const meshVertices: number[] = mesh["vertices"];
                 const meshNormals: number[] = mesh["normals"];
 //              const meshNormals: number[] = mesh["normals"];
-                const meshTextureCoords: number[] = mesh["texturecoords"][0];
-//              const meshTextureCoords: number[] = mesh["texturecoords"][0];
+//                 const meshTextureCoords: number[] = mesh["texturecoords"][0];
+// //              const meshTextureCoords: number[] = mesh["texturecoords"][0];
                 for (let face of mesh["faces"]) {
 //              for (let face of mesh["faces"]) {
 
@@ -3053,12 +3063,12 @@
 //                  const vno1: Vec3 = vertex1Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
                     const vno2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
 //                  const vno2: Vec3 = vertex2Base3ComponentIndices.map((componentIndex: number): number => meshNormals[componentIndex]) as Vec3;
-                    const vuv0: Vec2 = vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
-//                  const vuv0: Vec2 = vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
-                    const vuv1: Vec2 = vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
-//                  const vuv1: Vec2 = vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
-                    const vuv2: Vec2 = vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
-//                  const vuv2: Vec2 = vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+                    const vuv0: Vec2 = [0,0];//vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv0: Vec2 = [0,0];//vertex0Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+                    const vuv1: Vec2 = [0,0];//vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv1: Vec2 = [0,0];//vertex1Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+                    const vuv2: Vec2 = [0,0];//vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
+//                  const vuv2: Vec2 = [0,0];//vertex2Base2ComponentIndices.map((componentIndex: number): number => meshTextureCoords[componentIndex]) as Vec2;
 
                     vpo0[1] = vpo0[1] - offsetY;
 //                  vpo0[1] = vpo0[1] - offsetY;
