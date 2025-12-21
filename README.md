@@ -62,7 +62,6 @@
 
 
 <p align="center"><h3>[Example 01]</h3></p><br/>
-<p align="center"><a href="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/1/demo.mp4">https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/1/demo.mp4</a></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/1/001.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/1/002.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/1/003.png"></p><br/>
@@ -76,7 +75,6 @@
 
 
 <p align="center"><h3>[Example 02]</h3></p><br/>
-<p align="center"><a href="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/2/demo.mp4">https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/2/demo.mp4</a></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/2/001.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/2/002.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/2/003.png"></p><br/>
@@ -90,7 +88,6 @@
 
 
 <p align="center"><h3>[Example 03]</h3></p><br/>
-<p align="center"><a href="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/3/demo.mp4">https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/3/demo.mp4</a></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/3/001.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/3/002.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/3/003.png"></p><br/>
@@ -104,7 +101,6 @@
 
 
 <p align="center"><h3>[Example 04]</h3></p><br/>
-<p align="center"><a href="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/4/demo.mp4">https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/4/demo.mp4</a></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/4/001.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/4/002.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/4/003.png"></p><br/>
@@ -112,7 +108,6 @@
 
 
 <p align="center"><h3>[Example 05]</h3></p><br/>
-<p align="center"><a href="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/5/demo.mp4">https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/5/demo.mp4</a></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/5/001.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/5/002.png"></p><br/>
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/5/003.png"></p><br/>
