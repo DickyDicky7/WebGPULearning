@@ -265,83 +265,79 @@
 
     fn decodeOctahedralNormal(packedNormal: u32) -> vec3<f32>
 //  fn decodeOctahedralNormal(packedNormal: u32) -> vec3<f32>
-{
-    // Unpack the two 16-bit components into the [-1, 1] range
-    // Unpack the two 16-bit components into the [-1, 1] range
-    var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
-//  var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
-    // Reconstruct the approximate normal
-    // Reconstruct the approximate normal
-    var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
-//  var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
-    // Reflect if below the plane
-    // Reflect if below the plane
-    if (normal.z < 0.0)
-//  if (normal.z < 0.0)
     {
-        normal.x = (1.0 - abs(normal.y)) * sign(normal.x);
-//      normal.x = (1.0 - abs(normal.y)) * sign(normal.x);
-        normal.y = (1.0 - abs(normal.x)) * sign(normal.y);
-//      normal.y = (1.0 - abs(normal.x)) * sign(normal.y);
+        var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
+//      var encodedXY: vec2<f32> = vec2<f32>(f32((packedNormal >> 16u) & 0xFFFFu) / 65535.0 * 2.0 - 1.0, f32(packedNormal & 0xFFFFu) / 65535.0 * 2.0 - 1.0);
+        var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
+//      var normal: vec3<f32> = vec3<f32>(encodedXY.x, encodedXY.y, 1.0 - abs(encodedXY.x) - abs(encodedXY.y));
+        if (normal.z < 0.0)
+//      if (normal.z < 0.0)
+        {
+            let tempX: f32 = normal.x;
+//          let tempX: f32 = normal.x;
+            let signX: f32 = select(-1.0, 1.0, tempX >= 0.0);
+//          let signX: f32 = select(-1.0, 1.0, tempX >= 0.0);
+            let signY: f32 = select(-1.0, 1.0, normal.y >= 0.0);
+//          let signY: f32 = select(-1.0, 1.0, normal.y >= 0.0);
+            normal.x = (1.0 - abs(normal.y)) * signX;
+//          normal.x = (1.0 - abs(normal.y)) * signX;
+            normal.y = (1.0 - abs(tempX)) * signY;
+//          normal.y = (1.0 - abs(tempX)) * signY;
+        }
+        return normalize(normal);
+//      return normalize(normal);
     }
-    return normalize(normal);
-//  return normalize(normal);
-}
 
     fn encodeOctahedralNormal(normal: vec3<f32>) -> u32
 //  fn encodeOctahedralNormal(normal: vec3<f32>) -> u32
-{
-    // Normalize and project to octahedral space
-    // Normalize and project to octahedral space
-    var n: vec3<f32> = normalize(normal);
-//  var n: vec3<f32> = normalize(normal);
-    n = n / (abs(n.x) + abs(n.y) + abs(n.z));
-//  n = n / (abs(n.x) + abs(n.y) + abs(n.z));
-    // Reflect if below the plane
-    // Reflect if below the plane
-    if (n.z < 0.0)
-//  if (n.z < 0.0)
     {
-        let prevX: f32 = n.x;
-//      let prevX: f32 = n.x;
-        n.x = (1.0 - abs(n.y)) * sign(prevX);
-//      n.x = (1.0 - abs(n.y)) * sign(prevX);
-        n.y = (1.0 - abs(prevX)) * sign(n.y);
-//      n.y = (1.0 - abs(prevX)) * sign(n.y);
+        var n: vec3<f32> = normalize(normal);
+//      var n: vec3<f32> = normalize(normal);
+        n = n / (abs(n.x) + abs(n.y) + abs(n.z));
+//      n = n / (abs(n.x) + abs(n.y) + abs(n.z));
+        if (n.z < 0.0)
+//      if (n.z < 0.0)
+        {
+            let prevX: f32 = n.x;
+//          let prevX: f32 = n.x;
+            let signX: f32 = select(-1.0, 1.0, prevX >= 0.0);
+//          let signX: f32 = select(-1.0, 1.0, prevX >= 0.0);
+            let signY: f32 = select(-1.0, 1.0, n.y >= 0.0);
+//          let signY: f32 = select(-1.0, 1.0, n.y >= 0.0);
+            n.x = (1.0 - abs(n.y)) * signX;
+//          n.x = (1.0 - abs(n.y)) * signX;
+            n.y = (1.0 - abs(prevX)) * signY;
+//          n.y = (1.0 - abs(prevX)) * signY;
+        }
+        let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+//      let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+        let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+//      let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
+        return (quantizedX << 16u) | quantizedY;
+//      return (quantizedX << 16u) | quantizedY;
     }
-    // Quantize to 16-bit unsigned ints
-    // Quantize to 16-bit unsigned ints
-    let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
-//  let quantizedX: u32 = u32(clamp(n.x * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
-    let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
-//  let quantizedY: u32 = u32(clamp(n.y * 0.5 + 0.5, 0.0, 1.0) * 65535.0 + 0.5);
-    // Pack into a single u32
-    // Pack into a single u32
-    return (quantizedX << 16u) | quantizedY;
-//  return (quantizedX << 16u) | quantizedY;
-}
 
     fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
 //  fn decodeQuantizedUV(packedUV: u32) -> vec2<f32>
-{
-    let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
-//  let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
-    let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
-//  let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
-    return vec2<f32>(u, v);
-//  return vec2<f32>(u, v);
-}
+    {
+        let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
+//      let u: f32 = f32((packedUV >> 16u) & 0xFFFFu) / 65535.0;
+        let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
+//      let v: f32 = f32(packedUV & 0xFFFFu) / 65535.0;
+        return vec2<f32>(u, v);
+//      return vec2<f32>(u, v);
+    }
 
     fn encodeQuantizedUV(uv: vec2<f32>) -> u32
 //  fn encodeQuantizedUV(uv: vec2<f32>) -> u32
-{
-    let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
-//  let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
-    let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
-//  let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
-    return (quantizedU << 16u) | quantizedV;
-//  return (quantizedU << 16u) | quantizedV;
-}
+    {
+        let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
+//      let quantizedU: u32 = u32(clamp(uv.x, 0.0, 1.0) * 65535.0 + 0.5);
+        let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
+//      let quantizedV: u32 = u32(clamp(uv.y, 0.0, 1.0) * 65535.0 + 0.5);
+        return (quantizedU << 16u) | quantizedV;
+//      return (quantizedU << 16u) | quantizedV;
+    }
 
     fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
