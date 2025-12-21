@@ -2005,8 +2005,8 @@
 //              textureIndex: 6,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT A
+//          // LIGHT A
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2025,8 +2025,8 @@
 //              textureIndex: 11,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT B
+//          // LIGHT B
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2045,8 +2045,8 @@
 //              textureIndex: 12,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT C
+//          // LIGHT C
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2065,8 +2065,8 @@
 //              textureIndex: 13,
             },
 //          },
-            // LIGHT
-//          // LIGHT
+            // LIGHT D
+//          // LIGHT D
             {
 //          {
                 layer1Roughness: 0.0,
@@ -2169,6 +2169,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT
+            // LIGHT
             {
 //          {
                 albedo: [ 5.00, 5.00, 5.00 ],
@@ -2265,6 +2267,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT A
+            // LIGHT A
             {
 //          {
                 albedo: [ 3.00, 0.60, 0.50 ],
@@ -2281,6 +2285,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT B
+            // LIGHT B
             {
 //          {
                 albedo: [ 0.60, 1.20, 3.20 ],
@@ -2297,6 +2303,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT C
+            // LIGHT C
             {
 //          {
                 albedo: [ 0.50, 3.10, 1.00 ],
@@ -2313,6 +2321,8 @@
 //              albedoETileTextureIndex: 0,
             },
 //          },
+            // LIGHT D
+            // LIGHT D
             {
 //          {
                 albedo: [ 2.40, 2.20, 1.90 ],
