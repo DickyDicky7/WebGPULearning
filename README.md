@@ -52,7 +52,7 @@
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/10/004.png"></p><br/>
 <p align="center"><i><b>*** Demo Video ***</b></i></p><br/>
 
-[![Demo Video](https://img.youtube.com/vi/KkbtmtfokOU/maxresdefault.jpg)](https://www.youtube.com/watch?v=KkbtmtfokOU)
+[![Demo Video](https://img.youtube.com/vi/CYVD46qpcE0/maxresdefault.jpg)](https://www.youtube.com/watch?v=CYVD46qpcE0)
 
 
 
