@@ -424,8 +424,6 @@
 //  let _lengthLookAtSubtractLookFrom: number = $derived(m.norm(_lookAtSubtractLookFrom) as number);
     let _lookFromSubtractLookAt: Vec3 = $derived(m.subtract(_lookFrom, _lookAt));
 //  let _lookFromSubtractLookAt: Vec3 = $derived(m.subtract(_lookFrom, _lookAt));
-    let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
-//  let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
     let _vFOV: number = $state(m.pi / 2.5);
 //  let _vFOV: number = $state(m.pi / 2.5);
     let _hFOV: number = $state(m.pi / 2.5);
@@ -444,6 +442,16 @@
 //  let _cameraU: Vec3 = $derived(m.divide(_viewUpCrossCameraW, m.norm(_viewUpCrossCameraW)) as Vec3);
     let _cameraV: Vec3 = $derived(m.cross(_cameraW, _cameraU) as Vec3);
 //  let _cameraV: Vec3 = $derived(m.cross(_cameraW, _cameraU) as Vec3);
+    let _defocusAngle: number = $state(0.0 * m.pi);
+//  let _defocusAngle: number = $state(0.0 * m.pi);
+    let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
+//  let _focusDistance: number = $derived(_lengthLookAtSubtractLookFrom);
+    let _defocusRadius: number = $derived(_focusDistance * Math.tan(_defocusAngle / 2.0));
+//  let _defocusRadius: number = $derived(_focusDistance * Math.tan(_defocusAngle / 2.0));
+    let _defocusDiskRadiusU: Vec3 = $derived(m.multiply(_cameraU, _defocusRadius)) as Vec3;
+//  let _defocusDiskRadiusU: Vec3 = $derived(m.multiply(_cameraU, _defocusRadius)) as Vec3;
+    let _defocusDiskRadiusV: Vec3 = $derived(m.multiply(_cameraV, _defocusRadius)) as Vec3;
+//  let _defocusDiskRadiusV: Vec3 = $derived(m.multiply(_cameraV, _defocusRadius)) as Vec3;
     let _viewportH: number = $derived(2.0 * _h * _focalLength);
 //  let _viewportH: number = $derived(2.0 * _h * _focalLength);
     let _viewportW: number = $state(1.0);
@@ -1613,8 +1621,8 @@
 //          ] as GPURenderPassColorAttachment[],
         };
 //      };
-        _generalDataUniformValues = new ArrayBuffer(24 * 4);
-//      _generalDataUniformValues = new ArrayBuffer(24 * 4);
+        _generalDataUniformValues = new ArrayBuffer(32 * 4);
+//      _generalDataUniformValues = new ArrayBuffer(32 * 4);
         _generalDataUniformBuffer = _device.createBuffer({
 //      _generalDataUniformBuffer = _device.createBuffer({
             label: "GPU_UNIFORM_BUFFER_GENERAL_DATA",
@@ -3839,6 +3847,24 @@
 //      _generalDataUniformValuesDataView.setFloat32(84, _timeInSeconds, true);
         _generalDataUniformValuesDataView.setUint32(88, _accumulatedSampleCount, true);
 //      _generalDataUniformValuesDataView.setUint32(88, _accumulatedSampleCount, true);
+        _generalDataUniformValuesDataView.setUint32(92, 0, true);
+//      _generalDataUniformValuesDataView.setUint32(92, 0, true);
+        _generalDataUniformValuesDataView.setFloat32( 96, _defocusDiskRadiusU[0], true);
+//      _generalDataUniformValuesDataView.setFloat32( 96, _defocusDiskRadiusU[0], true);
+        _generalDataUniformValuesDataView.setFloat32(100, _defocusDiskRadiusU[1], true);
+//      _generalDataUniformValuesDataView.setFloat32(100, _defocusDiskRadiusU[1], true);
+        _generalDataUniformValuesDataView.setFloat32(104, _defocusDiskRadiusU[2], true);
+//      _generalDataUniformValuesDataView.setFloat32(104, _defocusDiskRadiusU[2], true);
+        _generalDataUniformValuesDataView.setUint32(108, 0, true);
+//      _generalDataUniformValuesDataView.setUint32(108, 0, true);
+        _generalDataUniformValuesDataView.setFloat32(112, _defocusDiskRadiusV[0], true);
+//      _generalDataUniformValuesDataView.setFloat32(112, _defocusDiskRadiusV[0], true);
+        _generalDataUniformValuesDataView.setFloat32(116, _defocusDiskRadiusV[1], true);
+//      _generalDataUniformValuesDataView.setFloat32(116, _defocusDiskRadiusV[1], true);
+        _generalDataUniformValuesDataView.setFloat32(120, _defocusDiskRadiusV[2], true);
+//      _generalDataUniformValuesDataView.setFloat32(120, _defocusDiskRadiusV[2], true);
+        _generalDataUniformValuesDataView.setUint32(124, 0, true);
+//      _generalDataUniformValuesDataView.setUint32(124, 0, true);
 
         _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);
 //      _device.queue.writeBuffer(_generalDataUniformBuffer, 0, _generalDataUniformValues as GPUAllowSharedBufferSource);

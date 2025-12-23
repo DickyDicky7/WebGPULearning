@@ -1241,6 +1241,10 @@
 //  timeInSeconds: f32,
     accumulatedSampleCount: u32,
 //  accumulatedSampleCount: u32,
+    defocusDiskRadiusU: vec3<f32>,
+//  defocusDiskRadiusU: vec3<f32>,
+    defocusDiskRadiusV: vec3<f32>,
+//  defocusDiskRadiusV: vec3<f32>,
 }
 
     struct TracingResult
@@ -1334,6 +1338,10 @@
 //      f32(uvJitter.y),
         generalData.cameraCenter,
 //      generalData.cameraCenter,
+        generalData.defocusDiskRadiusU,
+//      generalData.defocusDiskRadiusU,
+        generalData.defocusDiskRadiusV,
+//      generalData.defocusDiskRadiusV,
         &rng,
 //      &rng,
     );
@@ -1397,6 +1405,10 @@
 //      pixelY: f32,
         cameraCenter: vec3<f32>,
 //      cameraCenter: vec3<f32>,
+        defocusDiskRadiusU: vec3<f32>,
+//      defocusDiskRadiusU: vec3<f32>,
+        defocusDiskRadiusV: vec3<f32>,
+//      defocusDiskRadiusV: vec3<f32>,
         rng: ptr<function, RNG>,
 //      rng: ptr<function, RNG>,
     ) -> Ray
@@ -1408,8 +1420,10 @@
 // //      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
-        let rayOrigin: vec3<f32> = cameraCenter;
-//      let rayOrigin: vec3<f32> = cameraCenter;
+        let rayOrigin: vec3<f32> = _getDefocusDiskSample(cameraCenter, defocusDiskRadiusU, defocusDiskRadiusV, rng);
+//      let rayOrigin: vec3<f32> = _getDefocusDiskSample(cameraCenter, defocusDiskRadiusU, defocusDiskRadiusV, rng);
+//         let rayOrigin: vec3<f32> = cameraCenter;
+// //      let rayOrigin: vec3<f32> = cameraCenter;
         let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
 //      let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
         let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
@@ -2764,4 +2778,28 @@
 
         return vec2(cosine, sine) * r;
 //      return vec2(cosine, sine) * r;
+    }
+
+    fn _generateRandomPointInsideNormalizedDisk(rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _generateRandomPointInsideNormalizedDisk(rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        //  polar sampling
+//      //  polar sampling
+        let r: f32 = sqrt(_pcg32Next(rng)); // radius (sqrt ensures uniform distribution)
+//      let r: f32 = sqrt(_pcg32Next(rng)); // radius (sqrt ensures uniform distribution)
+        let theta: f32 = _pcg32NextRangeF32(rng, 0.0, 2.0 * PI); // angle in radians
+//      let theta: f32 = _pcg32NextRangeF32(rng, 0.0, 2.0 * PI); // angle in radians
+        return vec3<f32>(r * cos(theta), r * sin(theta), 0.0);
+//      return vec3<f32>(r * cos(theta), r * sin(theta), 0.0);
+    }
+
+    fn _getDefocusDiskSample(diskCenter: vec3<f32>, defocusDiskRadiusU: vec3<f32>, defocusDiskRadiusV: vec3<f32>, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _getDefocusDiskSample(diskCenter: vec3<f32>, defocusDiskRadiusU: vec3<f32>, defocusDiskRadiusV: vec3<f32>, rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        let randomPointInsideNormalizedDisk: vec3<f32> = _generateRandomPointInsideNormalizedDisk(rng);
+//      let randomPointInsideNormalizedDisk: vec3<f32> = _generateRandomPointInsideNormalizedDisk(rng);
+        return diskCenter + randomPointInsideNormalizedDisk.x * defocusDiskRadiusU
+//      return diskCenter + randomPointInsideNormalizedDisk.x * defocusDiskRadiusU
+                          + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
+//                        + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
     }

@@ -61,6 +61,10 @@
 //  timeInSeconds: f32,
     accumulatedSampleCount: u32,
 //  accumulatedSampleCount: u32,
+    defocusDiskRadiusU: vec3<f32>,
+//  defocusDiskRadiusU: vec3<f32>,
+    defocusDiskRadiusV: vec3<f32>,
+//  defocusDiskRadiusV: vec3<f32>,
 }
 
     const vertexPosition: array<vec4<f32>, 6> = array<vec4<f32>, 6>(
