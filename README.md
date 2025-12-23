@@ -18,7 +18,7 @@
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/15/014.png"></p><br/>
 <p align="center"><i><b>*** Demo Video ***</b></i></p><br/>
 
-[![Demo Video](https://img.youtube.com/vi/3cX5ZE_Gp0I/maxresdefault.jpg)](https://www.youtube.com/watch?v=3cX5ZE_Gp0I)
+[![Demo Video](https://img.youtube.com/vi/0SgfPfKUZsI/maxresdefault.jpg)](https://www.youtube.com/watch?v=0SgfPfKUZsI)
 [![Demo Video](https://img.youtube.com/vi/nCZ4zVRtJ3o/maxresdefault.jpg)](https://www.youtube.com/watch?v=nCZ4zVRtJ3o)
 
 
