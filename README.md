@@ -152,3 +152,53 @@
 <p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/7/004.png"></p><br/>
 
 
+
+<p align="center"><h3>[Example 16]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/004.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/005.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/16/006.png"></p><br/>
+<p align="center"><i><b>*** Demo Video ***</b></i></p><br/>
+
+[![Demo Video](https://img.youtube.com/vi/aCKGfbo8qSg/maxresdefault.jpg)](https://www.youtube.com/watch?v=aCKGfbo8qSg)
+
+
+
+<p align="center"><h3>[Example 17]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/004.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/005.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/006.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/17/007.png"></p><br/>
+<p align="center"><i><b>*** Demo Video ***</b></i></p><br/>
+
+[![Demo Video](https://img.youtube.com/vi/z3AP2B7O77w/maxresdefault.jpg)](https://www.youtube.com/watch?v=z3AP2B7O77w)
+
+
+
+<p align="center"><h3>[Example 18]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/004.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/005.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/006.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/18/007.png"></p><br/>
+
+
+
+<p align="center"><h3>[Example 19]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/19/001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/19/002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/19/003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/19/004.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/19/005.png"></p><br/>
+<p align="center"><i><b>*** Demo Video ***</b></i></p><br/>
+
+[![Demo Video](https://img.youtube.com/vi/igL8mYEgzH8/maxresdefault.jpg)](https://www.youtube.com/watch?v=igL8mYEgzH8)
+
+
