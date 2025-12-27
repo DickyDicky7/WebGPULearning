@@ -173,6 +173,10 @@
 //     let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
 // //  let colorB: vec4<f32> = textureSample(outputTexture, outputSampler, uvB);
 
+//     // Compose RGB from separate samples; keep alpha from green
+// //  // Compose RGB from separate samples; keep alpha from green
+//     var baseColor: vec3<f32> = vec3<f32>(colorR.r, colorG.g, colorB.b);
+// //  var baseColor: vec3<f32> = vec3<f32>(colorR.r, colorG.g, colorB.b);
     var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
 //  var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
     let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
@@ -182,12 +186,8 @@
     baseColor += 0.5 * bloom;
 //  baseColor += 0.5 * bloom;
 
-//     // Compose RGB from separate samples; keep alpha from green
-// //  // Compose RGB from separate samples; keep alpha from green
-//     var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b)));
-// //  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(vec3<f32>(colorR.r, colorG.g, colorB.b)));
-    var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(baseColor));
-//  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapACES(baseColor));
+    var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));
+//  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));
 
     // ---- Correct VIGNETTE ----
 //  // ---- Correct VIGNETTE ----

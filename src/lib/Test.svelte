@@ -470,8 +470,8 @@
 //  let _viewportTL: Vec3 = $derived(m.chain(_cameraCenter).subtract(m.multiply(_cameraW, _focalLength)).subtract(m.divide(_viewportU, 2)).subtract(m.divide(_viewportV, 2)).done() as Vec3);
     let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
 //  let _pixel00Coordinates: Vec3 = $derived(m.chain(_viewportTL).add(m.multiply(0.5, m.add(_fromPixelToPixelDeltaU, _fromPixelToPixelDeltaV))).done() as Vec3);
-    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
-//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_DARK);
+    let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
+//  let _backgroundType: BackgroundType = $state(BackgroundType.SKY_BOX_HDRI);
     let _numberOfImages: number;
 //  let _numberOfImages: number;
     let _frameHandleRenderLoop: number;
@@ -1765,8 +1765,8 @@
 //          },
         );
 //      );
-        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_03_puresky_4k.exr")).arrayBuffer();
-//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_03_puresky_4k.exr")).arrayBuffer();
+        const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_05_puresky_4k.exr")).arrayBuffer();
+//      const skyboxImage: ArrayBuffer = await (await fetch("/skyboxes/kloppenheim_05_puresky_4k.exr")).arrayBuffer();
         const skyboxImageParsed = await parseEXRWithWorker(skyboxImage, 1015);
 //      const skyboxImageParsed = await parseEXRWithWorker(skyboxImage, 1015);
         _hdriTexture = _device.createTexture({
