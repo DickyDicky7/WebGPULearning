@@ -30,6 +30,15 @@
     const TEXTURE_TYPE_CHECKER_STYLE_B: u32 = 3u;
 //  const TEXTURE_TYPE_CHECKER_STYLE_B: u32 = 3u;
 
+/* --- FOG --- */
+    const FOG_HEIGHT_DENSITY: f32 = 0.01;
+//  const FOG_HEIGHT_DENSITY: f32 = 0.01;
+    const FOG_HEIGHT_FALLOFF: f32 = 0.08;
+//  const FOG_HEIGHT_FALLOFF: f32 = 0.08;
+    const FOG_HEIGHT_COLOR: vec3<f32> = vec3<f32>(0.5, 0.6, 0.7);
+//  const FOG_HEIGHT_COLOR: vec3<f32> = vec3<f32>(0.5, 0.6, 0.7);
+/* --- FOG --- */
+
     struct Ray
 //  struct Ray
 {
@@ -970,6 +979,10 @@
 //      var currentRay: Ray = initialRay;
         var pixelNormal: vec3<f32>;
 //      var pixelNormal: vec3<f32>;
+/* --- FOG --- */
+//         var firstMinDistance: f32 = 1.0e+4;
+// //      var firstMinDistance: f32 = 1.0e+4;
+/* --- FOG --- */
 
 
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
@@ -981,6 +994,10 @@
 
             pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
 //          pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
+/* --- FOG --- */
+//             firstMinDistance = select(firstMinDistance, select(firstMinDistance, rayHitResult.minDistance, rayHitResult.isHitted), depth == 0u);
+// //          firstMinDistance = select(firstMinDistance, select(firstMinDistance, rayHitResult.minDistance, rayHitResult.isHitted), depth == 0u);
+/* --- FOG --- */
 
 
             if (!rayHitResult.isHitted)
@@ -1089,8 +1106,8 @@
             // Hard Shadow (Point Light) Solution
             // Hard Shadow (Point Light) Solution
             /*
-            let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-//          let sunDirection: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+            let sunDirection: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
+//          let sunDirection: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
             let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 //          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 
@@ -1124,8 +1141,8 @@
             // Soft Shadow (Area Light) Solution
             // Soft Shadow (Area Light) Solution
 
-            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
-//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.5, 0.707, -0.5);
+            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
+//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
             let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 //          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
             let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
@@ -1201,6 +1218,11 @@
 //          currentRay   = materialLightScatteringResult.scatteredRay;
         }
 
+/* --- FOG --- */
+//         accumulatedColor = _applyFogHeight(accumulatedColor, firstMinDistance, initialRay, FOG_HEIGHT_COLOR, FOG_HEIGHT_DENSITY, FOG_HEIGHT_FALLOFF);
+// //      accumulatedColor = _applyFogHeight(accumulatedColor, firstMinDistance, initialRay, FOG_HEIGHT_COLOR, FOG_HEIGHT_DENSITY, FOG_HEIGHT_FALLOFF);
+/* --- FOG --- */
+
         tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
 //      tracingResult.pixelOutput = vec4<f32>(accumulatedColor, 1.0);
         tracingResult.pixelNormal = vec4<f32>((pixelNormal + 1.0) * 0.5, 1.0);
@@ -1241,6 +1263,10 @@
 //  timeInSeconds: f32,
     accumulatedSampleCount: u32,
 //  accumulatedSampleCount: u32,
+    defocusDiskRadiusU: vec3<f32>,
+//  defocusDiskRadiusU: vec3<f32>,
+    defocusDiskRadiusV: vec3<f32>,
+//  defocusDiskRadiusV: vec3<f32>,
 }
 
     struct TracingResult
@@ -1314,6 +1340,11 @@
     uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
 //  uvJitter = clamp(uvJitter, vec2<i32>(0), vec2<i32>(generalData.canvasSize.xy));
 
+    let vogelDiskSampleIndex: f32 = frameIndex;
+//  let vogelDiskSampleIndex: f32 = frameIndex;
+    let vogelDiskSampleCount: f32 = generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel;
+//  let vogelDiskSampleCount: f32 = generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel;
+
     let ray: Ray = _generatePrimaryRay(
 //  let ray: Ray = _generatePrimaryRay(
         generalData.stratifiedSampleX,
@@ -1334,6 +1365,14 @@
 //      f32(uvJitter.y),
         generalData.cameraCenter,
 //      generalData.cameraCenter,
+        generalData.defocusDiskRadiusU,
+//      generalData.defocusDiskRadiusU,
+        generalData.defocusDiskRadiusV,
+//      generalData.defocusDiskRadiusV,
+        vogelDiskSampleIndex,
+//      vogelDiskSampleIndex,
+        vogelDiskSampleCount,
+//      vogelDiskSampleCount,
         &rng,
 //      &rng,
     );
@@ -1397,19 +1436,29 @@
 //      pixelY: f32,
         cameraCenter: vec3<f32>,
 //      cameraCenter: vec3<f32>,
+        defocusDiskRadiusU: vec3<f32>,
+//      defocusDiskRadiusU: vec3<f32>,
+        defocusDiskRadiusV: vec3<f32>,
+//      defocusDiskRadiusV: vec3<f32>,
+        vogelDiskSampleIndex: f32,
+//      vogelDiskSampleIndex: f32,
+        vogelDiskSampleCount: f32,
+//      vogelDiskSampleCount: f32,
         rng: ptr<function, RNG>,
 //      rng: ptr<function, RNG>,
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
-//      let sampleOffset: vec2<f32> = _getVogelDiskSample(u32(generalData.stratifiedSampleY * generalData.stratifiedSamplesPerPixel + generalData.stratifiedSampleX), u32(generalData.stratifiedSamplesPerPixel * generalData.stratifiedSamplesPerPixel), 0.0 /* 1.6180 */) * 0.5;
+        let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 0.5;
+//      let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 0.5;
 //         let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
 // //      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
 //      let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);
-        let rayOrigin: vec3<f32> = cameraCenter;
-//      let rayOrigin: vec3<f32> = cameraCenter;
+        let rayOrigin: vec3<f32> = _getDefocusDiskSample(cameraCenter, defocusDiskRadiusU, defocusDiskRadiusV, rng);
+//      let rayOrigin: vec3<f32> = _getDefocusDiskSample(cameraCenter, defocusDiskRadiusU, defocusDiskRadiusV, rng);
+//         let rayOrigin: vec3<f32> = cameraCenter;
+// //      let rayOrigin: vec3<f32> = cameraCenter;
         let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
 //      let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
         let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
@@ -2742,20 +2791,16 @@
 //      return color * SSVL_EXPOSURE;
     }
 
-    fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
-//  fn _getVogelDiskSample(sampleIndex: u32, sampleCount: u32, phi: f32) -> vec2<f32>
+    fn _getVogelDiskSample(sampleIndex: f32, sampleCount: f32, phi: f32) -> vec2<f32>
+//  fn _getVogelDiskSample(sampleIndex: f32, sampleCount: f32, phi: f32) -> vec2<f32>
     {
         const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
 //      const goldenAngle: f32 = radians(180.0) * (3.0 - sqrt(5.0));
-        let sampleIndexF: f32 = f32(sampleIndex);
-//      let sampleIndexF: f32 = f32(sampleIndex);
-        let sampleCountF: f32 = f32(sampleCount);
-//      let sampleCountF: f32 = f32(sampleCount);
 
-        let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
-//      let r: f32 = sqrt((sampleIndexF + 0.5) / sampleCountF); // Assuming index and count are positive
-        let theta: f32 = sampleIndexF * goldenAngle + phi;
-//      let theta: f32 = sampleIndexF * goldenAngle + phi;
+        let r: f32 = sqrt((sampleIndex + 0.5) / sampleCount); // Assuming index and count are positive
+//      let r: f32 = sqrt((sampleIndex + 0.5) / sampleCount); // Assuming index and count are positive
+        let theta: f32 = sampleIndex * goldenAngle + phi;
+//      let theta: f32 = sampleIndex * goldenAngle + phi;
 
         let   sine: f32 = sin(theta);
 //      let   sine: f32 = sin(theta);
@@ -2765,3 +2810,48 @@
         return vec2(cosine, sine) * r;
 //      return vec2(cosine, sine) * r;
     }
+
+    fn _generateRandomPointInsideNormalizedDisk(rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _generateRandomPointInsideNormalizedDisk(rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        //  polar sampling
+//      //  polar sampling
+        let r: f32 = sqrt(_pcg32Next(rng)); // radius (sqrt ensures uniform distribution)
+//      let r: f32 = sqrt(_pcg32Next(rng)); // radius (sqrt ensures uniform distribution)
+        let theta: f32 = _pcg32NextRangeF32(rng, 0.0, 2.0 * PI); // angle in radians
+//      let theta: f32 = _pcg32NextRangeF32(rng, 0.0, 2.0 * PI); // angle in radians
+        return vec3<f32>(r * cos(theta), r * sin(theta), 0.0);
+//      return vec3<f32>(r * cos(theta), r * sin(theta), 0.0);
+    }
+
+    fn _getDefocusDiskSample(diskCenter: vec3<f32>, defocusDiskRadiusU: vec3<f32>, defocusDiskRadiusV: vec3<f32>, rng: ptr<function, RNG>) -> vec3<f32>
+//  fn _getDefocusDiskSample(diskCenter: vec3<f32>, defocusDiskRadiusU: vec3<f32>, defocusDiskRadiusV: vec3<f32>, rng: ptr<function, RNG>) -> vec3<f32>
+    {
+        let randomPointInsideNormalizedDisk: vec3<f32> = _generateRandomPointInsideNormalizedDisk(rng);
+//      let randomPointInsideNormalizedDisk: vec3<f32> = _generateRandomPointInsideNormalizedDisk(rng);
+        return diskCenter + randomPointInsideNormalizedDisk.x * defocusDiskRadiusU
+//      return diskCenter + randomPointInsideNormalizedDisk.x * defocusDiskRadiusU
+                          + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
+//                        + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
+    }
+
+/* --- FOG --- */
+    fn _applyFogHeight(accumulatedColor: vec3<f32>, minDistance: f32, initialRay: Ray, fogColor: vec3<f32>, fogDensity: f32, fogFalloff: f32) -> vec3<f32> {
+//  fn _applyFogHeight(accumulatedColor: vec3<f32>, minDistance: f32, initialRay: Ray, fogColor: vec3<f32>, fogDensity: f32, fogFalloff: f32) -> vec3<f32> {
+        var fogAmount: f32 = select(
+//      var fogAmount: f32 = select(
+            (fogDensity / fogFalloff) * (exp(-initialRay.origin.y * fogFalloff)) * ((1.0 - exp(-minDistance * initialRay.direction.y * fogFalloff)) / initialRay.direction.y)
+//          (fogDensity / fogFalloff) * (exp(-initialRay.origin.y * fogFalloff)) * ((1.0 - exp(-minDistance * initialRay.direction.y * fogFalloff)) / initialRay.direction.y)
+            ,fogDensity * exp(-initialRay.origin.y * fogFalloff) * minDistance
+//          ,fogDensity * exp(-initialRay.origin.y * fogFalloff) * minDistance
+            ,abs(initialRay.direction.y) < 1.0e-4
+//          ,abs(initialRay.direction.y) < 1.0e-4
+        );
+//      );
+        fogAmount = clamp(fogAmount, 0.0, 1.0);
+//      fogAmount = clamp(fogAmount, 0.0, 1.0);
+        return mix(accumulatedColor, fogColor, fogAmount);
+//      return mix(accumulatedColor, fogColor, fogAmount);
+    }
+//  }
+/* --- FOG --- */

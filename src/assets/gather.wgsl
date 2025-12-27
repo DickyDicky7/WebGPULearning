@@ -29,6 +29,10 @@
 //  timeInSeconds: f32,
     accumulatedSampleCount: u32,
 //  accumulatedSampleCount: u32,
+    defocusDiskRadiusU: vec3<f32>,
+//  defocusDiskRadiusU: vec3<f32>,
+    defocusDiskRadiusV: vec3<f32>,
+//  defocusDiskRadiusV: vec3<f32>,
 }
 
     @group(0) @binding(0) var<uniform> generalData: GeneralData;
