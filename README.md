@@ -202,3 +202,36 @@
 [![Demo Video](https://img.youtube.com/vi/igL8mYEgzH8/maxresdefault.jpg)](https://www.youtube.com/watch?v=igL8mYEgzH8)
 
 
+
+<p align="center"><h3>[Lab Bastion]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/Bastion-001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/Bastion-002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/Bastion-003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/Bastion-004.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/Bastion-005.png"></p><br/>
+
+
+
+<p align="center"><h3>[Lab China-Vase]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/ChinaVase-001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/ChinaVase-002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/ChinaVase-003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/ChinaVase-004.png"></p><br/>
+
+
+
+<p align="center"><h3>[Lab #Blue-Noise vs #Stratified-Sampling]</h3></p><br/>
+<p align="center"><i><b>*** Blue-Noise ***</b></i></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/BlueNoise-001.png"></p><br/>
+<p align="center"><i><b>*** Stratified-Sampling ***</b></i></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/StratifiedSampling-001.png"></p><br/>
+
+
+
+<p align="center"><h3>[Lab Disney-BRDF-Model]</h3></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/DisneyBRDFModel-001.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/DisneyBRDFModel-002.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/DisneyBRDFModel-003.png"></p><br/>
+<p align="center"><img src="https://raw.githubusercontent.com/DickyDicky7/WebGPULearning/refs/heads/main/gallery/lab/DisneyBRDFModel-004.png"></p><br/>
+
+
