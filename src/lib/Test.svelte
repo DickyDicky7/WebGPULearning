@@ -1196,10 +1196,10 @@
 //      _device.queue.writeBuffer(_trianglesStorageBuffer, 0, _trianglesStorageValues as GPUAllowSharedBufferSource);
         _bvhNodes = buildLBVH(_triangles);
 //      _bvhNodes = buildLBVH(_triangles);
-        if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
-//      if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 36) {
-            _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 36);
-//          _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 36);
+        if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 32) {
+//      if (!_bvhNodesStorageValues || _bvhNodes.length !== _bvhNodesStorageValues.byteLength / 32) {
+            _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 32);
+//          _bvhNodesStorageValues = new ArrayBuffer(_bvhNodes.length * 32);
             _bvhNodesStorageValuesDataView = new DataView(_bvhNodesStorageValues);
 //          _bvhNodesStorageValuesDataView = new DataView(_bvhNodesStorageValues);
             if (_bvhNodesStorageBuffer) {
@@ -1224,8 +1224,8 @@
 //      _bvhNodes.forEach(
             (bvhNode: BVHNode, bvhNodeIndex: number): void => {
 //          (bvhNode: BVHNode, bvhNodeIndex: number): void => {
-                const base: number = bvhNodeIndex * 36;
-//              const base: number = bvhNodeIndex * 36;
+                const base: number = bvhNodeIndex * 32;
+//              const base: number = bvhNodeIndex * 32;
                 _bvhNodesStorageValuesDataView.setFloat32(base + 0 , bvhNode.aabb3d.minCornersLimit[0], true);
 //              _bvhNodesStorageValuesDataView.setFloat32(base + 0 , bvhNode.aabb3d.minCornersLimit[0], true);
                 _bvhNodesStorageValuesDataView.setFloat32(base + 4 , bvhNode.aabb3d.maxCornersLimit[0], true);
@@ -1238,12 +1238,24 @@
 //              _bvhNodesStorageValuesDataView.setFloat32(base + 16, bvhNode.aabb3d.minCornersLimit[2], true);
                 _bvhNodesStorageValuesDataView.setFloat32(base + 20, bvhNode.aabb3d.maxCornersLimit[2], true);
 //              _bvhNodesStorageValuesDataView.setFloat32(base + 20, bvhNode.aabb3d.maxCornersLimit[2], true);
-                _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.triangleIndex, true);
-//              _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.triangleIndex, true);
-                _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexL, true);
-//              _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexL, true);
-                _bvhNodesStorageValuesDataView.setInt32(base + 32, bvhNode.childIndexR, true);
-//              _bvhNodesStorageValuesDataView.setInt32(base + 32, bvhNode.childIndexR, true);
+                if (bvhNode.triangleIndex >= 0) {
+//              if (bvhNode.triangleIndex >= 0) {
+                    // LEAF: Store ~triangleIndex in data1 (makes it negative).
+//                  // LEAF: Store ~triangleIndex in data1 (makes it negative).
+                    _bvhNodesStorageValuesDataView.setInt32(base + 24, ~bvhNode.triangleIndex, true);
+//                  _bvhNodesStorageValuesDataView.setInt32(base + 24, ~bvhNode.triangleIndex, true);
+                    _bvhNodesStorageValuesDataView.setInt32(base + 28, 0, true); // Padding/Unused
+//                  _bvhNodesStorageValuesDataView.setInt32(base + 28, 0, true); // Padding/Unused
+                } else {
+//              } else {
+                    // INTERNAL: Store child indices.
+//                  // INTERNAL: Store child indices.
+                    _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.childIndexL, true);
+//                  _bvhNodesStorageValuesDataView.setInt32(base + 24, bvhNode.childIndexL, true);
+                    _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexR, true);
+//                  _bvhNodesStorageValuesDataView.setInt32(base + 28, bvhNode.childIndexR, true);
+                }
+//              }
             }
 //          }
         );
@@ -1687,8 +1699,8 @@
 */
         const publicURLs: string[] = [
 //      const publicURLs: string[] = [
-            "/ChinaVase.jpg",
-//          "/ChinaVase.jpg",
+            "/test/WoodToy3_albedo.jpg",
+//          "/test/WoodToy3_albedo.jpg",
         ];
 //      ];
         const cellImageWidth: number = 8192;
@@ -2279,8 +2291,8 @@
             // LIGHT A
             {
 //          {
-                albedo: [ 3.00, 0.60, 0.50 ],
-//              albedo: [ 3.00, 0.60, 0.50 ],
+                albedo: [ 5.00, 5.00, 5.00 ],
+//              albedo: [ 5.00, 5.00, 5.00 ],
                 albedoImageIndex: 11,
 //              albedoImageIndex: 11,
                 albedoTextureType: TextureType.COLOR,
@@ -2297,8 +2309,8 @@
             // LIGHT B
             {
 //          {
-                albedo: [ 0.60, 1.20, 3.20 ],
-//              albedo: [ 0.60, 1.20, 3.20 ],
+                albedo: [ 5.00, 5.00, 5.00 ],
+//              albedo: [ 5.00, 5.00, 5.00 ],
                 albedoImageIndex: 12,
 //              albedoImageIndex: 12,
                 albedoTextureType: TextureType.COLOR,
@@ -2315,8 +2327,8 @@
             // LIGHT C
             {
 //          {
-                albedo: [ 0.50, 3.10, 1.00 ],
-//              albedo: [ 0.50, 3.10, 1.00 ],
+                albedo: [ 5.00, 5.00, 5.00 ],
+//              albedo: [ 5.00, 5.00, 5.00 ],
                 albedoImageIndex: 13,
 //              albedoImageIndex: 13,
                 albedoTextureType: TextureType.COLOR,
@@ -2333,8 +2345,8 @@
             // LIGHT D
             {
 //          {
-                albedo: [ 2.40, 2.20, 1.90 ],
-//              albedo: [ 2.40, 2.20, 1.90 ],
+                albedo: [ 5.00, 5.00, 5.00 ],
+//              albedo: [ 5.00, 5.00, 5.00 ],
                 albedoImageIndex: 14,
 //              albedoImageIndex: 14,
                 albedoTextureType: TextureType.COLOR,
@@ -2955,10 +2967,10 @@
 //          [
                 {
 //              {
-                    name: "ChinaVase.obj",
-//                  name: "ChinaVase.obj",
-                    publicURL: "/ChinaVase.obj",
-//                  publicURL: "/ChinaVase.obj",
+                    name: "WoodToy_3.obj",
+//                  name: "WoodToy_3.obj",
+                    publicURL: "/test/WoodToy_3.obj",
+//                  publicURL: "/test/WoodToy_3.obj",
                 },
 //              },
             ]
@@ -2975,12 +2987,12 @@
 //          const floorY: number = -20.0;
             let minModelY: number = Infinity;
 //          let minModelY: number = Infinity;
-            const scaleX: number = 1.0;
-//          const scaleX: number = 1.0;
-            const scaleY: number = 1.0;
-//          const scaleY: number = 1.0;
-            const scaleZ: number = 1.0;
-//          const scaleZ: number = 1.0;
+            const scaleX: number = 2.1;
+//          const scaleX: number = 2.1;
+            const scaleY: number = 2.1;
+//          const scaleY: number = 2.1;
+            const scaleZ: number = 2.1;
+//          const scaleZ: number = 2.1;
             for (let mesh of model["meshes"]) {
 //          for (let mesh of model["meshes"]) {
                 const l: number = (mesh["vertices"] as number[]).length;

@@ -46,6 +46,8 @@
 //  origin: vec3<f32>,
     direction: vec3<f32>,
 //  direction: vec3<f32>,
+    directionInverse: vec3<f32>,
+//  directionInverse: vec3<f32>,
 }
 
     struct Sphere
@@ -76,6 +78,8 @@
 //  isFrontFaceHitted: bool,
     materialIndex: u32,
 //  materialIndex: u32,
+    triangleIndex: u32,
+//  triangleIndex: u32,
 }
 
     struct MaterialLightScatteringResult
@@ -193,12 +197,10 @@
 {
     aabb3d: AABB3D,
 //  aabb3d: AABB3D,
-    triangleIndex: i32,
-//  triangleIndex: i32,
-    childIndexL: i32,
-//  childIndexL: i32,
-    childIndexR: i32,
-//  childIndexR: i32,
+    data1: i32, // Leaf: ~triangleIndex, Internal: childIndexL,
+//  data1: i32, // Leaf: ~triangleIndex, Internal: childIndexL,
+    data2: i32, // Leaf: unused        , Internal: childIndexR,
+//  data2: i32, // Leaf: unused        , Internal: childIndexR,
 }
 
     const      PI: f32 = 3.1415926535897930; // 1*π
@@ -213,6 +215,13 @@
 {
     return dot(value, value);
 //  return dot(value, value);
+}
+
+    fn _makeRay(origin: vec3<f32>, direction: vec3<f32>) -> Ray
+//  fn _makeRay(origin: vec3<f32>, direction: vec3<f32>) -> Ray
+{
+    return Ray(origin, direction, 1.0 / direction);
+//  return Ray(origin, direction, 1.0 / direction);
 }
 
     // Helper functions to get min/max component of a vec3
@@ -234,12 +243,10 @@
 
     // Perform all calculations in parallel on a vector.
 //  // Perform all calculations in parallel on a vector.
-    let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
-//  let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
-    let distance0: vec3<f32> = (aabb3dMin - ray.origin) * rayDirectionInverse;
-//  let distance0: vec3<f32> = (aabb3dMin - ray.origin) * rayDirectionInverse;
-    let distance1: vec3<f32> = (aabb3dMax - ray.origin) * rayDirectionInverse;
-//  let distance1: vec3<f32> = (aabb3dMax - ray.origin) * rayDirectionInverse;
+    let distance0: vec3<f32> = (aabb3dMin - ray.origin) * ray.directionInverse;
+//  let distance0: vec3<f32> = (aabb3dMin - ray.origin) * ray.directionInverse;
+    let distance1: vec3<f32> = (aabb3dMax - ray.origin) * ray.directionInverse;
+//  let distance1: vec3<f32> = (aabb3dMax - ray.origin) * ray.directionInverse;
 
     // Find the min and max distances for each axis slab.
 //  // Find the min and max distances for each axis slab.
@@ -348,6 +355,73 @@
 //      return (quantizedU << 16u) | quantizedV;
     }
 
+    fn _rayHitTriangle_AnyHit(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> bool
+//  fn _rayHitTriangle_AnyHit(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> bool
+{
+    let triangle: Triangle = triangles[triangleIndex];
+//  let triangle: Triangle = triangles[triangleIndex];
+
+    const EPSILON: f32 = 1.0e-4;
+//  const EPSILON: f32 = 1.0e-4;
+
+    let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+//  let triangleEdge1: vec3<f32> = triangle.vertex1 - triangle.vertex0;
+    let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+//  let triangleEdge2: vec3<f32> = triangle.vertex2 - triangle.vertex0;
+
+    let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+//  let rayDirectionCrossTriangleEdge2: vec3<f32> = cross(ray.direction, triangleEdge2);
+    let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+//  let determinant: f32 = dot(triangleEdge1, rayDirectionCrossTriangleEdge2);
+
+    if (abs(determinant) < EPSILON)
+//  if (abs(determinant) < EPSILON)
+    {
+        return false;
+//      return false;
+    }
+
+    let inverseDeterminant: f32 = 1.0 / determinant;
+//  let inverseDeterminant: f32 = 1.0 / determinant;
+    let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+//  let vectorFromTriangleVertex0ToRayOrigin: vec3<f32> = ray.origin - triangle.vertex0;
+
+    let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+//  let w1Barycentric: f32 = inverseDeterminant * dot(vectorFromTriangleVertex0ToRayOrigin, rayDirectionCrossTriangleEdge2);
+    if (w1Barycentric < 0.0 || w1Barycentric > 1.0)
+//  if (w1Barycentric < 0.0 || w1Barycentric > 1.0)
+    {
+        return false;
+//      return false;
+    }
+
+    let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+//  let rayOriginCrossTriangleEdge1: vec3<f32> = cross(vectorFromTriangleVertex0ToRayOrigin, triangleEdge1);
+    let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+//  let w2Barycentric: f32 = inverseDeterminant * dot(ray.direction, rayOriginCrossTriangleEdge1);
+    if (w2Barycentric < 0.0 || w1Barycentric + w2Barycentric > 1.0)
+//  if (w2Barycentric < 0.0 || w1Barycentric + w2Barycentric > 1.0)
+    {
+        return false;
+//      return false;
+    }
+
+    let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
+//  let distanceFromRayOriginToIntersectionPoint: f32 = inverseDeterminant * dot(triangleEdge2, rayOriginCrossTriangleEdge1);
+
+    if (!_intervalSurround(rayTravelDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+//  if (!_intervalSurround(rayTravelDistanceLimit, distanceFromRayOriginToIntersectionPoint))
+    {
+        return false;
+//      return false;
+    }
+
+    // Hit found within interval. Since we don't care about the *closest* hit for occlusion, just return true.
+//  // Hit found within interval. Since we don't care about the *closest* hit for occlusion, just return true.
+    return true;
+//  return true;
+}
+
     fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 //  fn _rayHitTriangle(ray: Ray, triangleIndex: u32, rayTravelDistanceLimit: Interval) -> RayHitResult
 {
@@ -423,51 +497,33 @@
 //      return rayHitResult;
     }
 
+    /*
+        DEFERRED ATTRIBUTE OPTIMIZATION:
+//      DEFERRED ATTRIBUTE OPTIMIZATION:
+        We skip decoding expensive triangle-vertex-front-face-normals/triangle-vertex-UVs here. We just store the barycentrics
+//      We skip decoding expensive triangle-vertex-front-face-normals/triangle-vertex-UVs here. We just store the barycentrics
+        temporarily in the 'uvSurfaceCoordinate' field.
+//      temporarily in the 'uvSurfaceCoordinate' field.
+        'materialIndex' and 'triangleIndex' are stored to allow decoding later.
+//      'materialIndex' and 'triangleIndex' are stored to allow decoding later.
+    */
+
     if (distanceFromRayOriginToIntersectionPoint > EPSILON)
 //  if (distanceFromRayOriginToIntersectionPoint > EPSILON)
     {
-        let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
-//      let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
-        let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
-//      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
-        let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
-//      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
-        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
-//      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
-        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
-//      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
-        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
-//      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
-
         rayHitResult.isHitted = true;
 //      rayHitResult.isHitted = true;
 
         rayHitResult.minDistance = distanceFromRayOriginToIntersectionPoint;
 //      rayHitResult.minDistance = distanceFromRayOriginToIntersectionPoint;
 
-        rayHitResult.at = _rayMarch(ray, rayHitResult.minDistance);
-//      rayHitResult.at = _rayMarch(ray, rayHitResult.minDistance);
+        rayHitResult.triangleIndex = triangleIndex;
+//      rayHitResult.triangleIndex = triangleIndex;
 
-        let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
-//      let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
-        let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
-//      let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
-        rayHitResult.isFrontFaceHitted = dot(ray.direction, interpolatedFrontFaceNormal) < 0.0;
-//      rayHitResult.isFrontFaceHitted = dot(ray.direction, interpolatedFrontFaceNormal) < 0.0;
-        if (rayHitResult.isFrontFaceHitted)
-//      if (rayHitResult.isFrontFaceHitted)
-        {
-            rayHitResult.hittedSideNormal =  interpolatedFrontFaceNormal;
-//          rayHitResult.hittedSideNormal =  interpolatedFrontFaceNormal;
-        }
-        else
-//      else
-        {
-            rayHitResult.hittedSideNormal = -interpolatedFrontFaceNormal;
-//          rayHitResult.hittedSideNormal = -interpolatedFrontFaceNormal;
-        }
-        rayHitResult.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
-//      rayHitResult.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+        // Store Barycentrics (w1 & w2) in UV field temporarily
+//      // Store Barycentrics (w1 & w2) in UV field temporarily
+        rayHitResult.uvSurfaceCoordinate = vec2<f32>(w1Barycentric, w2Barycentric);
+//      rayHitResult.uvSurfaceCoordinate = vec2<f32>(w1Barycentric, w2Barycentric);
 
         return rayHitResult;
 //      return rayHitResult;
@@ -545,18 +601,8 @@
 
         rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
 //      rayHitResult.isFrontFaceHitted = dot(ray.direction, outwardNormal) < 0.0;
-        if (rayHitResult.isFrontFaceHitted)
-//      if (rayHitResult.isFrontFaceHitted)
-        {
-            rayHitResult.hittedSideNormal =  outwardNormal;
-//          rayHitResult.hittedSideNormal =  outwardNormal;
-        }
-        else
-//      else
-        {
-            rayHitResult.hittedSideNormal = -outwardNormal;
-//          rayHitResult.hittedSideNormal = -outwardNormal;
-        }
+        rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
+//      rayHitResult.hittedSideNormal = select(-outwardNormal, outwardNormal, rayHitResult.isFrontFaceHitted);
 
         let theta: f32 = acos (-outwardNormal.y); // latitude
 //      let theta: f32 = acos (-outwardNormal.y); // latitude
@@ -632,6 +678,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //          materialLightScatteringResult.scatteredRay.direction = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
+            materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//          materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
             materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
 //          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
@@ -644,8 +692,10 @@
         {
             materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
-            materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
-//          materialLightScatteringResult.scatteredRay.direction = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+            materialLightScatteringResult.scatteredRay.direction = normalize(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//          materialLightScatteringResult.scatteredRay.direction = normalize(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+            materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//          materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
             materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
 //          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
@@ -681,8 +731,8 @@
             if (_pcg32Next(rng) < reflectanceProbability)
 //          if (_pcg32Next(rng) < reflectanceProbability)
             {
-                scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
-//              scatteredDirection = normalize(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+                scatteredDirection = normalize(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
+//              scatteredDirection = normalize(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal) + material.layer1Roughness * _generateRandomUnitVector(rng));
                 if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
 //              if (dot(scatteredDirection, recentRayHitResult.hittedSideNormal) <= 0.0)
                 {
@@ -714,6 +764,8 @@
 //              materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
                 materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
 //              materialLightScatteringResult.scatteredRay.direction = scatteredDirection;
+                materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//              materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
                 materialLightScatteringResult.attenuation = attenuationColor;
 //              materialLightScatteringResult.attenuation = attenuationColor;
             }
@@ -732,10 +784,8 @@
             let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 //          let diffuseRayDirection: vec3<f32> = normalize(recentRayHitResult.hittedSideNormal + _generateRandomUnitVector(rng));
 
-            var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
-//          var etaRatioOfIncidenceOverTransmission: f32 = material.layer1IOR / material.layer0IOR;
-            if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
-//          if (recentRayHitResult.isFrontFaceHitted) { etaRatioOfIncidenceOverTransmission = material.layer0IOR / material.layer1IOR; }
+            let etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
+//          let etaRatioOfIncidenceOverTransmission: f32 = select(material.layer1IOR / material.layer0IOR, material.layer0IOR / material.layer1IOR, recentRayHitResult.isFrontFaceHitted);
 
             let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
 //          let cosTheta: f32 = min(dot(-incomingRay.direction, recentRayHitResult.hittedSideNormal), 1.0);
@@ -746,23 +796,19 @@
             var scatteredRayDirection: vec3<f32>;
 //          var scatteredRayDirection: vec3<f32>;
 
-            if (notAbleToRefract)
-//          if (notAbleToRefract)
-            {
-                 scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
-//               scatteredRayDirection = mix(_reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
-            }
-            else
-//          else
-            {
-                 scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
-//               scatteredRayDirection = mix(_refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
-            }
+            let reflectDirection: vec3<f32> = mix(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+//          let reflectDirection: vec3<f32> = mix(reflect(incomingRay.direction, recentRayHitResult.hittedSideNormal), diffuseRayDirection, material.layer1Roughness);
+            let refractDirection: vec3<f32> = mix(refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
+//          let refractDirection: vec3<f32> = mix(refract(incomingRay.direction, recentRayHitResult.hittedSideNormal, etaRatioOfIncidenceOverTransmission), -diffuseRayDirection, material.layer1Roughness);
+            scatteredRayDirection = select(refractDirection, reflectDirection, notAbleToRefract);
+//          scatteredRayDirection = select(refractDirection, reflectDirection, notAbleToRefract);
 
             materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
 //          materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
             materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
 //          materialLightScatteringResult.scatteredRay.direction = normalize(scatteredRayDirection);
+            materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//          materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
             materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
 //          materialLightScatteringResult.attenuation = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
             materialLightScatteringResult.emission = vec3<f32>(0.0, 0.0, 0.0);
@@ -793,6 +839,8 @@
 //          materialLightScatteringResult.scatteredRay.origin = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.scatteredRay.direction = vec3<f32>(0.0, 0.0, 0.0);
+            materialLightScatteringResult.scatteredRay.directionInverse = vec3<f32>(0.0, 0.0, 0.0);
+//          materialLightScatteringResult.scatteredRay.directionInverse = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
 //          materialLightScatteringResult.attenuation = vec3<f32>(0.0, 0.0, 0.0);
             materialLightScatteringResult.emission = _textureSampleAlbedo(material.textureIndex, recentRayHitResult.uvSurfaceCoordinate, recentRayHitResult.at);
@@ -860,6 +908,8 @@
 //                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
                     materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
 //                  materialLightScatteringResult.scatteredRay.direction = specularReflectedDirection;
+                    materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//                  materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
                     materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
 //                  materialLightScatteringResult.attenuation = mix(vec3<f32>(1.0), albedo, material.layer1Metallic);
                     materialLightScatteringResult.isScattered = true;
@@ -913,6 +963,8 @@
 //                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
                     materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
 //                  materialLightScatteringResult.scatteredRay.direction = select(reflectedDirection, refractedDirection, sinThetaTransmission <= 1.0);
+                    materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//                  materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
                     materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
 //                  materialLightScatteringResult.attenuation = select(vec3<f32>(1.0), albedo, sinThetaTransmission <= 1.0);
                     materialLightScatteringResult.isScattered = true;
@@ -931,6 +983,8 @@
 //                  materialLightScatteringResult.scatteredRay.origin = recentRayHitResult.at;
                     materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
 //                  materialLightScatteringResult.scatteredRay.direction = diffuseDirection;
+                    materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
+//                  materialLightScatteringResult.scatteredRay.directionInverse = 1.0 / materialLightScatteringResult.scatteredRay.direction;
                     materialLightScatteringResult.attenuation = albedo;
 //                  materialLightScatteringResult.attenuation = albedo;
                     materialLightScatteringResult.isScattered = true;
@@ -988,8 +1042,10 @@
         for (var depth: u32 = 0u; depth < maxDepth; depth++)
 //      for (var depth: u32 = 0u; depth < maxDepth; depth++)
         {
-            let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
-//          let rayHitResult: RayHitResult = _rayHitLBVH(currentRay, Interval(1.0e-4, 1.0e+4));
+            let rayHitResultClosestHit: RayHitResult = _rayHitLBVH_ClosestHit(currentRay, Interval(1.0e-4, 1.0e+4));
+//          let rayHitResultClosestHit: RayHitResult = _rayHitLBVH_ClosestHit(currentRay, Interval(1.0e-4, 1.0e+4));
+            let rayHitResult: RayHitResult = _finalizeFromRayHitResultClosestHit(currentRay, rayHitResultClosestHit);
+//          let rayHitResult: RayHitResult = _finalizeFromRayHitResultClosestHit(currentRay, rayHitResultClosestHit);
 
 
             pixelNormal = select(pixelNormal, select(vec3<f32>(0.0, 1.0, 0.0), rayHitResult.hittedSideNormal, rayHitResult.isHitted), depth == 0u);
@@ -1111,13 +1167,13 @@
             let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 //          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 
-            let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-//          let shadowRay: Ray = Ray(rayHitResult.at, sunDirection);
-            let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
-//          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+            let shadowRay: Ray = _makeRay(rayHitResult.at, sunDirection);
+//          let shadowRay: Ray = _makeRay(rayHitResult.at, sunDirection);
 
-            if (!shadowHit.isHitted)
-//          if (!shadowHit.isHitted)
+            // Hard Shadow (AnyHit Optimization)
+//          // Hard Shadow (AnyHit Optimization)
+            if (!_rayHitLBVH_AnyHit(shadowRay, Interval(1.0e-4, 1.0e+4)))
+//          if (!_rayHitLBVH_AnyHit(shadowRay, Interval(1.0e-4, 1.0e+4)))
             {
                 // The path to the sun is clear. Add direct light.
                 // The path to the sun is clear. Add direct light.
@@ -1141,8 +1197,8 @@
             // Soft Shadow (Area Light) Solution
             // Soft Shadow (Area Light) Solution
 
-            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
-//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.5);
+            let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.707);
+//          let sunDirectionCenter: vec3<f32> = vec3<f32>(0.0, 0.707, 0.707);
             let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 //          let sunColor: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
             let sunRadius: f32 = 0.025; // Increase for softer shadows. Decrease for harder shadows.
@@ -1153,13 +1209,13 @@
             let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
 //          let jitteredSunDirection: vec3<f32> = normalize(sunDirectionCenter + _generateRandomUnitVector(rng) * sunRadius);
 
-            let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-//          let shadowRay: Ray = Ray(rayHitResult.at, jitteredSunDirection);
-            let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
-//          let shadowHit: RayHitResult = _rayHitLBVH(shadowRay, Interval(1.0e-4, 1.0e+4));
+            let shadowRay: Ray = _makeRay(rayHitResult.at, jitteredSunDirection);
+//          let shadowRay: Ray = _makeRay(rayHitResult.at, jitteredSunDirection);
 
-            if (!shadowHit.isHitted)
-//          if (!shadowHit.isHitted)
+            // Soft Shadow (AnyHit Optimization)
+//          // Soft Shadow (AnyHit Optimization)
+            if (!_rayHitLBVH_AnyHit(shadowRay, Interval(1.0e-4, 1.0e+4)))
+//          if (!_rayHitLBVH_AnyHit(shadowRay, Interval(1.0e-4, 1.0e+4)))
             {
                 // The path to the sun is clear. Add direct light.
                 // The path to the sun is clear. Add direct light.
@@ -1404,8 +1460,8 @@
     let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
 //  let weight: f32 = 1.0 / (f32(generalData.accumulatedSampleCount) + 1.0);
     */
-    let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
-//  let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 0.01, generalData.accumulatedSampleCount == 0);
+    let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 1.0, generalData.accumulatedSampleCount == 0);
+//  let weight: f32 = select(1.0 / (f32(generalData.accumulatedSampleCount) + 1.0), 1.0, generalData.accumulatedSampleCount == 0);
     imageAcc = mix(imageAcc, imageJit, weight);
 //  imageAcc = mix(imageAcc, imageJit, weight);
 
@@ -1461,8 +1517,8 @@
 // //      let rayOrigin: vec3<f32> = cameraCenter;
         let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
 //      let rayDirection: vec3<f32> = pixelSampleCenter - rayOrigin;
-        let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
-//      let ray: Ray = Ray(rayOrigin, normalize(rayDirection));
+        let ray: Ray = _makeRay(rayOrigin, normalize(rayDirection));
+//      let ray: Ray = _makeRay(rayOrigin, normalize(rayDirection));
         return ray;
 //      return ray;
     }
@@ -1558,8 +1614,16 @@
     fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
 //  fn _schlickFresnel(cosine: f32, f0: vec3<f32>) -> vec3<f32>
     {
-        return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
-//      return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+        let oneMinusCos: f32 = 1.0 - cosine;
+//      let oneMinusCos: f32 = 1.0 - cosine;
+        let oneMinusCos2: f32 = oneMinusCos * oneMinusCos;
+//      let oneMinusCos2: f32 = oneMinusCos * oneMinusCos;
+        let oneMinusCos4: f32 = oneMinusCos2 * oneMinusCos2;
+//      let oneMinusCos4: f32 = oneMinusCos2 * oneMinusCos2;
+        let oneMinusCos5: f32 = oneMinusCos4 * oneMinusCos;
+//      let oneMinusCos5: f32 = oneMinusCos4 * oneMinusCos;
+        return f0 + (1.0 - f0) * oneMinusCos5;
+//      return f0 + (1.0 - f0) * oneMinusCos5;
     }
 
     // Generate a microfacet normal (H) based on roughness (GGX/Trowbridge-Reitz)
@@ -1617,6 +1681,7 @@
 //      return refractedDirection;
     }
 
+    /*
     fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 //  fn _reflect(incomingVector: vec3<f32>, normal: vec3<f32>) -> vec3<f32> { return incomingVector - 2.0 * dot(incomingVector, normal) * normal; }
 
@@ -1632,6 +1697,7 @@
         return refractedRayPerpendicular + refractedRayParallel;
 //      return refractedRayPerpendicular + refractedRayParallel;
     }
+    */
 
     fn _reflectance(cosine: f32, etaRatioOfIncidenceOverTransmission: f32) -> f32
 //  fn _reflectance(cosine: f32, etaRatioOfIncidenceOverTransmission: f32) -> f32
@@ -1644,8 +1710,14 @@
 //      r0 = r0 * r0;
         let temp: f32 = 1.0 - cosine;
 //      let temp: f32 = 1.0 - cosine;
-        return r0 + (1.0 - r0) * temp * temp * temp * temp * temp;
-//      return r0 + (1.0 - r0) * temp * temp * temp * temp * temp;
+        let temp2: f32 = temp * temp;
+//      let temp2: f32 = temp * temp;
+        let temp4: f32 = temp2 * temp2;
+//      let temp4: f32 = temp2 * temp2;
+        let temp5: f32 = temp4 * temp;
+//      let temp5: f32 = temp4 * temp;
+        return r0 + (1.0 - r0) * temp5;
+//      return r0 + (1.0 - r0) * temp5;
     }
 
     fn _generateRandomUnitVector(rng: ptr<function, RNG>) -> vec3<f32>
@@ -1759,6 +1831,7 @@
 //  return textureSampleLevel(columnAtlasTexture, columnAtlasSampler, columnAtlasUVTextureCoordinate, 0.0).rgb;
 }
 
+    /*
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
 //  fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
     fn _vec2Saturate(value: vec2<f32>) -> vec2<f32> { return clamp(value, vec2<f32>(0.0), vec2<f32>(1.0)); }
@@ -1767,12 +1840,13 @@
 //  fn _vec3Saturate(value: vec3<f32>) -> vec3<f32> { return clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)); }
     fn _vec4Saturate(value: vec4<f32>) -> vec4<f32> { return clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)); }
 //  fn _vec4Saturate(value: vec4<f32>) -> vec4<f32> { return clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)); }
+    */
 
     fn _tonemapACES(value: vec3<f32>) -> vec3<f32>
 //  fn _tonemapACES(value: vec3<f32>) -> vec3<f32>
     {
-        return _vec3Saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
-//      return _vec3Saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
+        return saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
+//      return saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
     }
     fn _tonemapFilmic(value: vec3<f32>) -> vec3<f32>
 //  fn _tonemapFilmic(value: vec3<f32>) -> vec3<f32>
@@ -1930,8 +2004,8 @@
         const e: f32 = 0.14;
 //      const e: f32 = 0.14;
 
-        let clamped: vec3<f32> = _vec3Saturate((value * (a * value + b)) / (value * (c * value + d) + e));
-//      let clamped: vec3<f32> = _vec3Saturate((value * (a * value + b)) / (value * (c * value + d) + e));
+        let clamped: vec3<f32> = saturate((value * (a * value + b)) / (value * (c * value + d) + e));
+//      let clamped: vec3<f32> = saturate((value * (a * value + b)) / (value * (c * value + d) + e));
         return clamped;
 //      return clamped;
     }
@@ -2515,12 +2589,168 @@
 //          return rayHitResult;
     }
 
+    fn _rayHitLBVH_AnyHit(ray: Ray, rayTravelDistanceLimit: Interval) -> bool
+//  fn _rayHitLBVH_AnyHit(ray: Ray, rayTravelDistanceLimit: Interval) -> bool
+    {
+
+        // 1. Initialize stack.
+//      // 1. Initialize stack.
+        // Size 32 is sufficient for 2^32 triangles (4 billion).
+//      // Size 32 is sufficient for 2^32 triangles (4 billion).
+        var stack: array<i32, 32>;
+//      var stack: array<i32, 32>;
+        var stackPointer: i32 = 0;
+//      var stackPointer: i32 = 0;
+
+        // Check Root AABB Intersection outside the loop (Optimized)
+//      // Check Root AABB Intersection outside the loop (Optimized)
+        let rootNode: BVHNode = bvhNodes[0];
+//      let rootNode: BVHNode = bvhNodes[0];
+        if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, rootNode.aabb3d))
+//      if (!_rayHitAABB3D(ray, rayTravelDistanceLimit, rootNode.aabb3d))
+        {
+            return false;
+//          return false;
+        }
+
+        // Push root node (index 0) into stack.
+//      // Push root node (index 0) into stack.
+        stack[0] = 0;
+//      stack[0] = 0;
+        stackPointer = 1;
+//      stackPointer = 1;
+
+        loop
+//      loop
+        {
+            // Check if stack is empty.
+//          // Check if stack is empty.
+            if (stackPointer == 0)
+//          if (stackPointer == 0)
+            {
+                break;
+//              break;
+            }
+
+            // Pop stack.
+//          // Pop stack.
+            stackPointer = stackPointer - 1;
+//          stackPointer = stackPointer - 1;
+            let nodeIndex: i32 = stack[stackPointer];
+//          let nodeIndex: i32 = stack[stackPointer];
+            let node: BVHNode = bvhNodes[nodeIndex];
+//          let node: BVHNode = bvhNodes[nodeIndex];
+
+            // 3. Leaf node case.
+//          // 3. Leaf node case.
+            if (node.data1 < 0)
+//          if (node.data1 < 0)
+            {
+                let triangleIndex: u32 = u32(~node.data1);
+//              let triangleIndex: u32 = u32(~node.data1);
+                if (_rayHitTriangle_AnyHit(ray, triangleIndex, rayTravelDistanceLimit))
+//              if (_rayHitTriangle_AnyHit(ray, triangleIndex, rayTravelDistanceLimit))
+                {
+                    // For shadows (AnyHit), we return true on the FIRST hit.
+//                  // For shadows (AnyHit), we return true on the FIRST hit.
+                    return true;
+//                  return true;
+                }
+                continue;
+//              continue;
+            }
+
+            // 4. Internal node case.
+//          // 4. Internal node case.
+
+            let childIndexL: i32 = node.data1;
+//          let childIndexL: i32 = node.data1;
+            let childIndexR: i32 = node.data2;
+//          let childIndexR: i32 = node.data2;
+
+            let childL: BVHNode = bvhNodes[childIndexL];
+//          let childL: BVHNode = bvhNodes[childIndexL];
+            let childR: BVHNode = bvhNodes[childIndexR];
+//          let childR: BVHNode = bvhNodes[childIndexR];
+
+            // Calculate distances to children
+//          // Calculate distances to children
+            let distanceL: f32 = _calculateDistanceToAABB3D(ray, rayTravelDistanceLimit, childL.aabb3d);
+//          let distanceL: f32 = _calculateDistanceToAABB3D(ray, rayTravelDistanceLimit, childL.aabb3d);
+            let distanceR: f32 = _calculateDistanceToAABB3D(ray, rayTravelDistanceLimit, childR.aabb3d);
+//          let distanceR: f32 = _calculateDistanceToAABB3D(ray, rayTravelDistanceLimit, childR.aabb3d);
+
+            // OPTIMIZATION: If both are Infinity (missed), continue.
+//          // OPTIMIZATION: If both are Infinity (missed), continue.
+            if (distanceL == 9999999.0 && distanceR == 9999999.0)
+//          if (distanceL == 9999999.0 && distanceR == 9999999.0)
+            {
+                continue;
+//              continue;
+            }
+
+            // PUSH ORDER: Push the FAR one first, so we process the NEAR one next.
+//          // PUSH ORDER: Push the FAR one first, so we process the NEAR one next.
+            if (distanceL < distanceR)
+//          if (distanceL < distanceR)
+            {
+                // L is closer. Push R first (if hit).
+//              // L is closer. Push R first (if hit).
+                if (distanceR < 9999999.0)
+//              if (distanceR < 9999999.0)
+                {
+                    stack[stackPointer] = childIndexR;
+//                  stack[stackPointer] = childIndexR;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+                // Push L second.
+//              // Push L second.
+                if (distanceL < 9999999.0)
+//              if (distanceL < 9999999.0)
+                {
+                    stack[stackPointer] = childIndexL;
+//                  stack[stackPointer] = childIndexL;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+            }
+            else
+//          else
+            {
+                // R is closer. Push L first (if hit).
+//              // R is closer. Push L first (if hit).
+                if (distanceL < 9999999.0)
+//              if (distanceL < 9999999.0)
+                {
+                    stack[stackPointer] = childIndexL;
+//                  stack[stackPointer] = childIndexL;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+                // Push R second.
+//              // Push R second.
+                if (distanceR < 9999999.0)
+//              if (distanceR < 9999999.0)
+                {
+                    stack[stackPointer] = childIndexR;
+//                  stack[stackPointer] = childIndexR;
+                    stackPointer = stackPointer + 1;
+//                  stackPointer = stackPointer + 1;
+                }
+            }
+        }
+
+        return false;
+//      return false;
+    }
+
     // stack[stackPointer] = value; stackPointer++; -> push
 //  // stack[stackPointer] = value; stackPointer++; -> push
     // stackPointer--; value = stack[stackPointer]; -> pop
 //  // stackPointer--; value = stack[stackPointer]; -> pop
-    fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
-//  fn _rayHitLBVH(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+    fn _rayHitLBVH_ClosestHit(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
+//  fn _rayHitLBVH_ClosestHit(ray: Ray, rayTravelDistanceLimit: Interval) -> RayHitResult
     {
 
         var finalRayHitResult: RayHitResult;
@@ -2581,11 +2811,13 @@
 
             // 3. Leaf node case.
 //          // 3. Leaf node case.
-            if (node.triangleIndex >= 0)
-//          if (node.triangleIndex >= 0)
+            if (node.data1 < 0)
+//          if (node.data1 < 0)
             {
-                let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(node.triangleIndex), updatedRayTravelDistanceLimit);
-//              let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, u32(node.triangleIndex), updatedRayTravelDistanceLimit);
+                let triangleIndex: u32 = u32(~node.data1);
+//              let triangleIndex: u32 = u32(~node.data1);
+                let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, updatedRayTravelDistanceLimit);
+//              let temporaryRayHitResult: RayHitResult = _rayHitTriangle(ray, triangleIndex, updatedRayTravelDistanceLimit);
                 if (temporaryRayHitResult.isHitted && temporaryRayHitResult.minDistance < maxTravelableDistanceSoFarForRay)
 //              if (temporaryRayHitResult.isHitted && temporaryRayHitResult.minDistance < maxTravelableDistanceSoFarForRay)
                 {
@@ -2601,6 +2833,11 @@
             // 4. Internal node case (THE OPTIMIZATION).
 //          // 4. Internal node case (THE OPTIMIZATION).
 
+            let childIndexL: i32 = node.data1;
+//          let childIndexL: i32 = node.data1;
+            let childIndexR: i32 = node.data2;
+//          let childIndexR: i32 = node.data2;
+
             // We need to look at the children.
 //          // We need to look at the children.
             // To do front-to-back traversal, we calculate the distance to both children.
@@ -2608,10 +2845,10 @@
             // NOTE: This adds some overhead, but usually pays off by culling huge branches later.
 //          // NOTE: This adds some overhead, but usually pays off by culling huge branches later.
 
-            let childL: BVHNode = bvhNodes[node.childIndexL];
-//          let childL: BVHNode = bvhNodes[node.childIndexL];
-            let childR: BVHNode = bvhNodes[node.childIndexR];
-//          let childR: BVHNode = bvhNodes[node.childIndexR];
+            let childL: BVHNode = bvhNodes[childIndexL];
+//          let childL: BVHNode = bvhNodes[childIndexL];
+            let childR: BVHNode = bvhNodes[childIndexR];
+//          let childR: BVHNode = bvhNodes[childIndexR];
 
             // Quick distance check (returns infinity if miss).
 //          // Quick distance check (returns infinity if miss).
@@ -2641,8 +2878,8 @@
                 if (distanceR < maxTravelableDistanceSoFarForRay)
 //              if (distanceR < maxTravelableDistanceSoFarForRay)
                 {
-                    stack[stackPointer] = node.childIndexR;
-//                  stack[stackPointer] = node.childIndexR;
+                    stack[stackPointer] = childIndexR;
+//                  stack[stackPointer] = childIndexR;
                     stackPointer = stackPointer + 1;
 //                  stackPointer = stackPointer + 1;
                 }
@@ -2651,8 +2888,8 @@
                 if (distanceL < maxTravelableDistanceSoFarForRay)
 //              if (distanceL < maxTravelableDistanceSoFarForRay)
                 {
-                    stack[stackPointer] = node.childIndexL;
-//                  stack[stackPointer] = node.childIndexL;
+                    stack[stackPointer] = childIndexL;
+//                  stack[stackPointer] = childIndexL;
                     stackPointer = stackPointer + 1;
 //                  stackPointer = stackPointer + 1;
                 }
@@ -2666,8 +2903,8 @@
                 if (distanceL < maxTravelableDistanceSoFarForRay)
 //              if (distanceL < maxTravelableDistanceSoFarForRay)
                 {
-                    stack[stackPointer] = node.childIndexL;
-//                  stack[stackPointer] = node.childIndexL;
+                    stack[stackPointer] = childIndexL;
+//                  stack[stackPointer] = childIndexL;
                     stackPointer = stackPointer + 1;
 //                  stackPointer = stackPointer + 1;
                 }
@@ -2676,8 +2913,8 @@
                 if (distanceR < maxTravelableDistanceSoFarForRay)
 //              if (distanceR < maxTravelableDistanceSoFarForRay)
                 {
-                    stack[stackPointer] = node.childIndexR;
-//                  stack[stackPointer] = node.childIndexR;
+                    stack[stackPointer] = childIndexR;
+//                  stack[stackPointer] = childIndexR;
                     stackPointer = stackPointer + 1;
 //                  stackPointer = stackPointer + 1;
                 }
@@ -2699,13 +2936,11 @@
 //      let aabb3dMinCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.min, aabb3d.cornerLimitAxisY.min, aabb3d.cornerLimitAxisZ.min);
         let aabb3dMaxCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
 //      let aabb3dMaxCornersLimit: vec3<f32> = vec3<f32>(aabb3d.cornerLimitAxisX.max, aabb3d.cornerLimitAxisY.max, aabb3d.cornerLimitAxisZ.max);
-        let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
-//      let rayDirectionInverse: vec3<f32> = 1.0 / ray.direction;
 
-        let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * rayDirectionInverse;
-//      let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * rayDirectionInverse;
-        let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * rayDirectionInverse;
-//      let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * rayDirectionInverse;
+        let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * ray.directionInverse;
+//      let distancesFromRayOriginToMinCornersLimit: vec3<f32> = (aabb3dMinCornersLimit - ray.origin) * ray.directionInverse;
+        let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * ray.directionInverse;
+//      let distancesFromRayOriginToMaxCornersLimit: vec3<f32> = (aabb3dMaxCornersLimit - ray.origin) * ray.directionInverse;
 
         let distancesMin: vec3<f32> = max(min(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.min));
 //      let distancesMin: vec3<f32> = max(min(distancesFromRayOriginToMinCornersLimit, distancesFromRayOriginToMaxCornersLimit), vec3<f32>(rayTravelDistanceLimit.min));
@@ -2833,6 +3068,63 @@
 //      return diskCenter + randomPointInsideNormalizedDisk.x * defocusDiskRadiusU
                           + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
 //                        + randomPointInsideNormalizedDisk.y * defocusDiskRadiusV;
+    }
+
+    fn _finalizeFromRayHitResultClosestHit(currentRay: Ray, rayHitResultClosestHit: RayHitResult) -> RayHitResult
+//  fn _finalizeFromRayHitResultClosestHit(currentRay: Ray, rayHitResultClosestHit: RayHitResult) -> RayHitResult
+    {
+        if (!rayHitResultClosestHit.isHitted)
+//      if (!rayHitResultClosestHit.isHitted)
+        {
+            return rayHitResultClosestHit;
+//          return rayHitResultClosestHit;
+        }
+
+        let triangle: Triangle = triangles[rayHitResultClosestHit.triangleIndex];
+//      let triangle: Triangle = triangles[rayHitResultClosestHit.triangleIndex];
+
+        let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+//      let triangleVertex0FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex0FrontFaceNormalEncoded);
+        let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+//      let triangleVertex1FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex1FrontFaceNormalEncoded);
+        let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+//      let triangleVertex2FrontFaceNormal: vec3<f32> = decodeOctahedralNormal(triangle.vertex2FrontFaceNormalEncoded);
+
+        let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+//      let triangleVertex0UV: vec2<f32> = decodeQuantizedUV(triangle.vertex0UVEncoded); // unpack2x16unorm(triangle.vertex0UVEncoded);
+        let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+//      let triangleVertex1UV: vec2<f32> = decodeQuantizedUV(triangle.vertex1UVEncoded); // unpack2x16unorm(triangle.vertex1UVEncoded);
+        let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
+//      let triangleVertex2UV: vec2<f32> = decodeQuantizedUV(triangle.vertex2UVEncoded); // unpack2x16unorm(triangle.vertex2UVEncoded);
+
+        var rayHitResultFinal: RayHitResult = rayHitResultClosestHit;
+//      var rayHitResultFinal: RayHitResult = rayHitResultClosestHit;
+
+        rayHitResultFinal.at = _rayMarch(currentRay, rayHitResultFinal.minDistance);
+//      rayHitResultFinal.at = _rayMarch(currentRay, rayHitResultFinal.minDistance);
+
+        // Retrieve Barycentrics from temporary storage
+//      // Retrieve Barycentrics from temporary storage
+        let w1Barycentric: f32 = rayHitResultFinal.uvSurfaceCoordinate.x;
+//      let w1Barycentric: f32 = rayHitResultFinal.uvSurfaceCoordinate.x;
+        let w2Barycentric: f32 = rayHitResultFinal.uvSurfaceCoordinate.y;
+//      let w2Barycentric: f32 = rayHitResultFinal.uvSurfaceCoordinate.y;
+        let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+//      let w0Barycentric: f32 = 1.0 - w1Barycentric - w2Barycentric;
+
+        let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+//      let interpolatedFrontFaceNormal: vec3<f32> = normalize(w0Barycentric * triangleVertex0FrontFaceNormal + w1Barycentric * triangleVertex1FrontFaceNormal + w2Barycentric * triangleVertex2FrontFaceNormal);
+
+        rayHitResultFinal.isFrontFaceHitted = dot(currentRay.direction, interpolatedFrontFaceNormal) < 0.0;
+//      rayHitResultFinal.isFrontFaceHitted = dot(currentRay.direction, interpolatedFrontFaceNormal) < 0.0;
+        rayHitResultFinal.hittedSideNormal = select(-interpolatedFrontFaceNormal, interpolatedFrontFaceNormal, rayHitResultFinal.isFrontFaceHitted);
+//      rayHitResultFinal.hittedSideNormal = select(-interpolatedFrontFaceNormal, interpolatedFrontFaceNormal, rayHitResultFinal.isFrontFaceHitted);
+
+        rayHitResultFinal.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+//      rayHitResultFinal.uvSurfaceCoordinate = w0Barycentric * triangleVertex0UV + w1Barycentric * triangleVertex1UV + w2Barycentric * triangleVertex2UV;
+
+        return rayHitResultFinal;
+//      return rayHitResultFinal;
     }
 
 /* --- FOG --- */

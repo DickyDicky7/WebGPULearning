@@ -183,8 +183,8 @@
 //  let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
     let bloom: vec3<f32> = blur.rgb / blur.w;
 //  let bloom: vec3<f32> = blur.rgb / blur.w;
-    baseColor += 0.5 * bloom;
-//  baseColor += 0.5 * bloom;
+    baseColor += 0.0 * bloom;
+//  baseColor += 0.0 * bloom;
 
     var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));
 //  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));
@@ -227,8 +227,8 @@
 //  lllp.x *= ratio;
     fragmentShaderOutput.fragmentColor = vec4<f32>(mix(fragmentShaderOutput.fragmentColor.rgb,
 //  fragmentShaderOutput.fragmentColor = vec4<f32>(mix(fragmentShaderOutput.fragmentColor.rgb,
-        _lensFlares(lluv * 1.5, lllp * 1.5, false, true, vec3<f32>(0.643, 0.494, 0.867), 6.0), 0.3), 1.0);
-//      _lensFlares(lluv * 1.5, lllp * 1.5, false, true, vec3<f32>(0.643, 0.494, 0.867), 6.0), 0.3), 1.0);
+        _lensFlares(lluv * 1.5, lllp * 1.5, false, true, vec3<f32>(0.643, 0.494, 0.867), 6.0), 0.0), 1.0);
+//      _lensFlares(lluv * 1.5, lllp * 1.5, false, true, vec3<f32>(0.643, 0.494, 0.867), 6.0), 0.0), 1.0);
 
 
 
@@ -338,6 +338,7 @@
     fn _f32GammaToLinear(value: f32) -> f32 { return value * value; }
 //  fn _f32GammaToLinear(value: f32) -> f32 { return value * value; }
 
+    /*
     fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
 //  fn _f32Saturate(value: f32) -> f32 { return clamp(value, 0.0, 1.0); }
     fn _vec2Saturate(value: vec2<f32>) -> vec2<f32> { return clamp(value, vec2<f32>(0.0), vec2<f32>(1.0)); }
@@ -346,12 +347,13 @@
 //  fn _vec3Saturate(value: vec3<f32>) -> vec3<f32> { return clamp(value, vec3<f32>(0.0), vec3<f32>(1.0)); }
     fn _vec4Saturate(value: vec4<f32>) -> vec4<f32> { return clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)); }
 //  fn _vec4Saturate(value: vec4<f32>) -> vec4<f32> { return clamp(value, vec4<f32>(0.0), vec4<f32>(1.0)); }
+    */
 
     fn _tonemapACES(value: vec3<f32>) -> vec3<f32>
 //  fn _tonemapACES(value: vec3<f32>) -> vec3<f32>
     {
-        return _vec3Saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
-//      return _vec3Saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
+        return saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
+//      return saturate((value * (2.51 * value + vec3<f32>(0.03, 0.03, 0.03))) / (value * (2.43 * value + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14)));
     }
     fn _tonemapFilmic(value: vec3<f32>) -> vec3<f32>
 //  fn _tonemapFilmic(value: vec3<f32>) -> vec3<f32>
@@ -509,8 +511,8 @@
         const e: f32 = 0.14;
 //      const e: f32 = 0.14;
 
-        let clamped: vec3<f32> = _vec3Saturate((value * (a * value + b)) / (value * (c * value + d) + e));
-//      let clamped: vec3<f32> = _vec3Saturate((value * (a * value + b)) / (value * (c * value + d) + e));
+        let clamped: vec3<f32> = saturate((value * (a * value + b)) / (value * (c * value + d) + e));
+//      let clamped: vec3<f32> = saturate((value * (a * value + b)) / (value * (c * value + d) + e));
         return clamped;
 //      return clamped;
     }
