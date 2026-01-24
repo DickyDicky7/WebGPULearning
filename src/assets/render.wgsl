@@ -1,3 +1,6 @@
+    enable f16;
+//  enable f16;
+
     struct VertexShaderInput
 //  struct VertexShaderInput
 {
@@ -179,12 +182,12 @@
 // //  var baseColor: vec3<f32> = vec3<f32>(colorR.r, colorG.g, colorB.b);
     var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
 //  var baseColor: vec3<f32> = textureSample(outputTexture, outputSampler, fragmentShaderInput.uv).rgb;
-    let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
-//  let blur: vec4<f32> = textureSample(blurTexture, blurSampler, fragmentShaderInput.uv);
-    let bloom: vec3<f32> = blur.rgb / blur.w;
-//  let bloom: vec3<f32> = blur.rgb / blur.w;
-    baseColor += 0.0 * bloom;
-//  baseColor += 0.0 * bloom;
+    let blur: vec4<f16> = vec4<f16>(textureSample(blurTexture, blurSampler, fragmentShaderInput.uv));
+//  let blur: vec4<f16> = vec4<f16>(textureSample(blurTexture, blurSampler, fragmentShaderInput.uv));
+    let bloom: vec3<f16> = blur.rgb / blur.w;
+//  let bloom: vec3<f16> = blur.rgb / blur.w;
+    baseColor += vec3<f32>(0.0h * bloom);
+//  baseColor += vec3<f32>(0.0h * bloom);
 
     var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));
 //  var outputColor: vec3<f32> = _vec3LinearToGamma(_tonemapReinhard(baseColor));

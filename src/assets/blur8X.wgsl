@@ -1,3 +1,6 @@
+    enable f16;
+//  enable f16;
+
     struct VertexShaderInput
 //  struct VertexShaderInput
 {
@@ -26,8 +29,8 @@
     struct FragmentShaderOutput
 //  struct FragmentShaderOutput
 {
-    @location(0) fragmentColor: vec4<f32>,
-//  @location(0) fragmentColor: vec4<f32>,
+    @location(0) fragmentColor: vec4<f16>,
+//  @location(0) fragmentColor: vec4<f16>,
 }
 
     struct GeneralData
@@ -128,14 +131,14 @@
 //  var fragmentShaderOutput: FragmentShaderOutput;
     let uv: vec2<f32> = fragmentShaderInput.uv;
 //  let uv: vec2<f32> = fragmentShaderInput.uv;
-    var color: vec4<f32> = vec4<f32>(0.0);
-//  var color: vec4<f32> = vec4<f32>(0.0);
+    var color: vec4<f16> = vec4<f16>(0.0);
+//  var color: vec4<f16> = vec4<f16>(0.0);
     for (var i: f32 = -2.0; i <= 2.0; i += 1.0) {
 //  for (var i: f32 = -2.0; i <= 2.0; i += 1.0) {
     for (var j: f32 = -2.0; j <= 2.0; j += 1.0) {
 //  for (var j: f32 = -2.0; j <= 2.0; j += 1.0) {
-        color += textureSample(blurTexture, blurSampler, uv + vec2<f32>(i, j) * 8.0 / vec2<f32>(generalData.canvasSize.xy));
-//      color += textureSample(blurTexture, blurSampler, uv + vec2<f32>(i, j) * 8.0 / vec2<f32>(generalData.canvasSize.xy));
+        color += vec4<f16>(textureSample(blurTexture, blurSampler, uv + vec2<f32>(i, j) * 8.0 / vec2<f32>(generalData.canvasSize.xy)));
+//      color += vec4<f16>(textureSample(blurTexture, blurSampler, uv + vec2<f32>(i, j) * 8.0 / vec2<f32>(generalData.canvasSize.xy)));
     }
 //  }
     }
