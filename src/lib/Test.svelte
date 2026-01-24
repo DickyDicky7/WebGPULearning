@@ -1463,8 +1463,8 @@
 //              module: _blur2XShaderModule,
                 entryPoint: "fragmentShader",
 //              entryPoint: "fragmentShader",
-                targets: [{ format: "rgba16float" }],
-//              targets: [{ format: "rgba16float" }],
+                targets: [{ format: "rgba32float" }],
+//              targets: [{ format: "rgba32float" }],
             },
 //          },
         });
@@ -1489,8 +1489,8 @@
 //              module: _blur4XShaderModule,
                 entryPoint: "fragmentShader",
 //              entryPoint: "fragmentShader",
-                targets: [{ format: "rgba16float" }],
-//              targets: [{ format: "rgba16float" }],
+                targets: [{ format: "rgba32float" }],
+//              targets: [{ format: "rgba32float" }],
             },
 //          },
         });
@@ -1515,8 +1515,8 @@
 //              module: _blur8XShaderModule,
                 entryPoint: "fragmentShader",
 //              entryPoint: "fragmentShader",
-                targets: [{ format: "rgba16float" }],
-//              targets: [{ format: "rgba16float" }],
+                targets: [{ format: "rgba32float" }],
+//              targets: [{ format: "rgba32float" }],
             },
 //          },
         });
@@ -3214,8 +3214,8 @@
 //                  _outputStorage = _device.createBuffer({
                         label: "GPU_STORAGE_OUTPUT",
 //                      label: "GPU_STORAGE_OUTPUT",
-                        size: _canvas.width * _canvas.height * 8, // image width * image height * 8 bytes (a.k.a vec4<f16>)
-//                      size: _canvas.width * _canvas.height * 8, // image width * image height * 8 bytes (a.k.a vec4<f16>)
+                        size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+//                      size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
                         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
 //                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
                     });
@@ -3230,8 +3230,8 @@
 //                  _accumulatedOutputStorage = _device.createBuffer({
                         label: "GPU_STORAGE_ACCUMULATED_OUTPUT",
 //                      label: "GPU_STORAGE_ACCUMULATED_OUTPUT",
-                        size: _canvas.width * _canvas.height * 8, // image width * image height * 8 bytes (a.k.a vec4<f16>)
-//                      size: _canvas.width * _canvas.height * 8, // image width * image height * 8 bytes (a.k.a vec4<f16>)
+                        size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
+//                      size: _canvas.width * _canvas.height * 16, // image width * image height * 16 bytes (a.k.a vec4<f32>)
                         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
 //                      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
                     });
@@ -3248,8 +3248,8 @@
 //                      label: "GPU_TEXTURE_OUTPUT",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba16float",
-//                      format: "rgba16float",
+                        format: "rgba32float",
+//                      format: "rgba32float",
                         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING,
 //                      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC | GPUTextureUsage.STORAGE_BINDING,
                     });
@@ -3266,8 +3266,8 @@
 //                      label: "GPU_TEXTURE_BLUR_PING",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba16float",
-//                      format: "rgba16float",
+                        format: "rgba32float",
+//                      format: "rgba32float",
                         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
 //                      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
                     });
@@ -3284,8 +3284,8 @@
 //                      label: "GPU_TEXTURE_BLUR_PONG",
                         size: [ _canvas.width, _canvas.height, ],
 //                      size: [ _canvas.width, _canvas.height, ],
-                        format: "rgba16float",
-//                      format: "rgba16float",
+                        format: "rgba32float",
+//                      format: "rgba32float",
                         usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
 //                      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
                     });
