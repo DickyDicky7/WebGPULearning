@@ -826,8 +826,11 @@
 //              materialLightScatteringResult.attenuation *= vec3<f32>
                 (
                     exp(-recentRayHitResult.minDistance * 1.0),
+//                  exp(-recentRayHitResult.minDistance * 1.0),
                     exp(-recentRayHitResult.minDistance * 1.0),
+//                  exp(-recentRayHitResult.minDistance * 1.0),
                     exp(-recentRayHitResult.minDistance * 1.0),
+//                  exp(-recentRayHitResult.minDistance * 1.0),
                 );
             }
 */
@@ -1505,8 +1508,8 @@
     ) -> Ray
 //  ) -> Ray
     {
-        let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 0.5;
-//      let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 0.5;
+        let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 1.5;
+//      let sampleOffset: vec2<f32> = _getVogelDiskSample(vogelDiskSampleIndex, vogelDiskSampleCount, 0.0 /* 1.6180 */) * 1.5;
 //         let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
 // //      let sampleOffset: vec3<f32> = vec3<f32>(((stratifiedSampleX + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, ((stratifiedSampleY + _pcg32Next(rng)) * inverseStratifiedSamplesPerPixel) - 0.5, 0.0);
         let pixelSampleCenter: vec3<f32> = pixel00Coordinates + fromPixelToPixelDeltaU * (pixelX + sampleOffset.x) + fromPixelToPixelDeltaV * (pixelY + sampleOffset.y);

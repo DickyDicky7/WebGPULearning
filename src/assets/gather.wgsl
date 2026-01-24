@@ -58,15 +58,15 @@
 //  let progressivePixelSamplesScale: f32 = 1.0 / frameCount;
     let pixelColor: vec4<f32> = outputStorage[pixelIndex] * progressivePixelSamplesScale;
 //  let pixelColor: vec4<f32> = outputStorage[pixelIndex] * progressivePixelSamplesScale;
-    textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-//  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-    textureStore(  blurTexture, vec2<u32>(gid.xy), pixelColor);
-//  textureStore(  blurTexture, vec2<u32>(gid.xy), pixelColor);
+    textureStore(outputTexture, gid.xy, pixelColor);
+//  textureStore(outputTexture, gid.xy, pixelColor);
+    textureStore(  blurTexture, gid.xy, pixelColor);
+//  textureStore(  blurTexture, gid.xy, pixelColor);
     */
     let pixelColor: vec4<f32> = outputStorage[pixelIndex];
 //  let pixelColor: vec4<f32> = outputStorage[pixelIndex];
-    textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-//  textureStore(outputTexture, vec2<u32>(gid.xy), pixelColor);
-    textureStore(  blurTexture, vec2<u32>(gid.xy), pixelColor);
-//  textureStore(  blurTexture, vec2<u32>(gid.xy), pixelColor);
+    textureStore(outputTexture, gid.xy, pixelColor);
+//  textureStore(outputTexture, gid.xy, pixelColor);
+    textureStore(  blurTexture, gid.xy, pixelColor);
+//  textureStore(  blurTexture, gid.xy, pixelColor);
 }
