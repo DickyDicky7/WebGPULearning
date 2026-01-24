@@ -35,6 +35,8 @@
 //  import * as assimp from "./assimp/assimp-worker-wrapper";
     import { createColumnAtlas, type ColumnAtlas } from "./atlas-images-merger-column/atlas-images-merger-column-worker-wrapper";
 //  import { createColumnAtlas, type ColumnAtlas } from "./atlas-images-merger-column/atlas-images-merger-column-worker-wrapper";
+    import * as utility from "./utility";
+//  import * as utility from "./utility";
 
 
 
@@ -2978,6 +2980,8 @@
 //                      },
                     );
 //                  );
+                    utility.rotateAroundPivotAndAxisTriangle(_triangles[_triangles.length - 1], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], m.pi / 4.0);
+//                  utility.rotateAroundPivotAndAxisTriangle(_triangles[_triangles.length - 1], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], m.pi / 4.0);
                 }
 //              }
             }
